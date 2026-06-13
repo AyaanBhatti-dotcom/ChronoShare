@@ -116,8 +116,7 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     setError(null);
     try {
       await deleteAdminUser(adminKey, user.id);
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      setPosts((prev) => prev.filter((p) => p.user_id !== user.id));
+      await loadData();
       if (previewUserId === user.id) setPreviewUserId(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete user.");

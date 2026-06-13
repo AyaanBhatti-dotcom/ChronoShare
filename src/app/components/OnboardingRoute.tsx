@@ -12,13 +12,13 @@ function AuthLoading() {
   );
 }
 
-/** Logged-in users with completed profile setup land on the dashboard. */
+/** Logged-in users visiting auth pages — send to dashboard or back to landing. */
 export function AuthenticatedRedirect() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <AuthLoading />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!user.profileSetupCompleted) return <Navigate to="/signup" replace />;
+  if (!user.profileSetupCompleted) return <Navigate to="/" replace />;
 
   return <Navigate to="/dashboard" replace />;
 }

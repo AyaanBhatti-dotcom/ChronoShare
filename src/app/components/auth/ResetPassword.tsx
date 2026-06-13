@@ -29,7 +29,7 @@ export function ResetPassword() {
       return;
     }
 
-    navigate("/dashboard", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (

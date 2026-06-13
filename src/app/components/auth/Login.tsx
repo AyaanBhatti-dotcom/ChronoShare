@@ -23,7 +23,7 @@ export function Login() {
       return;
     }
 
-    navigate("/dashboard", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (

@@ -22,7 +22,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user.profileSetupCompleted) {
-    return <Navigate to="/signup" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
