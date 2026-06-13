@@ -14,8 +14,12 @@ html {
 
   .hero-content,
   .hero-container,
-  .landing-scroll-hint {
+  .landing-scroll-hint,
+  .hero-text-panel,
+  .hero-title,
+  .hero-subtitle {
     transition: none !important;
+    animation: none !important;
   }
 }
 
@@ -34,6 +38,30 @@ html {
   }
   100% {
     background-position: 2000px 100%;
+  }
+}
+
+@keyframes hero-panel-fall-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-36px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes hero-line-fall-blur-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px);
+    filter: blur(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
 
@@ -156,11 +184,15 @@ html {
   max-width: 44rem;
   padding: clamp(1.25rem, 3vw, 2rem) clamp(1.5rem, 4vw, 2.75rem);
   border-radius: 1.5rem;
+  animation: hero-panel-fall-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.15s;
 }
 
 .hero-container-landing .hero-title {
   font-size: clamp(2rem, 5.5vw, 3.75rem);
   max-width: none;
+  animation: hero-line-fall-blur-in 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.35s;
 }
 
 .hero-container-landing .hero-subtitle {
@@ -168,6 +200,8 @@ html {
   font-weight: 500;
   max-width: none;
   margin-top: 0.75rem;
+  animation: hero-line-fall-blur-in 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.55s;
 }
 
 .landing-nav {
