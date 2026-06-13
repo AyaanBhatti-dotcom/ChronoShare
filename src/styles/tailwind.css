@@ -42,8 +42,15 @@ html {
   overflow: hidden;
   height: 280px;
   border-radius: 1rem;
-  border: 1px solid #1f2937;
-  background: linear-gradient(to bottom, #7ec8e3 0%, #b8dff0 35%, #2d5a3d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: linear-gradient(
+    180deg,
+    #c5ebfa 0%,
+    #8ed4f0 28%,
+    #5ecee8 52%,
+    #7ad99a 78%,
+    #b8e8a0 100%
+  );
   transition: transform 0.1s linear;
   will-change: transform;
 }
@@ -70,9 +77,9 @@ html {
   padding: 1.5rem;
   background: linear-gradient(
     to top,
-    rgba(11, 15, 25, 0.75) 0%,
-    rgba(11, 15, 25, 0.2) 45%,
-    transparent 100%
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.08) 35%,
+    transparent 65%
   );
   pointer-events: none;
   transition: opacity 0.1s linear, transform 0.1s linear;
@@ -82,7 +89,7 @@ html {
   position: absolute;
   inset: 0;
   z-index: 8;
-  background: #0b0f19;
+  background: linear-gradient(180deg, transparent 0%, rgba(197, 235, 250, 0.5) 100%);
   pointer-events: none;
   transition: opacity 0.1s linear;
 }
@@ -90,17 +97,17 @@ html {
 .hero-title {
   font-size: clamp(1.75rem, 4vw, 2.5rem);
   font-weight: 700;
-  color: #ffffff;
+  color: #0c3d4f;
   text-align: center;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85), 0 2px 16px rgba(255, 255, 255, 0.45);
 }
 
 .hero-subtitle {
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #1e5f75;
   text-align: center;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 @media (min-width: 640px) {
@@ -140,9 +147,9 @@ html {
   padding-top: 5rem;
   background: linear-gradient(
     to top,
-    rgba(11, 15, 25, 0.88) 0%,
-    rgba(11, 15, 25, 0.4) 45%,
-    transparent 100%
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.12) 40%,
+    transparent 70%
   );
 }
 
@@ -184,7 +191,7 @@ html {
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(12, 61, 79, 0.72);
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -204,7 +211,7 @@ html {
 }
 
 .landing-scroll-hint:hover {
-  color: #ffffff;
+  color: #0c3d4f;
 }
 
 @keyframes scroll-hint-bob {

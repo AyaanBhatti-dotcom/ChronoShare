@@ -89,7 +89,7 @@ function MountainVistaParallax({
 
       <div
         className="hero-scroll-overlay"
-        style={{ opacity: scrollProgress * 0.92 }}
+        style={{ opacity: scrollProgress * 0.55 }}
       />
 
       {layersData.map((layer) => (
