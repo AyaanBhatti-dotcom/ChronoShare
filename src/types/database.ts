@@ -92,6 +92,37 @@ export interface Database {
         Args: { p_key: string; p_post_id: string; p_status: string };
         Returns: void;
       };
+      admin_update_profile: {
+        Args: {
+          p_key: string;
+          p_user_id: string;
+          p_full_name?: string | null;
+          p_email?: string | null;
+          p_hours_available?: number | null;
+        };
+        Returns: void;
+      };
+      admin_delete_user: {
+        Args: { p_key: string; p_user_id: string };
+        Returns: void;
+      };
+      admin_update_post: {
+        Args: {
+          p_key: string;
+          p_post_id: string;
+          p_title?: string | null;
+          p_description?: string | null;
+          p_category?: string | null;
+          p_post_type?: string | null;
+          p_hours_cost?: number | null;
+          p_status?: string | null;
+        };
+        Returns: void;
+      };
+      admin_delete_post: {
+        Args: { p_key: string; p_post_id: string };
+        Returns: void;
+      };
     };
     Enums: Record<string, never>;
   };

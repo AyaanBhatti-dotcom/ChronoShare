@@ -30,7 +30,13 @@ const pageTitles: Record<Screen, string> = {
   settings: "Settings",
 };
 
-export function DashboardLayout() {
+export function DashboardLayout({
+  previewMode = false,
+  onExitPreview,
+}: {
+  previewMode?: boolean;
+  onExitPreview?: () => void;
+} = {}) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("home");
@@ -45,15 +51,22 @@ export function DashboardLayout() {
   };
 
   const handleLogout = async () => {
+    if (previewMode) {
+      onExitPreview?.();
+      return;
+    }
     await logout();
     navigate("/", { replace: true });
   };
 
   return (
-    <div className="relative h-screen overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div
+      className={`relative overflow-hidden ${previewMode ? "h-full" : "h-screen"}`}
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
       <ShaderBackground />
 
-      <div className="relative z-10 flex h-screen overflow-hidden">
+      <div className={`relative z-10 flex overflow-hidden ${previewMode ? "h-full" : "h-screen"}`}>
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
@@ -124,7 +137,7 @@ export function DashboardLayout() {
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs text-[#9CA3AF] hover:text-red-400 hover:bg-red-500/5 transition-colors"
           >
             <LogOut size={14} />
-            Sign out
+            {previewMode ? "Exit preview" : "Sign out"}
           </button>
         </div>
       </aside>

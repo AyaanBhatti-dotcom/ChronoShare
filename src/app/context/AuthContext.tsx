@@ -20,6 +20,7 @@ export interface Session {
 interface AuthContextValue {
   user: Session | null;
   isLoading: boolean;
+  isPreview: boolean;
   login: (email: string, password: string) => Promise<string | null>;
   signup: (name: string, email: string, password: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
@@ -206,7 +207,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, signup, resetPassword, updatePassword, logout }}
+      value={{ user, isLoading, isPreview: false, login, signup, resetPassword, updatePassword, logout }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function AuthPreviewProvider({
+  user,
+  children,
+}: {
+  user: Session;
+  children: ReactNode;
+}) {
+  const noop = async (): Promise<string | null> => "Not available in preview mode.";
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading: false,
+        isPreview: true,
+        login: noop,
+        signup: noop,
+        resetPassword: noop,
+        updatePassword: noop,
+        logout: async () => {},
+      }}
     >
       {children}
     </AuthContext.Provider>

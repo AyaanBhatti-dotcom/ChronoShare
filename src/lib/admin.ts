@@ -41,3 +41,67 @@ export async function updateAdminPostStatus(
   });
   if (error) throw new Error(error.message);
 }
+
+export interface AdminUpdateProfileInput {
+  fullName?: string;
+  email?: string;
+  hoursAvailable?: number;
+}
+
+export async function updateAdminProfile(
+  key: string,
+  userId: string,
+  input: AdminUpdateProfileInput,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_update_profile", {
+    p_key: key,
+    p_user_id: userId,
+    p_full_name: input.fullName ?? null,
+    p_email: input.email ?? null,
+    p_hours_available: input.hoursAvailable ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteAdminUser(key: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_delete_user", {
+    p_key: key,
+    p_user_id: userId,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export interface AdminUpdatePostInput {
+  title?: string;
+  description?: string | null;
+  category?: string;
+  postType?: "needs" | "offers";
+  hoursCost?: number;
+  status?: "active" | "closed" | "archived";
+}
+
+export async function updateAdminPost(
+  key: string,
+  postId: string,
+  input: AdminUpdatePostInput,
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_update_post", {
+    p_key: key,
+    p_post_id: postId,
+    p_title: input.title ?? null,
+    p_description: input.description ?? null,
+    p_category: input.category ?? null,
+    p_post_type: input.postType ?? null,
+    p_hours_cost: input.hoursCost ?? null,
+    p_status: input.status ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteAdminPost(key: string, postId: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_delete_post", {
+    p_key: key,
+    p_post_id: postId,
+  });
+  if (error) throw new Error(error.message);
+}

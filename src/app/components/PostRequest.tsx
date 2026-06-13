@@ -13,7 +13,7 @@ const categories = [
 ];
 
 export const PostRequest = () => {
-  const { user } = useAuth();
+  const { user, isPreview } = useAuth();
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -26,6 +26,11 @@ export const PostRequest = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !category || !user) return;
+
+    if (isPreview) {
+      setError("Preview mode — posting is disabled.");
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -77,6 +82,9 @@ export const PostRequest = () => {
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-white mb-1">Post a Request</h2>
         <p className="text-sm text-[#9CA3AF]">Describe what you need or offer and how many hours it&apos;s worth.</p>
+        {isPreview && (
+          <p className="text-xs text-amber-400 mt-2">Preview mode — form is read-only.</p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -212,7 +220,7 @@ export const PostRequest = () => {
         {/* Submit */}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || isPreview}
           className="w-full py-4 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:shadow-lg active:scale-[0.99] disabled:opacity-60"
           style={{
             background: "linear-gradient(135deg, #10B981, #059669)",
