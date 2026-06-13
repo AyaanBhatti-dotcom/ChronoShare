@@ -1,13 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
   Clock, ChevronDown, Search, X, ArrowUpRight, ArrowDownRight,
-  CheckCircle2, PlusCircle,
+  CheckCircle2, PlusCircle, MapPin,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { fetchActivePosts } from "../../lib/posts";
-import { acceptPost, getHourImpact } from "../../lib/exchanges";
-import type { PostWithAuthor } from "../../types/database";
+import { acceptPost, getHourImpact, formatHourImpactLabel } from "../../lib/exchanges";
+import {
+  enrichPostsWithDistance,
+  filterAndSortListings,
+  formatDistance,
+  formatPostLocation,
+  getUserLocation,
+  type NearbyPost,
+  type NearbySort,
+  type UserLocation,
+} from "../../lib/location";
+import { getStoredListingScope, storeListingScope, type ListingScope } from "../../lib/listing-scope";
+import { ListingScopeToggle } from "./ListingScopeToggle";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -35,24 +46,48 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   const [mode, setMode] = useState<BoardMode>(initialMode);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
-  const [jobs, setJobs] = useState<PostWithAuthor[]>([]);
+  const [jobs, setJobs] = useState<NearbyPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedJob, setSelectedJob] = useState<PostWithAuthor | null>(null);
+  const [selectedJob, setSelectedJob] = useState<NearbyPost | null>(null);
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
   const [acceptSuccess, setAcceptSuccess] = useState(false);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope());
+  const [sort, setSort] = useState<NearbySort>("newest");
+  const [radiusMiles] = useState(100);
+
+  const handleScopeChange = (next: ListingScope) => {
+    setScope(next);
+    storeListingScope(next);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    getUserLocation(user.userId).then(setUserLocation).catch(console.warn);
+  }, [user]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchActivePosts();
-      setJobs(data);
+      if (userLocation) {
+        setJobs(enrichPostsWithDistance(data, userLocation));
+      } else {
+        setJobs(
+          data.map((post) => ({
+            ...post,
+            distanceMiles: null,
+            matchType: "unknown" as const,
+          })),
+        );
+      }
     } catch (err) {
       console.warn("Could not load posts:", err);
       setJobs([]);
     }
     setLoading(false);
-  }, []);
+  }, [userLocation]);
 
   useEffect(() => {
     setMode(initialMode);
@@ -62,7 +97,12 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
     loadPosts();
   }, [loadPosts]);
 
-  const filtered = jobs.filter((j) => {
+  const scopedJobs = useMemo(() => {
+    const effectiveScope = scope === "nearby" && !userLocation ? "worldwide" : scope;
+    return filterAndSortListings(jobs, { scope: effectiveScope, radiusMiles, sort });
+  }, [jobs, scope, userLocation, radiusMiles, sort]);
+
+  const filtered = scopedJobs.filter((j) => {
     const authorName = j.profiles?.full_name ?? "User";
     const matchMode = mode === "all" || j.post_type === mode;
     const matchCat = category === "All" || j.category === category;
@@ -104,6 +144,34 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
 
   return (
     <div className="space-y-5">
+      {/* Scope + sort */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <ListingScopeToggle scope={scope} onChange={handleScopeChange} />
+        <div className="flex items-center gap-2">
+          {scope === "nearby" && !userLocation && (
+            <p className="text-xs text-amber-400">Set your location in Settings to filter nearby.</p>
+          )}
+          <div
+            className="flex rounded-full p-1 w-fit"
+            style={{ background: "#111827", border: "1px solid #1F2937" }}
+          >
+            {(["nearest", "newest"] as const).map((option) => (
+              <button
+                key={option}
+                onClick={() => setSort(option)}
+                className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+                style={{
+                  background: sort === option ? "#10B981" : "transparent",
+                  color: sort === option ? "#000" : "#9CA3AF",
+                }}
+              >
+                {option === "nearest" ? "Nearest" : "Newest"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div
@@ -167,9 +235,11 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
           <p className="text-[#9CA3AF] text-sm mb-4">
             {jobs.length === 0
               ? "No active listings yet. Be the first to post!"
-              : mode !== "all"
-                ? `No ${mode === "needs" ? "help requests" : "skill offers"} match your filters. Try "All Listings".`
-                : "No listings match your filters."}
+              : scope === "nearby" && userLocation
+                ? `No listings within ${radiusMiles} miles match your filters. Try "Anywhere".`
+                : mode !== "all"
+                  ? `No ${mode === "needs" ? "help requests" : "skill offers"} match your filters. Try "All Listings".`
+                  : "No listings match your filters."}
           </p>
           {onNavigate && (
             <button
@@ -228,6 +298,12 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                 {job.description && (
                   <p className="text-xs text-[#9CA3AF] leading-relaxed line-clamp-2">{job.description}</p>
                 )}
+                <p className="text-[10px] text-[#6B7280] flex items-center gap-1">
+                  <MapPin size={10} className="text-emerald-400/70" />
+                  {scope === "nearby" && job.distanceMiles != null
+                    ? `${formatPostLocation(job)} · ${formatDistance(job.distanceMiles)}`
+                    : formatPostLocation(job)}
+                </p>
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-2">
                     <span
@@ -256,11 +332,21 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                     <span
                       className="px-4 py-1.5 rounded-full text-xs font-semibold"
                       style={{
-                        background: impact.direction === "earn" ? "rgba(16,185,129,0.15)" : "rgba(6,182,212,0.15)",
-                        color: impact.direction === "earn" ? "#10B981" : "#06B6D4",
+                        background:
+                          impact.direction === "earn"
+                            ? "rgba(16,185,129,0.15)"
+                            : impact.direction === "spend"
+                              ? "rgba(6,182,212,0.15)"
+                              : "rgba(107,114,128,0.15)",
+                        color:
+                          impact.direction === "earn"
+                            ? "#10B981"
+                            : impact.direction === "spend"
+                              ? "#06B6D4"
+                              : "#9CA3AF",
                       }}
                     >
-                      {impact.direction === "earn" ? "Earn" : "Spend"} {impact.amount}h
+                      {formatHourImpactLabel(impact)}
                     </span>
                   )}
                 </div>
@@ -329,30 +415,52 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                   </span>
                 </div>
 
+                <p className="text-xs text-[#9CA3AF] flex items-center gap-1.5">
+                  <MapPin size={12} className="text-emerald-400" />
+                  {formatPostLocation(selectedJob)}
+                  {selectedJob.distanceMiles != null && (
+                    <span>· {formatDistance(selectedJob.distanceMiles)} away</span>
+                  )}
+                </p>
+
                 {hourImpact && (
                   <div
                     className="rounded-xl p-4 flex items-center gap-3"
                     style={{
-                      background: hourImpact.direction === "earn"
-                        ? "rgba(16,185,129,0.1)"
-                        : "rgba(6,182,212,0.1)",
-                      border: `1px solid ${hourImpact.direction === "earn" ? "rgba(16,185,129,0.25)" : "rgba(6,182,212,0.25)"}`,
+                      background:
+                        hourImpact.direction === "earn"
+                          ? "rgba(16,185,129,0.1)"
+                          : hourImpact.direction === "spend"
+                            ? "rgba(6,182,212,0.1)"
+                            : "rgba(107,114,128,0.1)",
+                      border: `1px solid ${
+                        hourImpact.direction === "earn"
+                          ? "rgba(16,185,129,0.25)"
+                          : hourImpact.direction === "spend"
+                            ? "rgba(6,182,212,0.25)"
+                            : "rgba(107,114,128,0.25)"
+                      }`,
                     }}
                   >
                     {hourImpact.direction === "earn" ? (
                       <ArrowUpRight size={20} className="text-emerald-400" />
-                    ) : (
+                    ) : hourImpact.direction === "spend" ? (
                       <ArrowDownRight size={20} className="text-cyan-400" />
+                    ) : (
+                      <CheckCircle2 size={20} className="text-[#9CA3AF]" />
                     )}
                     <div>
                       <p className="text-sm font-medium text-white">
-                        You&apos;ll {hourImpact.direction === "earn" ? "earn" : "spend"}{" "}
-                        {hourImpact.amount}h
+                        {hourImpact.direction === "free"
+                          ? "No cost to join"
+                          : `You'll ${hourImpact.direction === "earn" ? "earn" : "spend"} ${hourImpact.amount}h`}
                       </p>
                       <p className="text-xs text-[#9CA3AF]">
                         {hourImpact.direction === "earn"
                           ? "Hours transfer to you when you join this exchange."
-                          : `Requires ${hourImpact.amount}h in your balance.`}
+                          : hourImpact.direction === "spend"
+                            ? `Requires ${hourImpact.amount}h in your balance.`
+                            : "The helper earns from the community pool — you don't pay."}
                       </p>
                     </div>
                   </div>

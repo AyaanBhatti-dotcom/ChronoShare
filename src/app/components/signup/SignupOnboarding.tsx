@@ -26,7 +26,7 @@ import {
   updateProfileFields,
   uploadAvatar,
 } from "../../../lib/profile";
-import type { UserLocation } from "../../../lib/location";
+import { formatLocationLabel, type UserLocation } from "../../../lib/location";
 import { LocationPicker } from "../LocationPicker";
 import {
   INSECURE_PASSWORD_MESSAGE,
@@ -792,7 +792,7 @@ export function SignupOnboarding() {
             {step === 5 && (
               <StepShell
                 title="Where are you based?"
-                subtitle="This powers your nearby map and local listings. Use detect as a shortcut — you confirm before we save."
+                subtitle="This powers your nearby map and local listings. Search any city worldwide, or use detect as a shortcut."
               >
                 <LocationPicker onSaved={handleLocationSaved} compact showSuccessMessage />
                 <div className="flex gap-3 mt-4">
@@ -838,7 +838,7 @@ export function SignupOnboarding() {
                 {savedLocation && (
                   <p className="text-xs text-emerald-400/80 mb-6 flex items-center justify-center gap-1">
                     <MapPin size={12} />
-                    Listings near {savedLocation.city}, {savedLocation.state}
+                    Based in {formatLocationLabel(savedLocation)}
                   </p>
                 )}
                 <p className="text-sm text-[#9CA3AF] mb-8 leading-relaxed">

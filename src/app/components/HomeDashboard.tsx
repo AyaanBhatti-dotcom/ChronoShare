@@ -13,17 +13,20 @@ import { fetchActivePosts } from "../../lib/posts";
 import {
   getUserLocation,
   enrichPostsWithDistance,
-  filterAndSortNearbyPosts,
+  filterAndSortListings,
   formatDistance,
   formatLocationLabel,
+  formatPostLocation,
   type NearbyPost,
   type NearbySort,
   type UserLocation,
 } from "../../lib/location";
-import { getHourImpact } from "../../lib/exchanges";
+import { getStoredListingScope, storeListingScope, type ListingScope } from "../../lib/listing-scope";
+import { getHourImpact, formatHourImpactLabel, getExchangeHourType } from "../../lib/exchanges";
 import type { ExchangeWithProfiles } from "../../types/database";
 import { NearbyMap } from "./NearbyMap";
 import { LocationPicker } from "./LocationPicker";
+import { ListingScopeToggle } from "./ListingScopeToggle";
 import { Slider } from "./ui/slider";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
@@ -40,7 +43,13 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const [postsLoading, setPostsLoading] = useState(true);
   const [radiusMiles, setRadiusMiles] = useState(25);
   const [sort, setSort] = useState<NearbySort>("nearest");
+  const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope());
   const [exchanges, setExchanges] = useState<ExchangeWithProfiles[]>([]);
+
+  const handleScopeChange = (next: ListingScope) => {
+    setScope(next);
+    storeListingScope(next);
+  };
 
   const loadLocation = useCallback(async () => {
     if (!user) return;
@@ -98,53 +107,56 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   }, [user]);
 
   const nearbyPosts = useMemo(() => {
-    if (!userLocation) {
-      return posts
-        .filter((post) => post.matchType !== "unknown")
-        .slice(0, 8);
-    }
-    return filterAndSortNearbyPosts(posts, radiusMiles, sort).slice(0, 8);
-  }, [posts, userLocation, radiusMiles, sort]);
+    const sorted = filterAndSortListings(posts, { scope, radiusMiles, sort });
+    return sorted.slice(0, scope === "worldwide" ? 12 : 8);
+  }, [posts, scope, radiusMiles, sort]);
 
   const radiusIndex = RADIUS_OPTIONS.indexOf(radiusMiles);
 
   return (
     <div className="space-y-6">
       {/* Location header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <MapPin size={16} className="text-emerald-400" />
-            <h2 className="text-lg font-semibold text-white">Nearby Listings</h2>
+            <h2 className="text-lg font-semibold text-white">
+              {scope === "worldwide" ? "Listings Anywhere" : "Nearby Listings"}
+            </h2>
           </div>
           <p className="text-sm text-[#9CA3AF]">
             {locationLoading
               ? "Loading your location..."
-              : userLocation
-                ? `Showing opportunities near ${formatLocationLabel(userLocation)}`
-                : "Set your location to see nearby listings on the map"}
+              : scope === "worldwide"
+                ? "Traveling? Browse opportunities worldwide and offer help wherever you go."
+                : userLocation
+                  ? `Showing opportunities near ${formatLocationLabel(userLocation)}`
+                  : "Set your location to see nearby listings on the map"}
           </p>
         </div>
-        {userLocation && (
-        <div
-          className="flex rounded-full p-1 w-fit"
-          style={{ background: "#111827", border: "1px solid #1F2937" }}
-        >
-          {(["nearest", "newest"] as const).map((option) => (
-            <button
-              key={option}
-              onClick={() => setSort(option)}
-              className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
-              style={{
-                background: sort === option ? "#10B981" : "transparent",
-                color: sort === option ? "#000" : "#9CA3AF",
-              }}
-            >
-              {option === "nearest" ? "Nearest" : "Newest"}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <ListingScopeToggle scope={scope} onChange={handleScopeChange} />
+          {userLocation && (
+          <div
+            className="flex rounded-full p-1 w-fit"
+            style={{ background: "#111827", border: "1px solid #1F2937" }}
+          >
+            {(["nearest", "newest"] as const).map((option) => (
+              <button
+                key={option}
+                onClick={() => setSort(option)}
+                className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+                style={{
+                  background: sort === option ? "#10B981" : "transparent",
+                  color: sort === option ? "#000" : "#9CA3AF",
+                }}
+              >
+                {option === "nearest" ? "Nearest" : "Newest"}
+              </button>
+            ))}
+          </div>
+          )}
         </div>
-        )}
       </div>
 
       {!locationLoading && !userLocation && (
@@ -164,12 +176,13 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
           userLocation={userLocation}
           posts={nearbyPosts}
           radiusMiles={radiusMiles}
+          worldwide={scope === "worldwide"}
           onSelectPost={() => onNavigate("board")}
         />
       ) : null}
 
       {/* Radius control */}
-      {userLocation && (
+      {userLocation && scope === "nearby" && (
         <div
           className="rounded-2xl p-5 border space-y-4"
           style={{ background: "#111827", borderColor: "#1F2937" }}
@@ -199,13 +212,13 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
         </div>
       )}
 
-      {/* Nearby listing cards */}
-      {userLocation && (
+      {/* Listing cards */}
+      {(userLocation || scope === "worldwide") && (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
             <Sparkles size={14} className="text-emerald-400" />
-            New in your area
+            {scope === "worldwide" ? "Opportunities worldwide" : "New in your area"}
           </h3>
           <button
             onClick={() => onNavigate("board")}
@@ -225,7 +238,9 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
             style={{ background: "#111827", borderColor: "#1F2937" }}
           >
             <p className="text-sm text-[#9CA3AF] mb-3">
-              No listings within {radiusMiles} miles yet.
+              {scope === "worldwide"
+                ? "No active listings yet."
+                : `No listings within ${radiusMiles} miles yet.`}
             </p>
             <button
               onClick={() => onNavigate("post")}
@@ -269,9 +284,11 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                     <div className="flex items-center gap-2 text-xs text-[#9CA3AF]">
                       <span className="flex items-center gap-1">
                         <MapPin size={11} className="text-emerald-400" />
-                        {post.matchType === "state"
-                          ? "Same state"
-                          : formatDistance(post.distanceMiles)}
+                        {scope === "worldwide"
+                          ? formatPostLocation(post)
+                          : post.matchType === "state"
+                            ? formatPostLocation(post)
+                            : formatDistance(post.distanceMiles)}
                       </span>
                       <span className="flex items-center gap-1" style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}>
                         <Clock size={11} />
@@ -282,11 +299,21 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                       <span
                         className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                         style={{
-                          background: impact.direction === "earn" ? "rgba(16,185,129,0.15)" : "rgba(6,182,212,0.15)",
-                          color: impact.direction === "earn" ? "#10B981" : "#06B6D4",
+                          background:
+                            impact.direction === "earn"
+                              ? "rgba(16,185,129,0.15)"
+                              : impact.direction === "spend"
+                                ? "rgba(6,182,212,0.15)"
+                                : "rgba(107,114,128,0.15)",
+                          color:
+                            impact.direction === "earn"
+                              ? "#10B981"
+                              : impact.direction === "spend"
+                                ? "#06B6D4"
+                                : "#9CA3AF",
                         }}
                       >
-                        {impact.direction === "earn" ? "Earn" : "Spend"} {impact.amount}h
+                        {formatHourImpactLabel(impact)}
                       </span>
                     )}
                   </div>
@@ -346,9 +373,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
             <div className="divide-y" style={{ borderColor: "#1F2937" }}>
               {exchanges.map((ex) => {
                 const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
-                const isEarn =
-                  (ex.post_type === "needs" && ex.acceptor_id === user?.userId) ||
-                  (ex.post_type === "offers" && ex.poster_id === user?.userId);
+                const hourType = user ? getExchangeHourType(ex, user.userId) : "free";
                 return (
                   <div key={ex.id} className="flex items-center gap-3 px-5 py-3">
                     <div
@@ -365,11 +390,16 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                       className="text-xs font-medium flex items-center gap-0.5"
                       style={{
                         fontFamily: "'DM Mono', monospace",
-                        color: isEarn ? "#10B981" : "#06B6D4",
+                        color:
+                          hourType === "earned"
+                            ? "#10B981"
+                            : hourType === "spent"
+                              ? "#06B6D4"
+                              : "#9CA3AF",
                       }}
                     >
-                      {isEarn ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                      {ex.hours}h
+                      {hourType === "earned" ? <ArrowUpRight size={10} /> : hourType === "spent" ? <ArrowDownRight size={10} /> : null}
+                      {hourType === "free" ? "Free" : `${hourType === "earned" ? "+" : "-"}${ex.hours}h`}
                     </span>
                   </div>
                 );

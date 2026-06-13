@@ -2,15 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { MapPin, Navigation, Loader2, CheckCircle2, Search } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
-  geocodeCityState,
   saveUserLocation,
   searchLocationSuggestions,
   suggestLocationFromIp,
+  suggestionToUserLocation,
   formatLocationLabel,
   type LocationSuggestion,
   type UserLocation,
 } from "../../lib/location";
-import { US_STATES } from "../../lib/us-states";
 
 interface LocationPickerProps {
   initialLocation?: UserLocation | null;
@@ -26,8 +25,6 @@ export function LocationPicker({
   showSuccessMessage = false,
 }: LocationPickerProps) {
   const { user } = useAuth();
-  const [city, setCity] = useState(initialLocation?.city ?? "");
-  const [state, setState] = useState(initialLocation?.state ?? "");
   const [searchQuery, setSearchQuery] = useState(
     initialLocation ? formatLocationLabel(initialLocation) : "",
   );
@@ -35,17 +32,15 @@ export function LocationPicker({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [pickedSuggestion, setPickedSuggestion] = useState<LocationSuggestion | null>(null);
+  const [detectedLocation, setDetectedLocation] = useState<UserLocation | null>(null);
   const [detecting, setDetecting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [suggestedLabel, setSuggestedLabel] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialLocation) {
-      setCity(initialLocation.city ?? "");
-      setState(initialLocation.state ?? "");
       setSearchQuery(formatLocationLabel(initialLocation));
     }
   }, [initialLocation]);
@@ -83,38 +78,34 @@ export function LocationPicker({
     };
   }, [searchQuery, searchOpen]);
 
-  const resetPicked = () => {
+  const resetSelection = () => {
     setPickedSuggestion(null);
+    setDetectedLocation(null);
     setSaved(false);
-    setSuggestedLabel(null);
   };
 
   const applySuggestion = (suggestion: LocationSuggestion) => {
-    setCity(suggestion.city);
-    setState(suggestion.state);
     setSearchQuery(suggestion.label);
     setPickedSuggestion(suggestion);
+    setDetectedLocation(null);
     setSearchOpen(false);
     setSaved(false);
-    setSuggestedLabel(null);
     setError(null);
   };
 
   const handleDetect = async () => {
     setDetecting(true);
     setError(null);
-    setSuggestedLabel(null);
     try {
       const suggestion = await suggestLocationFromIp();
       if (!suggestion) {
         setError("Could not detect your area. Search for your city below.");
         return;
       }
-      setCity(suggestion.city ?? "");
-      setState(suggestion.state ?? "");
-      setSearchQuery(formatLocationLabel(suggestion));
+      setDetectedLocation(suggestion);
       setPickedSuggestion(null);
-      setSuggestedLabel(formatLocationLabel(suggestion));
+      setSearchQuery(formatLocationLabel(suggestion));
+      setSaved(false);
     } catch {
       setError("Detection failed. Search for your city below.");
     } finally {
@@ -125,9 +116,14 @@ export function LocationPicker({
   const handleSave = async () => {
     if (!user) return;
 
-    const effectiveCity = city.trim() || searchQuery.split(",")[0]?.trim() || "";
-    if (!effectiveCity || !state) {
-      setError("Choose a city and state from the suggestions, or finish typing and select one.");
+    let location: UserLocation | null = null;
+
+    if (pickedSuggestion) {
+      location = suggestionToUserLocation(pickedSuggestion);
+    } else if (detectedLocation) {
+      location = detectedLocation;
+    } else {
+      setError("Pick your city from the search results, or use detect my area.");
       return;
     }
 
@@ -136,39 +132,18 @@ export function LocationPicker({
     setSaved(false);
 
     try {
-      let geocoded: UserLocation | null = null;
-
-      if (
-        pickedSuggestion &&
-        pickedSuggestion.city === effectiveCity &&
-        pickedSuggestion.state === state
-      ) {
-        geocoded = {
-          city: pickedSuggestion.city,
-          region: pickedSuggestion.stateName,
-          state: pickedSuggestion.state,
-          country: "US",
-          latitude: pickedSuggestion.latitude,
-          longitude: pickedSuggestion.longitude,
-        };
-      } else {
-        geocoded = await geocodeCityState(effectiveCity, state);
-      }
-
-      if (!geocoded) {
-        setError("Could not find that city. Pick a suggestion from the list.");
-        return;
-      }
-
-      await saveUserLocation(user.userId, geocoded);
+      await saveUserLocation(user.userId, location);
       setSaved(true);
-      onSaved(geocoded);
+      onSaved(location);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save location.");
     } finally {
       setSaving(false);
     }
   };
+
+  const selectedLabel = pickedSuggestion?.label ?? (detectedLocation ? formatLocationLabel(detectedLocation) : null);
+  const canSave = Boolean(pickedSuggestion || detectedLocation);
 
   const inputClass =
     "w-full px-4 py-2.5 rounded-xl text-sm text-white outline-none transition-all duration-200 focus:ring-1 focus:ring-emerald-500";
@@ -190,16 +165,16 @@ export function LocationPicker({
           <div>
             <h3 className="text-sm font-semibold text-white">Where are you based?</h3>
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              Search for your city — pick from the dropdown instead of typing the full address.
+              Search for your city anywhere in the world — pick a result from the dropdown.
             </p>
           </div>
         </div>
       )}
 
-      <div className={`grid gap-3 ${compact ? "" : "mb-3"}`}>
+      <div className={`${compact ? "" : "mb-3"}`}>
         <div className="space-y-1.5 relative" ref={searchRef}>
           <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
-            City & state
+            City & region
           </label>
           <div className="relative">
             <Search
@@ -209,15 +184,13 @@ export function LocationPicker({
             <input
               value={searchQuery}
               onChange={(e) => {
-                const value = e.target.value;
-                setSearchQuery(value);
-                setCity(value.split(",")[0]?.trim() ?? "");
-                resetPicked();
+                setSearchQuery(e.target.value);
+                resetSelection();
                 setSearchOpen(true);
                 setError(null);
               }}
               onFocus={() => setSearchOpen(true)}
-              placeholder="Start typing, e.g. Manhattan, NY"
+              placeholder="e.g. Tokyo, JP or Austin, TX"
               className={`${inputClass} pl-9`}
               style={inputStyle}
               autoComplete="off"
@@ -242,55 +215,27 @@ export function LocationPicker({
                 <li className="px-4 py-3 text-xs text-[#6B7280]">No matches — try another spelling</li>
               )}
               {suggestions.map((suggestion) => (
-                <li key={`${suggestion.city}-${suggestion.state}`}>
+                <li key={`${suggestion.city}-${suggestion.state}-${suggestion.country}`}>
                   <button
                     type="button"
                     className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-emerald-500/10 transition-colors"
                     onClick={() => applySuggestion(suggestion)}
                   >
                     {suggestion.label}
-                    <span className="block text-[10px] text-[#6B7280]">{suggestion.stateName}</span>
+                    {suggestion.stateName && suggestion.country !== "US" && (
+                      <span className="block text-[10px] text-[#6B7280]">{suggestion.stateName}</span>
+                    )}
                   </button>
                 </li>
               ))}
             </ul>
           )}
         </div>
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">State</label>
-          <select
-            value={state}
-            onChange={(e) => {
-              setState(e.target.value);
-              resetPicked();
-              setSaved(false);
-              if (city.trim() && e.target.value) {
-                setSearchQuery(`${city.trim()}, ${e.target.value}`);
-              }
-            }}
-            className={`${inputClass} cursor-pointer`}
-            style={inputStyle}
-          >
-            <option value="">Select state</option>
-            {US_STATES.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      {city && state && (
+      {selectedLabel && (
         <p className="text-xs text-[#9CA3AF] mb-3">
-          Selected: <span className="text-emerald-400">{city}, {state}</span>
-        </p>
-      )}
-
-      {suggestedLabel && (
-        <p className="text-xs text-cyan-400/90 mb-3">
-          Suggested from your connection: {suggestedLabel}. Pick it from search or save if it looks right.
+          Selected: <span className="text-emerald-400">{selectedLabel}</span>
         </p>
       )}
 
@@ -307,7 +252,7 @@ export function LocationPicker({
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || !city.trim() || !state}
+          disabled={saving || !canSave}
           className="px-5 py-2 rounded-full text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
           style={{ background: "#10B981", color: "#000" }}
         >

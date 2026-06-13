@@ -7,6 +7,7 @@ import { useAuth, getInitials } from "../context/AuthContext";
 import {
   fetchMyExchanges,
   getExchangePartner,
+  getExchangeHourType,
   completeExchange,
   cancelExchange,
 } from "../../lib/exchanges";
@@ -48,12 +49,11 @@ export const Profile = () => {
     .filter((ex) => ex.status !== "cancelled")
     .map((ex) => {
       const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
-      const isGiven =
-        (ex.post_type === "needs" && ex.acceptor_id === user?.userId) ||
-        (ex.post_type === "offers" && ex.poster_id === user?.userId);
+      const hourType = user ? getExchangeHourType(ex, user.userId) : "free";
       return {
         id: ex.id,
-        type: isGiven ? ("given" as const) : ("received" as const),
+        hourType,
+        type: hourType === "earned" ? ("given" as const) : hourType === "spent" ? ("received" as const) : ("free" as const),
         name: partner.name,
         task: ex.title,
         hours: ex.hours,
@@ -66,11 +66,11 @@ export const Profile = () => {
   const filtered = history.filter((h) => tab === "all" || h.type === tab);
 
   const hoursEarned = history
-    .filter((h) => h.type === "given")
+    .filter((h) => h.hourType === "earned")
     .reduce((sum, h) => sum + h.hours, 0);
 
   const hoursReceived = history
-    .filter((h) => h.type === "received")
+    .filter((h) => h.hourType === "spent")
     .reduce((sum, h) => sum + h.hours, 0);
 
   const handleComplete = async (exchangeId: string) => {
@@ -240,30 +240,54 @@ export const Profile = () => {
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
-                    background: item.type === "given" ? "rgba(16,185,129,0.12)" : "rgba(6,182,212,0.12)",
-                    border: `1px solid ${item.type === "given" ? "rgba(16,185,129,0.25)" : "rgba(6,182,212,0.25)"}`,
+                    background:
+                      item.type === "given"
+                        ? "rgba(16,185,129,0.12)"
+                        : item.type === "received"
+                          ? "rgba(6,182,212,0.12)"
+                          : "rgba(107,114,128,0.12)",
+                    border: `1px solid ${
+                      item.type === "given"
+                        ? "rgba(16,185,129,0.25)"
+                        : item.type === "received"
+                          ? "rgba(6,182,212,0.25)"
+                          : "rgba(107,114,128,0.25)"
+                    }`,
                   }}
                 >
                   {item.type === "given" ? (
                     <ArrowUpRight size={14} className="text-emerald-400" />
-                  ) : (
+                  ) : item.type === "received" ? (
                     <ArrowDownLeft size={14} className="text-cyan-400" />
+                  ) : (
+                    <CheckCircle2 size={14} className="text-[#9CA3AF]" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{item.task}</p>
                   <p className="text-xs text-[#9CA3AF]">
-                    {item.type === "given" ? "Given to" : "Received from"} {item.name} · {item.date}
+                    {item.type === "given"
+                      ? "Earned with"
+                      : item.type === "received"
+                        ? "Paid to"
+                        : "Joined"}{" "}
+                    {item.name} · {item.date}
                   </p>
                 </div>
                 <span
                   className="text-sm font-medium flex-shrink-0"
                   style={{
                     fontFamily: "'DM Mono', monospace",
-                    color: item.type === "given" ? "#10B981" : "#06B6D4",
+                    color:
+                      item.type === "given"
+                        ? "#10B981"
+                        : item.type === "received"
+                          ? "#06B6D4"
+                          : "#9CA3AF",
                   }}
                 >
-                  {item.type === "given" ? "+" : "-"}{item.hours}h
+                  {item.type === "given" ? "+" : item.type === "received" ? "-" : ""}
+                  {item.type === "free" ? "Free" : `${item.hours}h`}
                 </span>
               </div>
             ))}

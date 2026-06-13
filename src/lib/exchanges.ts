@@ -74,12 +74,43 @@ export function getExchangePartner(
   };
 }
 
+export type HourImpactDirection = "earn" | "spend" | "free";
+
+export interface HourImpact {
+  direction: HourImpactDirection;
+  amount: number;
+}
+
+/** Hour impact for someone joining a listing on the job board. */
 export function getHourImpact(
   postType: "needs" | "offers",
   isAcceptor: boolean,
   hours: number,
-): { direction: "earn" | "spend"; amount: number } {
-  const earns =
-    (postType === "needs" && isAcceptor) || (postType === "offers" && !isAcceptor);
-  return { direction: earns ? "earn" : "spend", amount: hours };
+): HourImpact {
+  if (postType === "needs" && isAcceptor) {
+    return { direction: "earn", amount: hours };
+  }
+  if (postType === "offers" && isAcceptor) {
+    return { direction: "free", amount: hours };
+  }
+  if (postType === "needs" && !isAcceptor) {
+    return { direction: "spend", amount: hours };
+  }
+  return { direction: "earn", amount: hours };
+}
+
+export function formatHourImpactLabel(impact: HourImpact): string {
+  if (impact.direction === "free") return "Free";
+  if (impact.direction === "earn") return `Earn ${impact.amount}h`;
+  return `Spend ${impact.amount}h`;
+}
+
+export function getExchangeHourType(
+  exchange: { post_type: "needs" | "offers"; poster_id: string; acceptor_id: string },
+  userId: string,
+): "earned" | "spent" | "free" {
+  if (exchange.post_type === "needs" && exchange.acceptor_id === userId) return "earned";
+  if (exchange.post_type === "needs" && exchange.poster_id === userId) return "spent";
+  if (exchange.post_type === "offers" && exchange.poster_id === userId) return "earned";
+  return "free";
 }

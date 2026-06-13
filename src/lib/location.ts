@@ -41,7 +41,11 @@ export function formatDistance(miles: number | null): string {
 }
 
 export function formatLocationLabel(location: UserLocation): string {
-  const parts = [location.city, location.state ?? location.region].filter(Boolean);
+  const parts = [
+    location.city,
+    location.state ?? location.region,
+    location.country && location.country !== "US" ? location.country : null,
+  ].filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : "Your area";
 }
 
@@ -121,59 +125,6 @@ export async function suggestLocationFromIp(): Promise<UserLocation | null> {
   return detectLocationFromIp();
 }
 
-/** Geocode a city + state into coordinates (Photon geocoder). */
-export async function geocodeCityState(
-  city: string,
-  stateCode: string,
-): Promise<UserLocation | null> {
-  const trimmedCity = city.trim();
-  const stateName = getStateName(stateCode) ?? stateCode;
-
-  if (!trimmedCity || !stateCode) return null;
-
-  try {
-    const features = await fetchPhoton(`${trimmedCity}, ${stateName}`, 8);
-
-    for (const feature of features) {
-      const suggestion = featureToSuggestion(feature);
-      if (!suggestion || suggestion.state !== stateCode) continue;
-
-      const cityMatches =
-        suggestion.city.toLowerCase() === trimmedCity.toLowerCase() ||
-        suggestion.city.toLowerCase().includes(trimmedCity.toLowerCase()) ||
-        trimmedCity.toLowerCase().includes(suggestion.city.toLowerCase());
-
-      if (!cityMatches) continue;
-
-      return {
-        city: suggestion.city,
-        region: suggestion.stateName,
-        state: suggestion.state,
-        country: "US",
-        latitude: suggestion.latitude,
-        longitude: suggestion.longitude,
-      };
-    }
-
-    const fallback = features
-      .map(featureToSuggestion)
-      .find((s) => s && s.state === stateCode);
-
-    if (!fallback) return null;
-
-    return {
-      city: fallback.city,
-      region: fallback.stateName,
-      state: fallback.state,
-      country: "US",
-      latitude: fallback.latitude,
-      longitude: fallback.longitude,
-    };
-  } catch {
-    return null;
-  }
-}
-
 /** Load the user's saved profile location only (no IP fallback). */
 export async function getUserLocation(userId: string): Promise<UserLocation | null> {
   return fetchSavedUserLocation(userId);
@@ -194,6 +145,7 @@ export function enrichPostsWithDistance(
   userLocation: UserLocation,
 ): NearbyPost[] {
   const userState = normalizeState(userLocation.state);
+  const userCountry = normalizeState(userLocation.country);
 
   return posts.map((post) => {
     if (post.latitude != null && post.longitude != null) {
@@ -213,11 +165,31 @@ export function enrichPostsWithDistance(
       return { ...post, distanceMiles: null, matchType: "state" as const };
     }
 
+    if (userCountry && normalizeState(post.country) === userCountry) {
+      return { ...post, distanceMiles: null, matchType: "state" as const };
+    }
+
     return { ...post, distanceMiles: null, matchType: "unknown" as const };
   });
 }
 
 export type NearbySort = "nearest" | "newest";
+
+export type ListingScope = "nearby" | "worldwide";
+
+export function formatPostLocation(post: {
+  city?: string | null;
+  state?: string | null;
+  region?: string | null;
+  country?: string | null;
+}): string {
+  const parts = [
+    post.city,
+    post.state ?? post.region,
+    post.country && post.country !== "US" ? post.country : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : "Location unknown";
+}
 
 export function filterAndSortNearbyPosts(
   posts: NearbyPost[],
@@ -253,21 +225,43 @@ export function filterAndSortNearbyPosts(
   return sorted;
 }
 
+export function filterAndSortListings(
+  posts: NearbyPost[],
+  options: { scope: ListingScope; radiusMiles: number; sort: NearbySort },
+): NearbyPost[] {
+  if (options.scope === "worldwide") {
+    const sorted = [...posts];
+    if (options.sort === "nearest") {
+      sorted.sort((a, b) => {
+        const aDistance = a.distanceMiles ?? Infinity;
+        const bDistance = b.distanceMiles ?? Infinity;
+        if (aDistance !== bDistance) return aDistance - bDistance;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    } else {
+      sorted.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    }
+    return sorted;
+  }
+
+  return filterAndSortNearbyPosts(posts, options.radiusMiles, options.sort);
+}
+
 export function milesToMeters(miles: number): number {
   return miles * 1609.34;
 }
 
 export interface LocationSuggestion {
   city: string;
-  state: string;
-  stateName: string;
+  state: string | null;
+  stateName: string | null;
+  country: string;
   label: string;
   latitude: number;
   longitude: number;
 }
-
-/** Continental US bounding box for Photon searches */
-const US_BBOX = "-125,24,-66,50";
 
 const PHOTON_PLACE_VALUES = new Set([
   "city",
@@ -289,6 +283,7 @@ interface PhotonFeature {
     town?: string;
     locality?: string;
     state?: string;
+    country?: string;
     countrycode?: string;
     osm_key?: string;
     osm_value?: string;
@@ -301,7 +296,6 @@ async function fetchPhoton(query: string, limit: number): Promise<PhotonFeature[
     q: query,
     limit: String(limit),
     lang: "en",
-    bbox: US_BBOX,
   });
 
   const res = await fetch(`https://photon.komoot.io/api/?${params}`);
@@ -311,40 +305,56 @@ async function fetchPhoton(query: string, limit: number): Promise<PhotonFeature[
   return data.features ?? [];
 }
 
-function isUsPlaceFeature(props: PhotonFeature["properties"]): boolean {
-  if (props.countrycode !== "US" || !props.state) return false;
+function isPlaceFeature(props: PhotonFeature["properties"]): boolean {
+  if (!props.countrycode) return false;
   if (props.osm_key === "place") return true;
   return PHOTON_PLACE_VALUES.has(props.osm_value ?? "");
 }
 
+function buildSuggestionLabel(
+  city: string,
+  state: string | null,
+  country: string,
+): string {
+  if (country === "US" && state) return `${city}, ${state}`;
+  return [city, state, country].filter(Boolean).join(", ");
+}
+
 function featureToSuggestion(feature: PhotonFeature): LocationSuggestion | null {
   const props = feature.properties;
-  if (!isUsPlaceFeature(props)) return null;
+  if (!isPlaceFeature(props)) return null;
 
-  const stateCode = getStateCode(props.state ?? "");
-  if (!stateCode) return null;
+  const country = props.countrycode ?? "";
+  if (!country) return null;
 
-  const city =
-    props.name ??
-    props.city ??
-    props.town ??
-    props.locality;
+  const city = props.name ?? props.city ?? props.town ?? props.locality;
   if (!city) return null;
 
+  let state: string | null = props.state ?? null;
+  let stateName: string | null = props.state ?? null;
+
+  if (country === "US" && state) {
+    const stateCode = getStateCode(state);
+    if (stateCode) {
+      state = stateCode;
+      stateName = getStateName(stateCode) ?? state;
+    }
+  }
+
   const [longitude, latitude] = feature.geometry.coordinates;
-  const stateName = getStateName(stateCode) ?? props.state ?? stateCode;
 
   return {
     city,
-    state: stateCode,
+    state,
     stateName,
-    label: `${city}, ${stateCode}`,
+    country,
+    label: buildSuggestionLabel(city, state, country),
     latitude,
     longitude,
   };
 }
 
-/** US city/state suggestions (Photon — works from the browser; Nominatim blocks CORS). */
+/** Worldwide city suggestions (Photon — works from the browser; Nominatim blocks CORS). */
 export async function searchLocationSuggestions(
   query: string,
   limit = 6,
@@ -353,7 +363,7 @@ export async function searchLocationSuggestions(
   if (trimmed.length < 2) return [];
 
   try {
-    const features = await fetchPhoton(trimmed, Math.max(limit * 2, 10));
+    const features = await fetchPhoton(trimmed, Math.max(limit * 2, 12));
     const seen = new Set<string>();
     const suggestions: LocationSuggestion[] = [];
 
@@ -361,7 +371,7 @@ export async function searchLocationSuggestions(
       const suggestion = featureToSuggestion(feature);
       if (!suggestion) continue;
 
-      const key = `${suggestion.city.toLowerCase()}|${suggestion.state}`;
+      const key = `${suggestion.city.toLowerCase()}|${suggestion.state ?? ""}|${suggestion.country}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
@@ -373,4 +383,16 @@ export async function searchLocationSuggestions(
   } catch {
     return [];
   }
+}
+
+/** Convert a search suggestion into a saved user location. */
+export function suggestionToUserLocation(suggestion: LocationSuggestion): UserLocation {
+  return {
+    city: suggestion.city,
+    region: suggestion.stateName,
+    state: suggestion.state,
+    country: suggestion.country,
+    latitude: suggestion.latitude,
+    longitude: suggestion.longitude,
+  };
 }

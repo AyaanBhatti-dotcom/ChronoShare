@@ -247,8 +247,8 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
               </div>
               <p className="text-xs text-[#4B5563]">
                 {postType === "needs"
-                  ? "You'll pay hours to whoever helps you."
-                  : "You'll earn hours when someone accepts your offer."}
+                  ? "You'll pay hours from your balance to whoever helps you."
+                  : "You'll earn hours from the community pool when someone accepts your offer."}
               </p>
             </div>
 

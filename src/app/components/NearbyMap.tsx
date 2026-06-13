@@ -41,14 +41,49 @@ function MapViewport({
   return null;
 }
 
+function MapWorldViewport({
+  center,
+  posts,
+}: {
+  center: [number, number];
+  posts: NearbyPost[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const points: L.LatLngExpression[] = [center];
+    for (const post of posts) {
+      if (post.latitude != null && post.longitude != null) {
+        points.push([post.latitude, post.longitude]);
+      }
+    }
+
+    if (points.length === 1) {
+      map.setView(center, 3);
+      return;
+    }
+
+    map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 8 });
+  }, [center, posts, map]);
+
+  return null;
+}
+
 interface NearbyMapProps {
   userLocation: UserLocation;
   posts: NearbyPost[];
   radiusMiles: number;
+  worldwide?: boolean;
   onSelectPost?: (post: NearbyPost) => void;
 }
 
-export function NearbyMap({ userLocation, posts, radiusMiles, onSelectPost }: NearbyMapProps) {
+export function NearbyMap({
+  userLocation,
+  posts,
+  radiusMiles,
+  worldwide = false,
+  onSelectPost,
+}: NearbyMapProps) {
   const center: [number, number] = [userLocation.latitude, userLocation.longitude];
   const mapPosts = posts.filter(
     (post) => post.latitude != null && post.longitude != null,
@@ -60,7 +95,7 @@ export function NearbyMap({ userLocation, posts, radiusMiles, onSelectPost }: Ne
         className="absolute top-3 right-3 z-[400] px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm pointer-events-none"
         style={{ background: "rgba(17,24,39,0.85)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
       >
-        {formatLocationLabel(userLocation)}
+        {worldwide ? "Worldwide view" : formatLocationLabel(userLocation)}
       </div>
       <MapContainer
         center={center}
@@ -73,21 +108,27 @@ export function NearbyMap({ userLocation, posts, radiusMiles, onSelectPost }: Ne
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <MapViewport center={center} radiusMiles={radiusMiles} />
+        {worldwide ? (
+          <MapWorldViewport center={center} posts={mapPosts} />
+        ) : (
+          <>
+            <MapViewport center={center} radiusMiles={radiusMiles} />
+            <Circle
+              center={center}
+              radius={milesToMeters(radiusMiles)}
+              pathOptions={{
+                color: "#10B981",
+                fillColor: "#10B981",
+                fillOpacity: 0.08,
+                weight: 1.5,
+                dashArray: "6 4",
+              }}
+            />
+          </>
+        )}
         <Marker position={center} icon={userIcon}>
           <Popup>You are here</Popup>
         </Marker>
-        <Circle
-          center={center}
-          radius={milesToMeters(radiusMiles)}
-          pathOptions={{
-            color: "#10B981",
-            fillColor: "#10B981",
-            fillOpacity: 0.08,
-            weight: 1.5,
-            dashArray: "6 4",
-          }}
-        />
         {mapPosts.map((post) => (
           <Marker
             key={post.id}

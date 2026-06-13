@@ -137,7 +137,7 @@ export const Settings = ({
         <SectionHeader
           icon={<MapPin size={16} />}
           title="Your Location"
-          desc="Used for nearby listings and map on the home dashboard"
+          desc="Used for nearby listings and map — search any city worldwide"
         />
         {locationLoading ? (
           <div className="flex justify-center py-6">
