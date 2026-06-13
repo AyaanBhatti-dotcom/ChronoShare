@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "build:rockyou": "node scripts/build-rockyou-data.mjs",
     "build": "vite build",
     "dev": "vite",
     "setup:supabase-auth": "node scripts/setup-supabase-auth.mjs",

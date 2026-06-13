@@ -28,7 +28,11 @@ import {
 } from "../../../lib/profile";
 import type { UserLocation } from "../../../lib/location";
 import { LocationPicker } from "../LocationPicker";
-import { setNewSignupTourPending } from "../../utils/onboarding";
+import {
+  INSECURE_PASSWORD_MESSAGE,
+  isPasswordInRockyou,
+  preloadRockyouSet,
+} from "../../../lib/password-leak-check";
 
 const DRAFT_KEY = "chronoshare-signup-draft";
 
@@ -150,6 +154,8 @@ export function SignupOnboarding() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [linkResent, setLinkResent] = useState(false);
+  const [passwordInsecure, setPasswordInsecure] = useState(false);
+  const [checkingPassword, setCheckingPassword] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -158,6 +164,36 @@ export function SignupOnboarding() {
 
   const firstName = name.trim().split(" ")[0] || "friend";
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    preloadRockyouSet();
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== 2 || !password) {
+      setPasswordInsecure(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setCheckingPassword(true);
+      try {
+        const insecure = await isPasswordInRockyou(password);
+        if (!cancelled) setPasswordInsecure(insecure);
+      } catch {
+        if (!cancelled) setPasswordInsecure(false);
+      } finally {
+        if (!cancelled) setCheckingPassword(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [password, step]);
 
   useEffect(() => {
     saveDraft({ step, name, username, email, emailVerified });
@@ -578,6 +614,12 @@ export function SignupOnboarding() {
                         </div>
                       </div>
                     )}
+                    {passwordInsecure && (
+                      <p className="text-xs text-red-400 pl-1">{INSECURE_PASSWORD_MESSAGE}</p>
+                    )}
+                    {checkingPassword && password && !passwordInsecure && (
+                      <p className="text-xs text-[#6B7280] pl-1">Checking password safety...</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
@@ -609,7 +651,14 @@ export function SignupOnboarding() {
                   <button
                     type="button"
                     onClick={handleCreateAccount}
-                    disabled={loading || !email || password.length < 6 || password !== confirmPassword}
+                    disabled={
+                      loading ||
+                      checkingPassword ||
+                      passwordInsecure ||
+                      !email ||
+                      password.length < 6 ||
+                      password !== confirmPassword
+                    }
                     className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
                     style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
                   >
