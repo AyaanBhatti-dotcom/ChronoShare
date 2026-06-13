@@ -2280,4 +2280,491 @@ html {
     width: 5px;
     height: 5px;
   }
+
+  /* ── Profile: Windows 7 desktop ── */
+  .profile-desktop {
+    position: relative;
+    min-height: calc(100vh - 8rem);
+    padding: 0.5rem 0.5rem 3.25rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .profile-desktop-wallpaper {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border: none;
+    cursor: default;
+    background:
+      radial-gradient(ellipse 80% 50% at 85% 15%, rgba(255, 209, 102, 0.35) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(91, 199, 122, 0.35) 0%, transparent 50%),
+      linear-gradient(180deg, #7ec8e8 0%, #5ba8d8 35%, #4a9c68 72%, #6bc77a 100%);
+  }
+
+  .profile-desktop-icons {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    max-height: 14rem;
+    width: 5.5rem;
+    float: left;
+    margin-right: 0.75rem;
+  }
+
+  .profile-desktop-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 0.35rem;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .profile-desktop-icon:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.45);
+  }
+
+  .profile-desktop-icon-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.35rem;
+    color: #ffffff;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(91, 163, 232, 0.55) 100%);
+    box-shadow: 0 2px 8px rgba(0, 60, 100, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .profile-desktop-icon-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.2;
+    text-shadow: 0 1px 2px rgba(0, 40, 80, 0.65);
+  }
+
+  .profile-gadgets {
+    position: relative;
+    z-index: 2;
+    float: right;
+    width: 11rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-left: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .profile-gadget {
+    padding: 0.75rem;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    box-shadow: 0 4px 16px rgba(26, 95, 122, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .profile-gadget-heading {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--dash-text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .profile-gadget-time {
+    font-size: 1.75rem;
+    font-weight: 300;
+    color: var(--dash-text);
+    font-family: "Segoe UI", "Inter", sans-serif;
+    line-height: 1;
+  }
+
+  .profile-gadget-date {
+    font-size: 0.6875rem;
+    color: var(--dash-text-muted);
+    margin-top: 0.15rem;
+  }
+
+  .profile-gadget-big {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dash-aqua);
+    line-height: 1.1;
+  }
+
+  .profile-gadget-sub {
+    font-size: 0.625rem;
+    color: var(--dash-text-faint);
+    margin-top: 0.15rem;
+  }
+
+  .profile-gadget-weather {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--dash-text);
+  }
+
+  .profile-gadget-meter {
+    margin-top: 0.5rem;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+  }
+
+  .profile-gadget-meter-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #3dd9c8, #5bc77a);
+    transition: width 0.5s ease;
+  }
+
+  .profile-gadget-clock {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .profile-achievement-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .profile-achievement-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+  }
+
+  .profile-achievement-unlocked {
+    color: var(--dash-grass);
+  }
+
+  .profile-achievement-locked {
+    color: var(--dash-text-faint);
+    opacity: 0.55;
+  }
+
+  .profile-windows {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow: hidden;
+    clear: both;
+  }
+
+  .profile-win7-window {
+    border-radius: 0.65rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 32px rgba(26, 95, 122, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .profile-win7-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem 0.4rem 0.65rem;
+    background: linear-gradient(180deg, #7eb8ea 0%, #5ba3e8 12%, #3d8fd9 50%, #2b7ac7 100%);
+    border-bottom: 1px solid #1e5a99;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  }
+
+  .profile-win7-title {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 0 rgba(0, 40, 80, 0.35);
+  }
+
+  .profile-win7-subtitle {
+    font-weight: 500;
+    opacity: 0.88;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-win7-controls {
+    display: flex;
+    gap: 0.3rem;
+    flex-shrink: 0;
+  }
+
+  .profile-win7-btn {
+    display: block;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 50, 100, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .profile-win7-btn-min,
+  .profile-win7-btn-max {
+    background: linear-gradient(180deg, #8ec5f0 0%, #5ba3e8 100%);
+  }
+
+  .profile-win7-btn-close {
+    background: linear-gradient(180deg, #f0a090 0%, #e85040 100%);
+  }
+
+  .profile-win7-body {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .profile-stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .profile-stat-gadget {
+    padding: 0.75rem;
+    text-align: center;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .profile-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+  }
+
+  .profile-stat-label {
+    font-size: 0.625rem;
+    color: var(--dash-text-muted);
+    line-height: 1.3;
+  }
+
+  .profile-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--dash-text-muted);
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+  }
+
+  .profile-avatar-btn {
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .profile-avatar-bounce {
+    animation: profile-avatar-pop 0.5s ease;
+  }
+
+  @keyframes profile-avatar-pop {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.12);
+    }
+  }
+
+  .profile-taskbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(210, 228, 242, 0.98) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 -4px 16px rgba(26, 95, 122, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  }
+
+  .profile-start-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #fff;
+    border: 1px solid #1e6b38;
+    background: linear-gradient(180deg, #7ad99a 0%, #5bc77a 40%, #3d8b5e 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+    transition: filter 0.2s;
+  }
+
+  .profile-start-btn:hover {
+    filter: brightness(1.06);
+  }
+
+  .profile-taskbar-apps {
+    display: flex;
+    gap: 0.35rem;
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .profile-taskbar-app {
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.35rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--dash-text-muted);
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .profile-taskbar-app-active {
+    color: var(--dash-text);
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(94, 255, 240, 0.45);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .profile-taskbar-tray {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.35rem;
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .profile-tray-time {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--dash-text-muted);
+    font-family: "Segoe UI", sans-serif;
+  }
+
+  .profile-system-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(27, 95, 122, 0.35);
+    backdrop-filter: blur(4px);
+  }
+
+  .profile-system-modal .profile-win7-window {
+    max-width: 24rem;
+    width: 100%;
+  }
+
+  .profile-egg-toast {
+    position: fixed;
+    bottom: 4rem;
+    right: 1rem;
+    z-index: 60;
+    max-width: 18rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.98);
+    box-shadow: 0 12px 32px rgba(26, 95, 122, 0.22);
+    animation: profile-egg-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .profile-egg-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--dash-text);
+    margin-bottom: 0.25rem;
+  }
+
+  .profile-egg-body {
+    font-size: 0.6875rem;
+    color: var(--dash-text-muted);
+    line-height: 1.45;
+  }
+
+  @keyframes profile-egg-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .profile-gadgets {
+      float: none;
+      width: 100%;
+      flex-direction: row;
+      flex-wrap: wrap;
+      margin-left: 0;
+    }
+
+    .profile-gadget {
+      flex: 1 1 8rem;
+    }
+
+    .profile-gadget-achievements {
+      flex: 1 1 100%;
+    }
+
+    .profile-desktop-icons {
+      float: none;
+      flex-direction: row;
+      max-height: none;
+      width: 100%;
+      margin-bottom: 0.75rem;
+    }
+  }
 }
