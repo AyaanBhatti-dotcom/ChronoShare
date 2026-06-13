@@ -340,7 +340,6 @@ export function DashboardLayout({
           {screen === "settings" && (
             <Settings
               onLogout={handleLogout}
-              onStartTour={startTour}
               onRestartOnboarding={handleRestartOnboarding}
             />
           )}

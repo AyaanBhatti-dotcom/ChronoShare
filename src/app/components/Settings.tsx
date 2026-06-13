@@ -49,11 +49,9 @@ const SettingRow = ({ label, desc, children }: { label: string; desc?: string; c
 
 export const Settings = ({
   onLogout,
-  onStartTour,
   onRestartOnboarding,
 }: {
   onLogout?: () => void;
-  onStartTour?: () => void;
   onRestartOnboarding?: () => Promise<void>;
 }) => {
   const { user } = useAuth();
@@ -171,45 +169,28 @@ export const Settings = ({
       </div>
 
       {/* Help */}
-      {(onStartTour || onRestartOnboarding) && (
+      {onRestartOnboarding && (
         <div {...cardProps}>
           <SectionHeader
             icon={<Compass size={16} />}
             title="Help & Onboarding"
             desc="Revisit the dashboard walkthrough anytime"
           />
-          {onStartTour && (
-            <SettingRow
-              label="App tour"
-              desc="Replay the guided walkthrough of navigation and key features"
+          <SettingRow
+            label="Restart onboarding"
+            desc="Reset and walk through the full dashboard tour again"
+          >
+            <button
+              type="button"
+              onClick={handleRestartOnboarding}
+              disabled={resetting}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold border transition-all duration-200 hover:bg-white/[0.04] disabled:opacity-60"
+              style={{ borderColor: "#374151", color: "#9CA3AF" }}
             >
-              <button
-                type="button"
-                onClick={onStartTour}
-                className="px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:opacity-90"
-                style={{ background: "#10B981", color: "#000" }}
-              >
-                Start tour
-              </button>
-            </SettingRow>
-          )}
-          {onRestartOnboarding && (
-            <SettingRow
-              label="Restart onboarding"
-              desc="Reset and walk through the full dashboard tour again"
-            >
-              <button
-                type="button"
-                onClick={handleRestartOnboarding}
-                disabled={resetting}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold border transition-all duration-200 hover:bg-white/[0.04] disabled:opacity-60"
-                style={{ borderColor: "#374151", color: "#9CA3AF" }}
-              >
-                <RotateCcw size={12} />
-                {resetting ? "Resetting..." : "Restart"}
-              </button>
-            </SettingRow>
-          )}
+              <RotateCcw size={12} />
+              {resetting ? "Resetting..." : "Restart"}
+            </button>
+          </SettingRow>
         </div>
       )}
 
