@@ -121,7 +121,7 @@ export async function suggestLocationFromIp(): Promise<UserLocation | null> {
   return detectLocationFromIp();
 }
 
-/** Geocode a city + state into coordinates (OpenStreetMap Nominatim). */
+/** Geocode a city + state into coordinates (Photon geocoder). */
 export async function geocodeCityState(
   city: string,
   stateCode: string,
@@ -132,36 +132,42 @@ export async function geocodeCityState(
   if (!trimmedCity || !stateCode) return null;
 
   try {
-    const params = new URLSearchParams({
-      city: trimmedCity,
-      state: stateName,
-      country: "US",
-      format: "json",
-      limit: "1",
-    });
+    const features = await fetchPhoton(`${trimmedCity}, ${stateName}`, 8);
 
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-      headers: { Accept: "application/json", "User-Agent": "ChronoShare/1.0" },
-    });
+    for (const feature of features) {
+      const suggestion = featureToSuggestion(feature);
+      if (!suggestion || suggestion.state !== stateCode) continue;
 
-    if (!res.ok) return null;
+      const cityMatches =
+        suggestion.city.toLowerCase() === trimmedCity.toLowerCase() ||
+        suggestion.city.toLowerCase().includes(trimmedCity.toLowerCase()) ||
+        trimmedCity.toLowerCase().includes(suggestion.city.toLowerCase());
 
-    const results = (await res.json()) as Array<{
-      lat: string;
-      lon: string;
-      display_name?: string;
-    }>;
+      if (!cityMatches) continue;
 
-    const hit = results[0];
-    if (!hit) return null;
+      return {
+        city: suggestion.city,
+        region: suggestion.stateName,
+        state: suggestion.state,
+        country: "US",
+        latitude: suggestion.latitude,
+        longitude: suggestion.longitude,
+      };
+    }
+
+    const fallback = features
+      .map(featureToSuggestion)
+      .find((s) => s && s.state === stateCode);
+
+    if (!fallback) return null;
 
     return {
-      city: trimmedCity,
-      region: stateName,
-      state: stateCode,
+      city: fallback.city,
+      region: fallback.stateName,
+      state: fallback.state,
       country: "US",
-      latitude: parseFloat(hit.lat),
-      longitude: parseFloat(hit.lon),
+      latitude: fallback.latitude,
+      longitude: fallback.longitude,
     };
   } catch {
     return null;
@@ -260,7 +266,85 @@ export interface LocationSuggestion {
   longitude: number;
 }
 
-/** US city/state suggestions from OpenStreetMap (for autocomplete). */
+/** Continental US bounding box for Photon searches */
+const US_BBOX = "-125,24,-66,50";
+
+const PHOTON_PLACE_VALUES = new Set([
+  "city",
+  "town",
+  "village",
+  "hamlet",
+  "suburb",
+  "county",
+  "district",
+  "locality",
+  "quarter",
+  "island",
+]);
+
+interface PhotonFeature {
+  properties: {
+    name?: string;
+    city?: string;
+    town?: string;
+    locality?: string;
+    state?: string;
+    countrycode?: string;
+    osm_key?: string;
+    osm_value?: string;
+  };
+  geometry: { coordinates: [number, number] };
+}
+
+async function fetchPhoton(query: string, limit: number): Promise<PhotonFeature[]> {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+    lang: "en",
+    bbox: US_BBOX,
+  });
+
+  const res = await fetch(`https://photon.komoot.io/api/?${params}`);
+  if (!res.ok) return [];
+
+  const data = (await res.json()) as { features?: PhotonFeature[] };
+  return data.features ?? [];
+}
+
+function isUsPlaceFeature(props: PhotonFeature["properties"]): boolean {
+  if (props.countrycode !== "US" || !props.state) return false;
+  if (props.osm_key === "place") return true;
+  return PHOTON_PLACE_VALUES.has(props.osm_value ?? "");
+}
+
+function featureToSuggestion(feature: PhotonFeature): LocationSuggestion | null {
+  const props = feature.properties;
+  if (!isUsPlaceFeature(props)) return null;
+
+  const stateCode = getStateCode(props.state ?? "");
+  if (!stateCode) return null;
+
+  const city =
+    props.name ??
+    props.city ??
+    props.town ??
+    props.locality;
+  if (!city) return null;
+
+  const [longitude, latitude] = feature.geometry.coordinates;
+  const stateName = getStateName(stateCode) ?? props.state ?? stateCode;
+
+  return {
+    city,
+    state: stateCode,
+    stateName,
+    label: `${city}, ${stateCode}`,
+    latitude,
+    longitude,
+  };
+}
+
+/** US city/state suggestions (Photon — works from the browser; Nominatim blocks CORS). */
 export async function searchLocationSuggestions(
   query: string,
   limit = 6,
@@ -269,66 +353,20 @@ export async function searchLocationSuggestions(
   if (trimmed.length < 2) return [];
 
   try {
-    const params = new URLSearchParams({
-      q: trimmed,
-      countrycodes: "us",
-      format: "json",
-      addressdetails: "1",
-      limit: String(limit),
-    });
-
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-      headers: { Accept: "application/json", "User-Agent": "ChronoShare/1.0" },
-    });
-
-    if (!res.ok) return [];
-
-    const results = (await res.json()) as Array<{
-      lat: string;
-      lon: string;
-      address?: {
-        city?: string;
-        town?: string;
-        village?: string;
-        hamlet?: string;
-        suburb?: string;
-        county?: string;
-        state?: string;
-      };
-    }>;
-
+    const features = await fetchPhoton(trimmed, Math.max(limit * 2, 10));
     const seen = new Set<string>();
     const suggestions: LocationSuggestion[] = [];
 
-    for (const hit of results) {
-      const addr = hit.address;
-      if (!addr?.state) continue;
+    for (const feature of features) {
+      const suggestion = featureToSuggestion(feature);
+      if (!suggestion) continue;
 
-      const stateCode = getStateCode(addr.state);
-      if (!stateCode) continue;
-
-      const city =
-        addr.city ??
-        addr.town ??
-        addr.village ??
-        addr.hamlet ??
-        addr.suburb ??
-        addr.county;
-      if (!city) continue;
-
-      const key = `${city.toLowerCase()}|${stateCode}`;
+      const key = `${suggestion.city.toLowerCase()}|${suggestion.state}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const stateName = getStateName(stateCode) ?? addr.state;
-      suggestions.push({
-        city,
-        state: stateCode,
-        stateName,
-        label: `${city}, ${stateCode}`,
-        latitude: parseFloat(hit.lat),
-        longitude: parseFloat(hit.lon),
-      });
+      suggestions.push(suggestion);
+      if (suggestions.length >= limit) break;
     }
 
     return suggestions;
