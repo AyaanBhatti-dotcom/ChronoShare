@@ -64,6 +64,18 @@ export async function updateAdminProfile(
 }
 
 export async function deleteAdminUser(key: string, userId: string): Promise<void> {
+  // Best-effort avatar cleanup via Storage API (may no-op if files missing or RLS blocks)
+  try {
+    const { data: files } = await supabase.storage.from("avatars").list(userId);
+    if (files?.length) {
+      await supabase.storage
+        .from("avatars")
+        .remove(files.map((file) => `${userId}/${file.name}`));
+    }
+  } catch (err) {
+    console.warn("Could not remove user avatars:", err);
+  }
+
   const { error } = await supabase.rpc("admin_delete_user", {
     p_key: key,
     p_user_id: userId,

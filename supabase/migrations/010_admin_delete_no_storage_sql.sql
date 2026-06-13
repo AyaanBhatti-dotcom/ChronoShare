@@ -1,4 +1,4 @@
--- Fix admin user deletion: clear exchanges/posts first (exchanges.post_id is ON DELETE RESTRICT)
+-- Remove direct storage.objects deletes (Supabase requires Storage API instead)
 
 create or replace function public.admin_delete_user(
   p_key text,
@@ -20,7 +20,6 @@ begin
     raise exception 'User not found';
   end if;
 
-  -- Exchanges block post deletes (post_id ON DELETE RESTRICT)
   delete from public.exchanges
   where poster_id = p_user_id
      or acceptor_id = p_user_id
@@ -32,7 +31,6 @@ begin
   get diagnostics v_deleted = row_count;
 
   if v_deleted = 0 then
-    -- Orphan profile (no auth row): remove profile directly
     delete from public.profiles where id = p_user_id;
     if not found then
       raise exception 'User could not be deleted';

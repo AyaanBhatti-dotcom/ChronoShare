@@ -34,12 +34,19 @@ interface SignupInput {
   password: string;
 }
 
+export interface SignupResult {
+  error: string | null;
+  needsEmailVerification: boolean;
+}
+
 interface AuthContextValue {
   user: Session | null;
   isLoading: boolean;
   isPreview: boolean;
   login: (email: string, password: string) => Promise<string | null>;
-  signup: (input: SignupInput) => Promise<string | null>;
+  signup: (input: SignupInput) => Promise<SignupResult>;
+  verifySignupEmail: (email: string, code: string) => Promise<string | null>;
+  resendSignupEmail: (email: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
   logout: () => Promise<void>;
@@ -72,6 +79,9 @@ function mapAuthError(message: string): string {
   }
   if (lower.includes("email not confirmed")) {
     return "Please confirm your email before signing in.";
+  }
+  if (lower.includes("token has expired") || lower.includes("invalid otp")) {
+    return "That code is invalid or expired. Request a new one.";
   }
   if (lower.includes("duplicate key") || lower.includes("profiles_username")) {
     return "That username is already taken.";
@@ -171,15 +181,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
-  const signup = async (input: SignupInput): Promise<string | null> => {
+  const signup = async (input: SignupInput): Promise<SignupResult> => {
     const trimmedName = input.name.trim();
     const normalizedUsername = input.username.trim().toLowerCase();
     const normalizedEmail = input.email.trim().toLowerCase();
 
-    if (!trimmedName) return "Name is required.";
-    if (!normalizedUsername) return "Username is required.";
-    if (!normalizedEmail) return "Email is required.";
-    if (input.password.length < 6) return "Password must be at least 6 characters.";
+    if (!trimmedName) return { error: "Name is required.", needsEmailVerification: false };
+    if (!normalizedUsername) return { error: "Username is required.", needsEmailVerification: false };
+    if (!normalizedEmail) return { error: "Email is required.", needsEmailVerification: false };
+    if (input.password.length < 6) {
+      return { error: "Password must be at least 6 characters.", needsEmailVerification: false };
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
@@ -189,8 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    if (error) return mapAuthError(error.message);
-    if (!data.user) return "Sign up failed. Please try again.";
+    if (error) return { error: mapAuthError(error.message), needsEmailVerification: false };
+    if (!data.user) return { error: "Sign up failed. Please try again.", needsEmailVerification: false };
 
     await supabase.from("profiles").upsert({
       id: data.user.id,
@@ -200,10 +212,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!data.session) {
-      return "Check your email to confirm your account, then sign in.";
+      return { error: null, needsEmailVerification: true };
     }
 
     await resolveSession(data.user);
+    return { error: null, needsEmailVerification: false };
+  };
+
+  const verifySignupEmail = async (email: string, code: string): Promise<string | null> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const token = code.trim();
+
+    if (!normalizedEmail) return "Email is required.";
+    if (token.length < 6) return "Enter the 6-digit code from your email.";
+
+    let { data, error } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token,
+      type: "signup",
+    });
+
+    if (error) {
+      const retry = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token,
+        type: "email",
+      });
+      data = retry.data;
+      error = retry.error;
+    }
+
+    if (error) return mapAuthError(error.message);
+    if (!data.user) return "Verification failed. Please try again.";
+
+    await resolveSession(data.user);
+    return null;
+  };
+
+  const resendSignupEmail = async (email: string): Promise<string | null> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return "Email is required.";
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: normalizedEmail,
+    });
+
+    if (error) return mapAuthError(error.message);
     return null;
   };
 
@@ -296,6 +351,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isPreview: false,
         login,
         signup,
+        verifySignupEmail,
+        resendSignupEmail,
         resetPassword,
         updatePassword,
         logout,
@@ -319,6 +376,11 @@ export function AuthPreviewProvider({
 }) {
   const noop = async (): Promise<string | null> => "Not available in preview mode.";
 
+  const previewSignup = async (): Promise<SignupResult> => ({
+    error: "Not available in preview mode.",
+    needsEmailVerification: false,
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -326,7 +388,9 @@ export function AuthPreviewProvider({
         isLoading: false,
         isPreview: true,
         login: noop,
-        signup: noop,
+        signup: previewSignup,
+        verifySignupEmail: noop,
+        resendSignupEmail: noop,
         resetPassword: noop,
         updatePassword: noop,
         logout: async () => {},

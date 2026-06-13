@@ -10,8 +10,8 @@ import {
   Clock,
   Handshake,
   Loader2,
+  Mail,
   MapPin,
-  Shield,
   Sparkles,
   Upload,
   User,
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuth, getInitials } from "../../context/AuthContext";
-import { supabase } from "../../../lib/supabase";
 import {
   getPasswordStrength,
   isUsernameAvailable,
@@ -38,7 +37,7 @@ const STEPS = [
   { id: "welcome", label: "Welcome" },
   { id: "identity", label: "You" },
   { id: "account", label: "Account" },
-  { id: "security", label: "Security" },
+  { id: "verify", label: "Verify" },
   { id: "photo", label: "Photo" },
   { id: "location", label: "Location" },
   { id: "done", label: "Ready" },
@@ -118,7 +117,8 @@ function StepShell({
 }
 
 export function SignupOnboarding() {
-  const { user, signup, finishProfileSetup, refreshUser } = useAuth();
+  const { user, signup, verifySignupEmail, resendSignupEmail, finishProfileSetup, refreshUser } =
+    useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -137,12 +137,10 @@ export function SignupOnboarding() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [wantsMfa, setWantsMfa] = useState(false);
-  const [mfaEnrolled, setMfaEnrolled] = useState(false);
-  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
-  const [mfaQr, setMfaQr] = useState<string | null>(null);
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaVerifying, setMfaVerifying] = useState(false);
+  const [emailCode, setEmailCode] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -157,6 +155,18 @@ export function SignupOnboarding() {
       saveDraft({ step, name, username, email });
     }
   }, [step, name, username, email]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
+
+  useEffect(() => {
+    if (user && step >= 3) {
+      setEmailVerified(true);
+    }
+  }, [user, step]);
 
   useEffect(() => {
     if (!username || !isValidUsername(username)) {
@@ -191,69 +201,54 @@ export function SignupOnboarding() {
     }
 
     setLoading(true);
-    const err = await signup({ name, username, email, password });
+    const result = await signup({ name, username, email, password });
     setLoading(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+
+    if (result.needsEmailVerification) {
+      setResendCooldown(60);
+      goNext();
+    } else {
+      setEmailVerified(true);
+      setStep(4);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (emailCode.length !== 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+
+    setVerifyingEmail(true);
+    setError("");
+    const err = await verifySignupEmail(email, emailCode);
+    setVerifyingEmail(false);
 
     if (err) {
       setError(err);
       return;
     }
 
+    setEmailVerified(true);
     goNext();
   };
 
-  const startMfaEnroll = async () => {
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
     setError("");
     setLoading(true);
-    try {
-      const { data, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: "ChronoShare Authenticator",
-      });
-
-      if (enrollError) throw enrollError;
-      if (!data) throw new Error("Could not start 2FA setup.");
-
-      setMfaFactorId(data.id);
-      setMfaQr(data.totp?.qr_code ?? null);
-      setWantsMfa(true);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "2FA is not available right now. You can skip and enable it later.",
-      );
-    } finally {
-      setLoading(false);
+    const err = await resendSignupEmail(email);
+    setLoading(false);
+    if (err) {
+      setError(err);
+      return;
     }
-  };
-
-  const verifyMfa = async () => {
-    if (!mfaFactorId || mfaCode.length !== 6) return;
-    setMfaVerifying(true);
-    setError("");
-    try {
-      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId: mfaFactorId,
-      });
-      if (challengeError) throw challengeError;
-
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: mfaFactorId,
-        challengeId: challenge.id,
-        code: mfaCode,
-      });
-      if (verifyError) throw verifyError;
-
-      if (user) {
-        await updateProfileFields(user.userId, { mfaEnabled: true });
-      }
-      setMfaEnrolled(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid code. Try again.");
-    } finally {
-      setMfaVerifying(false);
-    }
+    setResendCooldown(60);
   };
 
   const handlePhotoContinue = async (skipped: boolean) => {
@@ -600,7 +595,7 @@ export function SignupOnboarding() {
                     className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
                     style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
                   >
-                    {loading ? "Creating account..." : "Create my account"}
+                    {loading ? "Creating account..." : "Continue — we'll email you a code"}
                   </button>
                 </div>
               </StepShell>
@@ -608,51 +603,27 @@ export function SignupOnboarding() {
 
             {step === 3 && (
               <StepShell
-                title="Lock down your account"
-                subtitle="Two-factor authentication adds an extra layer of security. Optional — you can always enable it later."
+                title="Verify your email"
+                subtitle={`We sent a 6-digit code to ${email}. Enter it below to confirm your account.`}
               >
-                {!wantsMfa ? (
+                {emailVerified ? (
+                  <div className="text-center py-6 mb-4">
+                    <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3" />
+                    <p className="text-sm text-white font-medium">Email verified!</p>
+                  </div>
+                ) : (
                   <div className="space-y-4 mb-6">
                     <div
                       className="rounded-2xl p-5 border text-center"
                       style={{ background: "#0B0F19", borderColor: "#1F2937" }}
                     >
-                      <Shield size={32} className="text-emerald-400 mx-auto mb-3" />
+                      <Mail size={32} className="text-emerald-400 mx-auto mb-3" />
                       <p className="text-sm text-[#9CA3AF] leading-relaxed">
-                        Use an authenticator app like Google Authenticator or 1Password to protect your
-                        account with a 6-digit code at sign-in.
+                        Check your inbox (and spam folder) for a code from ChronoShare.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={startMfaEnroll}
-                      disabled={loading}
-                      className="w-full py-3 rounded-full text-sm font-semibold border transition-all hover:bg-emerald-500/10"
-                      style={{ borderColor: "#10B981", color: "#10B981" }}
-                    >
-                      {loading ? "Setting up..." : "Enable two-factor authentication"}
-                    </button>
-                  </div>
-                ) : mfaEnrolled ? (
-                  <div className="text-center py-6 mb-4">
-                    <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3" />
-                    <p className="text-sm text-white font-medium">2FA is enabled!</p>
-                    <p className="text-xs text-[#9CA3AF] mt-1">Your account is extra secure.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4 mb-6">
-                    {mfaQr && (
-                      <div
-                        className="rounded-2xl p-4 flex justify-center border"
-                        style={{ background: "#fff", borderColor: "#1F2937" }}
-                        dangerouslySetInnerHTML={{ __html: mfaQr }}
-                      />
-                    )}
-                    <p className="text-xs text-[#9CA3AF] text-center">
-                      Scan the QR code, then enter the 6-digit code from your app.
-                    </p>
                     <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={mfaCode} onChange={setMfaCode}>
+                      <InputOTP maxLength={6} value={emailCode} onChange={setEmailCode}>
                         <InputOTPGroup>
                           {[0, 1, 2, 3, 4, 5].map((i) => (
                             <InputOTPSlot
@@ -666,12 +637,22 @@ export function SignupOnboarding() {
                     </div>
                     <button
                       type="button"
-                      onClick={verifyMfa}
-                      disabled={mfaVerifying || mfaCode.length !== 6}
+                      onClick={handleVerifyEmail}
+                      disabled={verifyingEmail || emailCode.length !== 6}
                       className="w-full py-3 rounded-full text-sm font-semibold disabled:opacity-40"
                       style={{ background: "#10B981", color: "#000" }}
                     >
-                      {mfaVerifying ? "Verifying..." : "Verify & enable"}
+                      {verifyingEmail ? "Verifying..." : "Verify email"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      disabled={loading || resendCooldown > 0}
+                      className="w-full text-xs text-[#9CA3AF] hover:text-emerald-400 disabled:opacity-50 transition-colors"
+                    >
+                      {resendCooldown > 0
+                        ? `Resend code in ${resendCooldown}s`
+                        : "Didn't get it? Resend code"}
                     </button>
                   </div>
                 )}
@@ -687,13 +668,11 @@ export function SignupOnboarding() {
                   <button
                     type="button"
                     onClick={goNext}
-                    className="flex-1 py-3 rounded-full text-sm font-semibold"
-                    style={{
-                      background: mfaEnrolled ? "#10B981" : "#1F2937",
-                      color: mfaEnrolled ? "#000" : "#9CA3AF",
-                    }}
+                    disabled={!emailVerified}
+                    className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
+                    style={{ background: "#10B981", color: "#000" }}
                   >
-                    {mfaEnrolled ? "Continue" : "Skip for now"}
+                    Continue
                   </button>
                 </div>
               </StepShell>
