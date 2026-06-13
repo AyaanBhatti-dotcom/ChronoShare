@@ -612,8 +612,8 @@ export const Profile = () => {
         <div className="profile-taskbar-apps">
           {(["profile", "ledger", "pending"] as const).map((windowId) => {
             if (windowId === "pending" && pending.length === 0) return null;
-            if (!openWindows.has(windowId) && windowId !== "pending") return null;
-            const isActive = activeWindow === windowId && openWindows.has(windowId);
+            if (!openWindows.has(windowId)) return null;
+            const isActive = activeWindow === windowId;
             return (
               <button
                 key={windowId}
