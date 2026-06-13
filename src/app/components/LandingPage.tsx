@@ -51,17 +51,6 @@ const features = [
   },
 ] as const;
 
-const stats = [
-  { value: "2,400+", label: "Active members", accent: "aqua" },
-  { value: "18k", label: "Hours exchanged", accent: "sky" },
-  {
-    value: "4.9",
-    label: "Avg. rating",
-    accent: "sun",
-    icon: <Star size={14} className="text-[#c47a12] fill-[#ffd166]" />,
-  },
-] as const;
-
 export function LandingPage() {
   const { user, isLoading } = useAuth();
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -184,20 +173,6 @@ export function LandingPage() {
                 </Link>
               </div>
             </LandingReveal>
-          </div>
-
-          <div className="relative grid grid-cols-3 gap-4 max-w-lg mx-auto mt-16">
-            {stats.map((stat, index) => (
-              <LandingReveal key={stat.label} delay={320 + index * 100}>
-                <div className={`landing-glass landing-glass-stat landing-stat-${stat.accent} text-center`}>
-                  <p className="landing-stat-value flex items-center justify-center gap-1">
-                    {stat.value}
-                    {stat.icon}
-                  </p>
-                  <p className="landing-stat-label">{stat.label}</p>
-                </div>
-              </LandingReveal>
-            ))}
           </div>
         </section>
 

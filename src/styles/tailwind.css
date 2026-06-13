@@ -362,31 +362,6 @@ html {
   z-index: 1;
 }
 
-.landing-glass-stat {
-  border-radius: 1.25rem;
-  padding: 1rem 0.75rem;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
-}
-
-.landing-stat-aqua {
-  border-color: rgba(94, 255, 240, 0.4);
-}
-
-.landing-stat-sky {
-  border-color: rgba(110, 198, 232, 0.45);
-}
-
-.landing-stat-sun {
-  border-color: rgba(255, 209, 102, 0.45);
-}
-
-.landing-glass-stat:hover {
-  transform: translateY(-3px);
-  box-shadow:
-    0 14px 40px rgba(58, 158, 196, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
 .landing-glass-card {
   border-radius: 1.5rem;
   padding: 1.5rem;
@@ -501,15 +476,6 @@ html {
 .landing-body {
   color: var(--landing-text-muted);
   line-height: 1.65;
-}
-
-.landing-stat-value {
-  font-size: clamp(1.125rem, 3vw, 1.5rem);
-  font-weight: 800;
-  background: linear-gradient(165deg, #0a3344 0%, #1a6b8a 40%, #0d7a72 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .landing-stat-label {
