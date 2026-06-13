@@ -149,6 +149,7 @@ export function SignupOnboarding() {
   );
   const [resendCooldown, setResendCooldown] = useState(0);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [linkResent, setLinkResent] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -256,6 +257,7 @@ export function SignupOnboarding() {
   const handleResendLink = async () => {
     if (resendCooldown > 0 || emailVerified) return;
     setError("");
+    setLinkResent(false);
     setLoading(true);
     const err = await resendSignupEmail(email);
     setLoading(false);
@@ -263,6 +265,7 @@ export function SignupOnboarding() {
       setError(err);
       return;
     }
+    setLinkResent(true);
     setResendCooldown(60);
   };
 
@@ -634,8 +637,10 @@ export function SignupOnboarding() {
                     >
                       <Mail size={32} className="text-emerald-400 mx-auto mb-3" />
                       <p className="text-sm text-[#9CA3AF] leading-relaxed">
-                        Check your inbox (and spam folder) for an email from ChronoShare with a
-                        confirmation link. Click the link, then come back to this tab.
+                        Check your inbox (and spam folder) for an email from{" "}
+                        <span className="text-white/80">noreply@mail.app.supabase.io</span> with a
+                        confirmation link. Proton and other providers sometimes delay or filter
+                        these — also check All Mail.
                       </p>
                     </div>
                     <button
@@ -657,6 +662,17 @@ export function SignupOnboarding() {
                         ? `Resend link in ${resendCooldown}s`
                         : "Didn't get it? Resend confirmation link"}
                     </button>
+                    {linkResent && (
+                      <p className="text-xs text-emerald-400 text-center">
+                        Link sent again — check spam and wait a minute.
+                      </p>
+                    )}
+                    <p className="text-xs text-[#6B7280] text-center">
+                      Already have an account?{" "}
+                      <Link to="/login" className="text-emerald-400 hover:text-emerald-300">
+                        Sign in instead
+                      </Link>
+                    </p>
                   </div>
                 )}
                 <div className="flex gap-3">

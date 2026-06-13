@@ -208,6 +208,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: mapAuthError(error.message), needsEmailVerification: false };
     if (!data.user) return { error: "Sign up failed. Please try again.", needsEmailVerification: false };
 
+    const isExistingAccount = (data.user.identities?.length ?? 0) === 0;
+    if (isExistingAccount) {
+      const signIn = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: input.password,
+      });
+
+      if (!signIn.error && signIn.data.user) {
+        await supabase.from("profiles").upsert({
+          id: signIn.data.user.id,
+          full_name: trimmedName,
+          email: normalizedEmail,
+          username: normalizedUsername,
+        });
+        await resolveSession(signIn.data.user);
+        return { error: null, needsEmailVerification: false };
+      }
+
+      if (signIn.error?.message.toLowerCase().includes("email not confirmed")) {
+        return { error: null, needsEmailVerification: true };
+      }
+
+      return {
+        error:
+          "This email is already registered. Sign in from the login page, or reset your password if you forgot it.",
+        needsEmailVerification: false,
+      };
+    }
+
     await supabase.from("profiles").upsert({
       id: data.user.id,
       full_name: trimmedName,

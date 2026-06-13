@@ -108,7 +108,11 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
 
   const handleDeleteUser = async (user: AdminProfile) => {
     const name = user.full_name || user.email || "this user";
-    if (!window.confirm(`Delete ${name}? This removes their account, profile, and all posts permanently.`)) {
+    if (
+      !window.confirm(
+        `Permanently delete ${name}? This removes their auth account, profile, posts, exchanges, avatar files, and all sessions. They can sign up again with the same email.`,
+      )
+    ) {
       return;
     }
 
