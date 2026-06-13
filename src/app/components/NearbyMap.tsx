@@ -1,22 +1,25 @@
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
+import { MapPin } from "lucide-react";
 import type { NearbyPost, UserLocation } from "../../lib/location";
 import { formatDistance, formatLocationLabel, milesToMeters } from "../../lib/location";
 import "leaflet/dist/leaflet.css";
 
 const userIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:14px;height:14px;border-radius:50%;background:#3DD9C8;border:2px solid #fff;box-shadow:0 0 8px rgba(61,217,200,0.8)"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
+  className: "dash-map-marker",
+  html: `<div class="dash-map-pin dash-map-pin-user" aria-hidden="true"><span class="dash-map-pin-head"></span><span class="dash-map-pin-stem"></span><span class="dash-map-pin-shine"></span></div>`,
+  iconSize: [28, 36],
+  iconAnchor: [14, 34],
+  popupAnchor: [0, -32],
 });
 
 const postIcon = L.divIcon({
-  className: "",
-  html: `<div style="width:10px;height:10px;border-radius:50%;background:#5BC77A;border:2px solid #fff;box-shadow:0 0 6px rgba(91,199,122,0.6)"></div>`,
-  iconSize: [10, 10],
-  iconAnchor: [5, 5],
+  className: "dash-map-marker",
+  html: `<div class="dash-map-pin dash-map-pin-post" aria-hidden="true"><span class="dash-map-pin-head"></span><span class="dash-map-pin-stem"></span><span class="dash-map-pin-shine"></span></div>`,
+  iconSize: [22, 28],
+  iconAnchor: [11, 26],
+  popupAnchor: [0, -24],
 });
 
 function MapViewport({
@@ -88,64 +91,84 @@ export function NearbyMap({
   const mapPosts = posts.filter(
     (post) => post.latitude != null && post.longitude != null,
   );
+  const locationLabel = worldwide ? "Worldwide view" : formatLocationLabel(userLocation);
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-white/70 shadow-[var(--dash-card-shadow)]">
-      <div className="dash-badge absolute top-3 right-3 z-[400] px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm pointer-events-none">
-        {worldwide ? "Worldwide view" : formatLocationLabel(userLocation)}
+    <div className="dash-map-win7">
+      <div className="dash-map-win7-titlebar">
+        <div className="dash-map-win7-title">
+          <MapPin size={14} strokeWidth={2.5} />
+          <span>ChronoShare Maps</span>
+          <span className="dash-map-win7-subtitle">— {locationLabel}</span>
+        </div>
+        <div className="dash-map-win7-controls" aria-hidden="true">
+          <span className="dash-map-win7-btn dash-map-win7-btn-min" />
+          <span className="dash-map-win7-btn dash-map-win7-btn-max" />
+          <span className="dash-map-win7-btn dash-map-win7-btn-close" />
+        </div>
       </div>
-      <MapContainer
-        center={center}
-        zoom={10}
-        scrollWheelZoom={false}
-        className="h-[340px] w-full z-0 [&_.leaflet-top.leaflet-left]:z-[500]"
-        style={{ background: "#C5EBFA" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        />
-        {worldwide ? (
-          <MapWorldViewport center={center} posts={mapPosts} />
-        ) : (
-          <>
-            <MapViewport center={center} radiusMiles={radiusMiles} />
-            <Circle
-              center={center}
-              radius={milesToMeters(radiusMiles)}
-              pathOptions={{
-                color: "#3DD9C8",
-                fillColor: "#5BC77A",
-                fillOpacity: 0.12,
-                weight: 1.5,
-                dashArray: "6 4",
-              }}
-            />
-          </>
-        )}
-        <Marker position={center} icon={userIcon}>
-          <Popup>You are here</Popup>
-        </Marker>
-        {mapPosts.map((post) => (
-          <Marker
-            key={post.id}
-            position={[post.latitude!, post.longitude!]}
-            icon={postIcon}
-            eventHandlers={{
-              click: () => onSelectPost?.(post),
-            }}
-          >
-            <Popup>
-              <div className="text-sm">
-                <p className="font-semibold">{post.title}</p>
-                <p className="text-xs opacity-70">
-                  {formatDistance(post.distanceMiles)} · {post.hours_cost}h
-                </p>
-              </div>
-            </Popup>
+
+      <div className="dash-map-win7-body">
+        <MapContainer
+          center={center}
+          zoom={10}
+          scrollWheelZoom={false}
+          zoomControl={false}
+          className="dash-map-leaflet h-[340px] w-full z-0"
+          style={{ background: "#a8d4f0" }}
+        >
+          <ZoomControl position="topleft" />
+          <TileLayer
+            attribution='&copy; OpenStreetMap &copy; CARTO'
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          />
+          {worldwide ? (
+            <MapWorldViewport center={center} posts={mapPosts} />
+          ) : (
+            <>
+              <MapViewport center={center} radiusMiles={radiusMiles} />
+              <Circle
+                center={center}
+                radius={milesToMeters(radiusMiles)}
+                pathOptions={{
+                  color: "#3399ff",
+                  fillColor: "#6ec6e8",
+                  fillOpacity: 0.22,
+                  weight: 2.5,
+                  dashArray: "8 6",
+                }}
+              />
+            </>
+          )}
+          <Marker position={center} icon={userIcon}>
+            <Popup>You are here</Popup>
           </Marker>
-        ))}
-      </MapContainer>
+          {mapPosts.map((post) => (
+            <Marker
+              key={post.id}
+              position={[post.latitude!, post.longitude!]}
+              icon={postIcon}
+              eventHandlers={{
+                click: () => onSelectPost?.(post),
+              }}
+            >
+              <Popup>
+                <div className="dash-map-popup">
+                  <p className="dash-map-popup-title">{post.title}</p>
+                  <p className="dash-map-popup-meta">
+                    {formatDistance(post.distanceMiles)} · {post.hours_cost}h
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+
+      <div className="dash-map-win7-statusbar">
+        <span>{mapPosts.length} listing{mapPosts.length === 1 ? "" : "s"} on map</span>
+        <span>© OpenStreetMap · CARTO</span>
+      </div>
     </div>
   );
 }

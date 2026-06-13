@@ -2036,4 +2036,248 @@ html {
   .dashboard-aero ::-webkit-scrollbar-thumb:hover {
     background: rgba(45, 212, 200, 0.55);
   }
+
+  /* ── Map: Windows 7 Aero × Y2K ── */
+  .dash-map-win7 {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 12px 40px rgba(26, 95, 122, 0.2),
+      0 0 0 1px rgba(43, 122, 199, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .dash-map-win7-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.45rem 0.5rem 0.45rem 0.75rem;
+    background: linear-gradient(
+      180deg,
+      #7eb8ea 0%,
+      #5ba3e8 12%,
+      #3d8fd9 45%,
+      #2b7ac7 78%,
+      #256bb3 100%
+    );
+    border-bottom: 1px solid #1e5a99;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  }
+
+  .dash-map-win7-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 1px 0 rgba(0, 40, 80, 0.35);
+    letter-spacing: 0.01em;
+  }
+
+  .dash-map-win7-subtitle {
+    font-weight: 500;
+    opacity: 0.88;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dash-map-win7-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .dash-map-win7-btn {
+    display: block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 50, 100, 0.25);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  }
+
+  .dash-map-win7-btn-min {
+    background: linear-gradient(180deg, #8ec5f0 0%, #5ba3e8 100%);
+  }
+
+  .dash-map-win7-btn-max {
+    background: linear-gradient(180deg, #8ec5f0 0%, #5ba3e8 100%);
+  }
+
+  .dash-map-win7-btn-close {
+    background: linear-gradient(180deg, #f0a090 0%, #e85040 100%);
+    border-color: rgba(120, 30, 20, 0.3);
+  }
+
+  .dash-map-win7-body {
+    padding: 3px;
+    background: linear-gradient(180deg, #dcecf8 0%, #b8d4ec 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .dash-map-leaflet.leaflet-container {
+    font-family: "Segoe UI", "Inter", sans-serif;
+    border-radius: 0.35rem;
+    border: 1px solid #8eb8d8;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+  }
+
+  .dash-map-win7-body .leaflet-tile-pane {
+    filter: saturate(1.18) contrast(1.06) brightness(1.03);
+  }
+
+  .dash-map-win7 .leaflet-control-attribution {
+    display: none;
+  }
+
+  .dash-map-win7 .leaflet-control-zoom {
+    border: 1px solid #8eb8d8 !important;
+    border-radius: 0.35rem !important;
+    overflow: hidden;
+    box-shadow:
+      0 2px 8px rgba(26, 95, 122, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .dash-map-win7 .leaflet-control-zoom a {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #1a5568 !important;
+    background: linear-gradient(180deg, #ffffff 0%, #d4ebfa 45%, #a8d4f0 100%) !important;
+    border-bottom: 1px solid #8eb8d8 !important;
+  }
+
+  .dash-map-win7 .leaflet-control-zoom a:hover {
+    background: linear-gradient(180deg, #ffffff 0%, #b8e0f8 45%, #8ec8f0 100%) !important;
+    color: #062a38 !important;
+  }
+
+  .dash-map-win7 .leaflet-control-zoom-in {
+    border-radius: 0.35rem 0.35rem 0 0 !important;
+  }
+
+  .dash-map-win7 .leaflet-control-zoom-out {
+    border-bottom: none !important;
+    border-radius: 0 0 0.35rem 0.35rem !important;
+  }
+
+  .dash-map-win7 .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.98);
+    border-radius: 0.65rem;
+    box-shadow:
+      0 10px 28px rgba(26, 95, 122, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  }
+
+  .dash-map-win7 .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.98);
+    box-shadow: none;
+  }
+
+  .dash-map-popup-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #062a38;
+    margin-bottom: 0.15rem;
+  }
+
+  .dash-map-popup-meta {
+    font-size: 0.6875rem;
+    color: #1a5568;
+    font-family: "DM Mono", monospace;
+  }
+
+  .dash-map-win7-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.625rem;
+    color: #1a5568;
+    background: linear-gradient(180deg, #eef6fc 0%, #d8e8f4 100%);
+    border-top: 1px solid #a8c8e0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .dash-map-marker {
+    background: none !important;
+    border: none !important;
+  }
+
+  .dash-map-pin {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 3px 6px rgba(0, 60, 100, 0.35));
+  }
+
+  .dash-map-pin-head {
+    position: relative;
+    z-index: 2;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.85),
+      inset 0 -2px 4px rgba(0, 60, 100, 0.15);
+  }
+
+  .dash-map-pin-user .dash-map-pin-head {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(145deg, #ffffff 0%, #5efff0 35%, #3dd9c8 70%, #18a89e 100%);
+  }
+
+  .dash-map-pin-post .dash-map-pin-head {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(145deg, #ffffff 0%, #9ae0ae 35%, #5bc77a 70%, #3d8b5e 100%);
+  }
+
+  .dash-map-pin-stem {
+    position: absolute;
+    bottom: 2px;
+    z-index: 1;
+    width: 3px;
+    height: 8px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(30, 90, 120, 0.5));
+  }
+
+  .dash-map-pin-shine {
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    z-index: 3;
+    width: 4px;
+    height: 4px;
+    margin-left: -5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    transform: rotate(-45deg);
+    pointer-events: none;
+  }
+
+  .dash-map-pin-user .dash-map-pin-shine {
+    top: 4px;
+    width: 5px;
+    height: 5px;
+  }
 }
