@@ -48,6 +48,14 @@ interface SignupDraft {
   name: string;
   username: string;
   email: string;
+  emailVerified?: boolean;
+}
+
+function computeInitialStep(draft: SignupDraft | null, hasSession: boolean): number {
+  if (hasSession) {
+    return Math.max(4, draft?.step ?? 4);
+  }
+  return draft?.step ?? 0;
 }
 
 function loadDraft(): SignupDraft | null {
@@ -123,8 +131,8 @@ export function SignupOnboarding() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const draft = loadDraft();
-  const initialStep =
-    user && !user.profileSetupCompleted ? Math.max(3, draft?.step ?? 3) : draft?.step ?? 0;
+  const hasSession = !!user;
+  const initialStep = computeInitialStep(draft, hasSession);
 
   const [step, setStep] = useState(initialStep);
   const [name, setName] = useState(draft?.name ?? "");
@@ -138,9 +146,12 @@ export function SignupOnboarding() {
   const [loading, setLoading] = useState(false);
 
   const [emailCode, setEmailCode] = useState("");
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(
+    draft?.emailVerified ?? hasSession,
+  );
   const [resendCooldown, setResendCooldown] = useState(0);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const verifyAttemptRef = useRef("");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -151,10 +162,8 @@ export function SignupOnboarding() {
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   useEffect(() => {
-    if (step < 3) {
-      saveDraft({ step, name, username, email });
-    }
-  }, [step, name, username, email]);
+    saveDraft({ step, name, username, email, emailVerified });
+  }, [step, name, username, email, emailVerified]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -163,9 +172,9 @@ export function SignupOnboarding() {
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (user && step >= 3) {
-      setEmailVerified(true);
-    }
+    if (!user || step !== 3) return;
+    setEmailVerified(true);
+    setStep(4);
   }, [user, step]);
 
   useEffect(() => {
@@ -184,10 +193,42 @@ export function SignupOnboarding() {
     return () => window.clearTimeout(timer);
   }, [username, user?.userId]);
 
-  const minStep = user && !user.profileSetupCompleted ? 3 : 0;
+  const minStep = user && !user.profileSetupCompleted ? 4 : 0;
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, minStep));
+
+  const handleVerifyEmail = useCallback(
+    async (codeOverride?: string) => {
+      const code = (codeOverride ?? emailCode).trim();
+      if (code.length !== 6) {
+        setError("Enter the 6-digit code from your email.");
+        return;
+      }
+
+      setVerifyingEmail(true);
+      setError("");
+      const err = await verifySignupEmail(email, code, password);
+      setVerifyingEmail(false);
+
+      if (err) {
+        verifyAttemptRef.current = "";
+        setError(err);
+        return;
+      }
+
+      setEmailVerified(true);
+      setStep(4);
+    },
+    [email, emailCode, password, verifySignupEmail],
+  );
+
+  useEffect(() => {
+    if (step !== 3 || emailVerified || verifyingEmail || emailCode.length !== 6) return;
+    if (verifyAttemptRef.current === emailCode) return;
+    verifyAttemptRef.current = emailCode;
+    void handleVerifyEmail(emailCode);
+  }, [emailCode, step, emailVerified, verifyingEmail, handleVerifyEmail]);
 
   const handleCreateAccount = async () => {
     setError("");
@@ -210,6 +251,7 @@ export function SignupOnboarding() {
     }
 
     if (result.needsEmailVerification) {
+      verifyAttemptRef.current = "";
       setResendCooldown(60);
       goNext();
     } else {
@@ -218,28 +260,8 @@ export function SignupOnboarding() {
     }
   };
 
-  const handleVerifyEmail = async () => {
-    if (emailCode.length !== 6) {
-      setError("Enter the 6-digit code from your email.");
-      return;
-    }
-
-    setVerifyingEmail(true);
-    setError("");
-    const err = await verifySignupEmail(email, emailCode);
-    setVerifyingEmail(false);
-
-    if (err) {
-      setError(err);
-      return;
-    }
-
-    setEmailVerified(true);
-    goNext();
-  };
-
   const handleResendCode = async () => {
-    if (resendCooldown > 0) return;
+    if (resendCooldown > 0 || emailVerified) return;
     setError("");
     setLoading(true);
     const err = await resendSignupEmail(email);
@@ -637,7 +659,7 @@ export function SignupOnboarding() {
                     </div>
                     <button
                       type="button"
-                      onClick={handleVerifyEmail}
+                      onClick={() => handleVerifyEmail()}
                       disabled={verifyingEmail || emailCode.length !== 6}
                       className="w-full py-3 rounded-full text-sm font-semibold disabled:opacity-40"
                       style={{ background: "#10B981", color: "#000" }}

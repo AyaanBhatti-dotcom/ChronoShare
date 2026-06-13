@@ -45,7 +45,11 @@ interface AuthContextValue {
   isPreview: boolean;
   login: (email: string, password: string) => Promise<string | null>;
   signup: (input: SignupInput) => Promise<SignupResult>;
-  verifySignupEmail: (email: string, code: string) => Promise<string | null>;
+  verifySignupEmail: (
+    email: string,
+    code: string,
+    password?: string,
+  ) => Promise<string | null>;
   resendSignupEmail: (email: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
@@ -82,6 +86,9 @@ function mapAuthError(message: string): string {
   }
   if (lower.includes("token has expired") || lower.includes("invalid otp")) {
     return "That code is invalid or expired. Request a new one.";
+  }
+  if (lower.includes("rate limit") || lower.includes("over_email_send")) {
+    return "Too many emails sent. Wait a few minutes, then try again.";
   }
   if (lower.includes("duplicate key") || lower.includes("profiles_username")) {
     return "That username is already taken.";
@@ -219,34 +226,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, needsEmailVerification: false };
   };
 
-  const verifySignupEmail = async (email: string, code: string): Promise<string | null> => {
+  const signInAfterVerification = async (
+    normalizedEmail: string,
+    password: string,
+  ): Promise<string | null> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (error) return mapAuthError(error.message);
+    if (!data.user) return "Sign in failed after verification. Please try again.";
+
+    await resolveSession(data.user);
+    return null;
+  };
+
+  const verifySignupEmail = async (
+    email: string,
+    code: string,
+    password?: string,
+  ): Promise<string | null> => {
     const normalizedEmail = email.trim().toLowerCase();
     const token = code.trim();
 
     if (!normalizedEmail) return "Email is required.";
     if (token.length < 6) return "Enter the 6-digit code from your email.";
 
-    let { data, error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       email: normalizedEmail,
       token,
       type: "signup",
     });
 
     if (error) {
-      const retry = await supabase.auth.verifyOtp({
-        email: normalizedEmail,
-        token,
-        type: "email",
-      });
-      data = retry.data;
-      error = retry.error;
+      const msg = error.message.toLowerCase();
+      const canTrySignIn =
+        !!password &&
+        (msg.includes("invalid otp") ||
+          msg.includes("token has expired") ||
+          msg.includes("already been verified") ||
+          msg.includes("already confirmed"));
+
+      if (canTrySignIn) {
+        return signInAfterVerification(normalizedEmail, password);
+      }
+
+      return mapAuthError(error.message);
     }
 
-    if (error) return mapAuthError(error.message);
     if (!data.user) return "Verification failed. Please try again.";
 
-    await resolveSession(data.user);
-    return null;
+    if (data.session) {
+      await resolveSession(data.user);
+      return null;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session?.user) {
+      await resolveSession(sessionData.session.user);
+      return null;
+    }
+
+    if (password) {
+      return signInAfterVerification(normalizedEmail, password);
+    }
+
+    return "Verification succeeded but sign-in failed. Try signing in with your password.";
   };
 
   const resendSignupEmail = async (email: string): Promise<string | null> => {
