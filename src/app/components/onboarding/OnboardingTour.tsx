@@ -25,14 +25,26 @@ interface Rect {
 
 const CARD_WIDTH = 320;
 const VIEWPORT_PAD = 16;
-const SPOTLIGHT_PAD = 10;
+const SPOTLIGHT_PAD = 8;
 const GAP = 20;
 
 function getTargetRect(selector: string): Rect | null {
   const el = document.querySelector(selector);
   if (!el) return null;
   const r = el.getBoundingClientRect();
+  if (r.width < 1 || r.height < 1) return null;
   return { top: r.top, left: r.left, width: r.width, height: r.height };
+}
+
+function isRectVisible(rect: Rect): boolean {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  return (
+    rect.left + rect.width > 0 &&
+    rect.top + rect.height > 0 &&
+    rect.left < vw &&
+    rect.top < vh
+  );
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -47,29 +59,23 @@ function computeCardPosition(
 ): { top: number; left: number } {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const s = {
-    top: spotlight.top - SPOTLIGHT_PAD,
-    left: spotlight.left - SPOTLIGHT_PAD,
-    width: spotlight.width + SPOTLIGHT_PAD * 2,
-    height: spotlight.height + SPOTLIGHT_PAD * 2,
-  };
 
   const candidates: { pos: NonNullable<TourStep["position"]>; top: number; left: number }[] = [];
   const add = (pos: NonNullable<TourStep["position"]>, top: number, left: number) => {
     candidates.push({ pos, top, left });
   };
 
-  add("right", s.top, s.left + s.width + GAP);
-  add("bottom", s.top + s.height + GAP, s.left + s.width / 2 - cardW / 2);
-  add("top", s.top - cardH - GAP, s.left + s.width / 2 - cardW / 2);
-  add("left", s.top, s.left - cardW - GAP);
+  add("right", spotlight.top, spotlight.left + spotlight.width + GAP);
+  add("bottom", spotlight.top + spotlight.height + GAP, spotlight.left + spotlight.width / 2 - cardW / 2);
+  add("top", spotlight.top - cardH - GAP, spotlight.left + spotlight.width / 2 - cardW / 2);
+  add("left", spotlight.top, spotlight.left - cardW - GAP);
 
   const order: NonNullable<TourStep["position"]>[] = [
     preferred ?? "right",
     "bottom",
-    "right",
     "left",
     "top",
+    "right",
   ];
 
   const sorted = [...candidates].sort((a, b) => {
@@ -85,14 +91,14 @@ function computeCardPosition(
 
     const top = clamp(c.top, VIEWPORT_PAD, vh - cardH - VIEWPORT_PAD);
     const left = clamp(c.left, VIEWPORT_PAD, vw - cardW - VIEWPORT_PAD);
-    const fitsVertically = top >= VIEWPORT_PAD && top + cardH <= vh - VIEWPORT_PAD;
-    const fitsHorizontally = left >= VIEWPORT_PAD && left + cardW <= vw - VIEWPORT_PAD;
 
-    if (fitsVertically && fitsHorizontally) return { top, left };
+    if (top + cardH <= vh - VIEWPORT_PAD && left + cardW <= vw - VIEWPORT_PAD) {
+      return { top, left };
+    }
   }
 
   return {
-    top: clamp(vh - cardH - VIEWPORT_PAD, VIEWPORT_PAD, vh - cardH - VIEWPORT_PAD),
+    top: clamp(vh / 2 - cardH / 2, VIEWPORT_PAD, vh - cardH - VIEWPORT_PAD),
     left: clamp(vw / 2 - cardW / 2, VIEWPORT_PAD, vw - cardW - VIEWPORT_PAD),
   };
 }
@@ -100,8 +106,10 @@ function computeCardPosition(
 export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
-  const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
-  const [ready, setReady] = useState(false);
+  const [cardPos, setCardPos] = useState({
+    top: Math.max(VIEWPORT_PAD, window.innerHeight / 2 - 120),
+    left: Math.max(VIEWPORT_PAD, window.innerWidth / 2 - CARD_WIDTH / 2),
+  });
   const cardRef = useRef<HTMLDivElement>(null);
 
   const step = steps[currentStep];
@@ -112,25 +120,24 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
       setRect(null);
       return;
     }
-    setRect(getTargetRect(step.target));
+    const r = getTargetRect(step.target);
+    setRect(r && isRectVisible(r) ? r : null);
   }, [step]);
 
   useEffect(() => {
-    setReady(true);
-    return () => setReady(false);
-  }, []);
-
-  useEffect(() => {
     step?.onEnter?.();
-    const timer = setTimeout(updateRect, 250);
+    updateRect();
+    const timer = setTimeout(updateRect, 100);
+    const timer2 = setTimeout(updateRect, 350);
     window.addEventListener("resize", updateRect);
     window.addEventListener("scroll", updateRect, true);
     return () => {
       clearTimeout(timer);
+      clearTimeout(timer2);
       window.removeEventListener("resize", updateRect);
       window.removeEventListener("scroll", updateRect, true);
     };
-  }, [step, updateRect]);
+  }, [step, updateRect, currentStep]);
 
   const spotlight = rect
     ? {
@@ -146,8 +153,8 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
 
     if (!spotlight) {
       setCardPos({
-        top: window.innerHeight / 2 - 120,
-        left: window.innerWidth / 2 - CARD_WIDTH / 2,
+        top: clamp(window.innerHeight / 2 - 120, VIEWPORT_PAD, window.innerHeight - 300),
+        left: clamp(window.innerWidth / 2 - CARD_WIDTH / 2, VIEWPORT_PAD, window.innerWidth - CARD_WIDTH - VIEWPORT_PAD),
       });
       return;
     }
@@ -165,65 +172,61 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
     if (currentStep > 0) setCurrentStep((s) => s - 1);
   };
 
-  if (!step || !ready) return null;
+  if (!step) return null;
 
   const content = (
     <div
       className="fixed inset-0"
       style={{ zIndex: 9999, fontFamily: "'Inter', sans-serif" }}
     >
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        <defs>
-          <mask id="tour-spotlight-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {spotlight && (
-              <rect
-                x={spotlight.left}
-                y={spotlight.top}
-                width={spotlight.width}
-                height={spotlight.height}
-                rx="12"
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(0,0,0,0.75)"
-          mask="url(#tour-spotlight-mask)"
-        />
-      </svg>
-
-      {spotlight && (
+      {/* Backdrop — full dim when no target; box-shadow hole when spotlight */}
+      {spotlight ? (
+        <>
+          <div
+            className="fixed pointer-events-none rounded-xl transition-all duration-300"
+            style={{
+              top: spotlight.top,
+              left: spotlight.left,
+              width: spotlight.width,
+              height: spotlight.height,
+              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.78)",
+              zIndex: 9999,
+            }}
+          />
+          <div
+            className="fixed pointer-events-none rounded-xl transition-all duration-300"
+            style={{
+              top: spotlight.top,
+              left: spotlight.left,
+              width: spotlight.width,
+              height: spotlight.height,
+              boxShadow: "0 0 0 2px #10B981, 0 0 20px rgba(16,185,129,0.4)",
+              zIndex: 10000,
+            }}
+          />
+        </>
+      ) : (
         <div
-          className="absolute rounded-xl pointer-events-none transition-all duration-300"
-          style={{
-            top: spotlight.top,
-            left: spotlight.left,
-            width: spotlight.width,
-            height: spotlight.height,
-            boxShadow: "0 0 0 2px #10B981, 0 0 20px rgba(16,185,129,0.35)",
-          }}
+          className="fixed inset-0"
+          style={{ background: "rgba(0, 0, 0, 0.78)", zIndex: 9999 }}
         />
       )}
 
+      {/* Block interaction with dashboard beneath */}
+      <div className="fixed inset-0" style={{ zIndex: 9999 }} aria-hidden />
+
       <div
         ref={cardRef}
-        className="fixed flex flex-col rounded-2xl border overflow-hidden"
+        className="fixed flex flex-col rounded-2xl border overflow-hidden pointer-events-auto"
         style={{
           top: cardPos.top,
           left: cardPos.left,
           width: CARD_WIDTH,
-          zIndex: 10000,
+          zIndex: 10001,
           background: "#0D1220",
           borderColor: "#1F2937",
           boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">

@@ -55,6 +55,18 @@ export function DashboardLayout({
     setMobileOpen(false);
   }, []);
 
+  const openSidebarForTour = useCallback(() => {
+    setMobileOpen(true);
+  }, []);
+
+  const sidebarStep = useCallback(
+    (screen: Screen = "home") => {
+      navigateScreen(screen);
+      openSidebarForTour();
+    },
+    [navigateScreen, openSidebarForTour],
+  );
+
   const startTour = useCallback(() => {
     setShowTour(false);
     setScreen("home");
@@ -90,7 +102,7 @@ export function DashboardLayout({
         description:
           "Home is your command center — hour balance, charts, and recent exchanges all in one place.",
         position: "right",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="hour-balance"]',
@@ -98,7 +110,7 @@ export function DashboardLayout({
         description:
           "Your available hours are always shown here in the sidebar. Earn hours by helping others, spend them when you need help.",
         position: "right",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="quick-actions"]',
@@ -106,7 +118,10 @@ export function DashboardLayout({
         description:
           "Offer your skills or request help from the community. Both buttons take you to Post Request.",
         position: "bottom",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => {
+          setMobileOpen(false);
+          navigateScreen("home");
+        },
       },
       {
         target: '[data-tour="nav-board"]',
@@ -114,7 +129,7 @@ export function DashboardLayout({
         description:
           "Browse active posts — find people offering skills you need, or see who's looking for help you can provide.",
         position: "right",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="nav-post"]',
@@ -122,7 +137,7 @@ export function DashboardLayout({
         description:
           "Create a listing to offer your skills or request help. Set how many hours each exchange is worth.",
         position: "right",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="nav-profile"]',
@@ -130,7 +145,7 @@ export function DashboardLayout({
         description:
           "View your exchange history, public profile, and community ratings.",
         position: "right",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="header-search"]',
@@ -138,7 +153,10 @@ export function DashboardLayout({
         description:
           "Search for people, tasks, and skills across the platform.",
         position: "bottom",
-        onEnter: () => navigateScreen("home"),
+        onEnter: () => {
+          setMobileOpen(false);
+          navigateScreen("home");
+        },
       },
       {
         title: "You're ready to go!",
@@ -146,7 +164,7 @@ export function DashboardLayout({
           "That's everything you need to get started. Browse the Job Board or post your first offer — happy trading!",
       },
     ],
-    [firstName, navigateScreen],
+    [firstName, navigateScreen, sidebarStep],
   );
 
   const handleTourComplete = useCallback(async () => {
