@@ -40,9 +40,14 @@ export function ExchangeFormatSelector({
                 active ? "dash-category-active" : "dash-category-inactive"
               }`}
             >
-              <Icon size={18} className={active ? "dash-accent" : "dash-subtext"} />
-              <span className="dash-heading">{option.label}</span>
-              <span className="text-[11px] font-normal dash-subtext leading-snug">
+              <Icon
+                size={18}
+                className={active ? "text-[var(--dash-aqua)]" : "text-[var(--dash-text-muted)]"}
+              />
+              <span className={`font-semibold ${active ? "text-[var(--dash-text)]" : "dash-heading"}`}>
+                {option.label}
+              </span>
+              <span className={`text-[11px] font-normal leading-snug ${active ? "text-[var(--dash-text-muted)]" : "dash-subtext"}`}>
                 {option.description}
               </span>
             </button>
