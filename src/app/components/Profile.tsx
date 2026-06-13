@@ -12,6 +12,8 @@ import {
   cancelExchange,
 } from "../../lib/exchanges";
 import type { ExchangeWithProfiles } from "../../types/database";
+import { dashColors } from "./onboarding/aeroTheme";
+import { formatExchangeFormat } from "../../lib/exchange-format";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -104,28 +106,19 @@ export const Profile = () => {
 
   return (
     <div className="space-y-6">
-      <div
-        className="rounded-2xl p-6 border flex flex-col sm:flex-row items-start sm:items-center gap-5"
-        style={{ background: "#111827", borderColor: "#1F2937" }}
-      >
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-        >
+      <div className="dash-card rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+        <div className="dash-avatar w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">
           {user ? getInitials(user.name) : "?"}
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-semibold text-white">{user?.name ?? "User"}</h2>
-            <span
-              className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
-              style={{ background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.25)" }}
-            >
+            <h2 className="text-lg font-semibold dash-heading">{user?.name ?? "User"}</h2>
+            <span className="dash-badge-earn flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium">
               <ShieldCheck size={11} />
               Verified Identity
             </span>
           </div>
-          <p className="text-sm text-[#9CA3AF]">
+          <p className="text-sm dash-subtext">
             {user?.email} · {user?.hoursAvailable.toFixed(1)} hrs available
           </p>
         </div>
@@ -133,43 +126,42 @@ export const Profile = () => {
 
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Total Exchanges", value: String(history.length), color: "#10B981" },
-          { label: "Hours Earned", value: `${hoursEarned.toFixed(1)}h`, color: "#06B6D4" },
-          { label: "Hours Spent", value: `${hoursReceived.toFixed(1)}h`, color: "#F59E0B", suffix: null },
+          { label: "Total Exchanges", value: String(history.length), color: dashColors.earn },
+          { label: "Hours Earned", value: `${hoursEarned.toFixed(1)}h`, color: dashColors.spend },
+          { label: "Hours Spent", value: `${hoursReceived.toFixed(1)}h`, color: dashColors.sun },
         ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-2xl p-4 border text-center"
-            style={{ background: "#111827", borderColor: "#1F2937" }}
-          >
+          <div key={stat.label} className="dash-card rounded-2xl p-4 text-center">
             <p
               className="text-2xl font-semibold mb-1"
               style={{ fontFamily: "'DM Mono', monospace", color: stat.color }}
             >
               {stat.value}
             </p>
-            <p className="text-xs text-[#9CA3AF] leading-snug">{stat.label}</p>
+            <p className="text-xs dash-subtext leading-snug">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {inProgress.length > 0 && (
-        <div className="rounded-2xl border overflow-hidden" style={{ background: "#111827", borderColor: "#1F2937" }}>
-          <div className="px-6 py-4 border-b" style={{ borderColor: "#1F2937" }}>
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Loader2 size={14} className="text-cyan-400 animate-spin" />
+        <div className="dash-card rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b dash-divider">
+            <h3 className="text-sm font-semibold dash-heading flex items-center gap-2">
+              <Loader2 size={14} className="dash-accent animate-spin" />
               Active Exchanges
             </h3>
           </div>
-          <div className="divide-y" style={{ borderColor: "#1F2937" }}>
+          <div className="divide-y dash-divider">
             {inProgress.map((ex) => {
               const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
               return (
                 <div key={ex.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white">{ex.title}</p>
-                    <p className="text-xs text-[#9CA3AF]">
+                    <p className="text-sm font-medium dash-heading">{ex.title}</p>
+                    <p className="text-xs dash-subtext">
                       with {partner.name} · {ex.hours}h
+                      {ex.exchange_format
+                        ? ` · ${formatExchangeFormat(ex.exchange_format)}`
+                        : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -177,8 +169,7 @@ export const Profile = () => {
                       type="button"
                       onClick={() => handleComplete(ex.id)}
                       disabled={actionId === ex.id || isPreview}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60"
-                      style={{ background: "#10B981", color: "#000" }}
+                      className="dash-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60"
                     >
                       <CheckCircle2 size={13} />
                       Complete
@@ -187,8 +178,7 @@ export const Profile = () => {
                       type="button"
                       onClick={() => handleCancel(ex.id)}
                       disabled={actionId === ex.id || isPreview}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border disabled:opacity-60"
-                      style={{ borderColor: "#374151", color: "#9CA3AF" }}
+                      className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
                     >
                       <XCircle size={13} />
                       Cancel
@@ -203,22 +193,17 @@ export const Profile = () => {
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <div className="rounded-2xl border overflow-hidden" style={{ background: "#111827", borderColor: "#1F2937" }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#1F2937" }}>
-          <h3 className="text-sm font-semibold text-white">Exchange Ledger</h3>
-          <div
-            className="flex rounded-full p-0.5"
-            style={{ background: "#0B0F19", border: "1px solid #1F2937" }}
-          >
+      <div className="dash-card rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b dash-divider">
+          <h3 className="text-sm font-semibold dash-heading">Exchange Ledger</h3>
+          <div className="dash-pill-group flex rounded-full p-0.5">
             {(["all", "given", "received"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className="px-3 py-1 rounded-full text-xs font-medium capitalize transition-all duration-200"
-                style={{
-                  background: tab === t ? "#10B981" : "transparent",
-                  color: tab === t ? "#000" : "#9CA3AF",
-                }}
+                className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-all duration-200 ${
+                  tab === t ? "dash-pill-active" : "dash-pill-inactive"
+                }`}
               >
                 {t}
               </button>
@@ -227,51 +212,45 @@ export const Profile = () => {
         </div>
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-6 h-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+            <div className="w-6 h-6 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-[#9CA3AF]">
+          <div className="px-6 py-12 text-center text-sm dash-subtext">
             No exchanges yet. Browse the Job Board to join one!
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: "#1F2937" }}>
+          <div className="divide-y dash-divider">
             {filtered.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors">
+              <div key={item.id} className="flex items-center gap-4 px-6 py-4 hover:bg-white/25 transition-colors">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background:
-                      item.type === "given"
-                        ? "rgba(16,185,129,0.12)"
-                        : item.type === "received"
-                          ? "rgba(6,182,212,0.12)"
-                          : "rgba(107,114,128,0.12)",
-                    border: `1px solid ${
-                      item.type === "given"
-                        ? "rgba(16,185,129,0.25)"
-                        : item.type === "received"
-                          ? "rgba(6,182,212,0.25)"
-                          : "rgba(107,114,128,0.25)"
-                    }`,
-                  }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    item.type === "given"
+                      ? "dash-badge-earn"
+                      : item.type === "received"
+                        ? "dash-badge-spend"
+                        : "dash-badge-neutral"
+                  }`}
                 >
                   {item.type === "given" ? (
-                    <ArrowUpRight size={14} className="text-emerald-400" />
+                    <ArrowUpRight size={14} className="dash-accent-grass" />
                   ) : item.type === "received" ? (
-                    <ArrowDownLeft size={14} className="text-cyan-400" />
+                    <ArrowDownLeft size={14} className="dash-accent" />
                   ) : (
-                    <CheckCircle2 size={14} className="text-[#9CA3AF]" />
+                    <CheckCircle2 size={14} className="dash-subtext" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{item.task}</p>
-                  <p className="text-xs text-[#9CA3AF]">
+                  <p className="text-sm font-medium dash-heading truncate">{item.task}</p>
+                  <p className="text-xs dash-subtext">
                     {item.type === "given"
                       ? "Earned with"
                       : item.type === "received"
                         ? "Paid to"
                         : "Joined"}{" "}
                     {item.name} · {item.date}
+                    {item.raw.exchange_format
+                      ? ` · ${formatExchangeFormat(item.raw.exchange_format)}`
+                      : ""}
                   </p>
                 </div>
                 <span
@@ -280,10 +259,10 @@ export const Profile = () => {
                     fontFamily: "'DM Mono', monospace",
                     color:
                       item.type === "given"
-                        ? "#10B981"
+                        ? dashColors.earn
                         : item.type === "received"
-                          ? "#06B6D4"
-                          : "#9CA3AF",
+                          ? dashColors.spend
+                          : dashColors.neutral,
                   }}
                 >
                   {item.type === "given" ? "+" : item.type === "received" ? "-" : ""}

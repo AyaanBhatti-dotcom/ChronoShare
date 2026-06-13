@@ -146,25 +146,18 @@ export function LocationPicker({
   const canSave = Boolean(pickedSuggestion || detectedLocation);
 
   const inputClass =
-    "w-full px-4 py-2.5 rounded-xl text-sm text-white outline-none transition-all duration-200 focus:ring-1 focus:ring-emerald-500";
-  const inputStyle = { background: "#0B0F19", border: "1px solid #1F2937" } as const;
+    "dash-input w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200";
 
   return (
-    <div
-      className={`rounded-2xl border ${compact ? "p-5" : "p-6"}`}
-      style={{ background: "#111827", borderColor: "#1F2937" }}
-    >
+    <div className={`dash-card rounded-2xl ${compact ? "p-5" : "p-6"}`}>
       {!compact && (
         <div className="flex items-start gap-3 mb-5">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}
-          >
-            <MapPin size={18} className="text-emerald-400" />
+          <div className="dash-icon-box w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <MapPin size={18} className="dash-accent" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Where are you based?</h3>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">
+            <h3 className="text-sm font-semibold dash-heading">Where are you based?</h3>
+            <p className="text-xs dash-subtext mt-0.5">
               Search for your city anywhere in the world — pick a result from the dropdown.
             </p>
           </div>
@@ -173,13 +166,13 @@ export function LocationPicker({
 
       <div className={`${compact ? "" : "mb-3"}`}>
         <div className="space-y-1.5 relative" ref={searchRef}>
-          <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
+          <label className="dash-label">
             City & region
           </label>
           <div className="relative">
             <Search
               size={14}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7280] pointer-events-none"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 dash-subtext pointer-events-none"
             />
             <input
               value={searchQuery}
@@ -192,38 +185,34 @@ export function LocationPicker({
               onFocus={() => setSearchOpen(true)}
               placeholder="e.g. Tokyo, JP or Austin, TX"
               className={`${inputClass} pl-9`}
-              style={inputStyle}
               autoComplete="off"
             />
             {searching && (
               <Loader2
                 size={14}
-                className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#6B7280]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin dash-subtext"
               />
             )}
           </div>
 
           {searchOpen && searchQuery.trim().length >= 2 && (
-            <ul
-              className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border shadow-lg"
-              style={{ background: "#0B0F19", borderColor: "#374151" }}
-            >
+            <ul className="dash-modal absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-xl">
               {searching && (
-                <li className="px-4 py-3 text-xs text-[#6B7280]">Searching…</li>
+                <li className="px-4 py-3 text-xs dash-subtext">Searching…</li>
               )}
               {!searching && suggestions.length === 0 && (
-                <li className="px-4 py-3 text-xs text-[#6B7280]">No matches — try another spelling</li>
+                <li className="px-4 py-3 text-xs dash-subtext">No matches — try another spelling</li>
               )}
               {suggestions.map((suggestion) => (
                 <li key={`${suggestion.city}-${suggestion.state}-${suggestion.country}`}>
                   <button
                     type="button"
-                    className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-emerald-500/10 transition-colors"
+                    className="w-full px-4 py-2.5 text-left text-sm dash-heading hover:bg-white/40 transition-colors"
                     onClick={() => applySuggestion(suggestion)}
                   >
                     {suggestion.label}
                     {suggestion.stateName && suggestion.country !== "US" && (
-                      <span className="block text-[10px] text-[#6B7280]">{suggestion.stateName}</span>
+                      <span className="block text-[10px] dash-subtext">{suggestion.stateName}</span>
                     )}
                   </button>
                 </li>
@@ -234,15 +223,15 @@ export function LocationPicker({
       </div>
 
       {selectedLabel && (
-        <p className="text-xs text-[#9CA3AF] mb-3">
-          Selected: <span className="text-emerald-400">{selectedLabel}</span>
+        <p className="text-xs dash-subtext mb-3">
+          Selected: <span className="dash-accent">{selectedLabel}</span>
         </p>
       )}
 
-      {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+      {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
 
       {saved && showSuccessMessage && (
-        <p className="text-xs text-emerald-400 mb-3 flex items-center gap-1.5">
+        <p className="text-xs dash-accent-grass mb-3 flex items-center gap-1.5">
           <CheckCircle2 size={13} />
           Location saved
         </p>
@@ -253,8 +242,7 @@ export function LocationPicker({
           type="button"
           onClick={handleSave}
           disabled={saving || !canSave}
-          className="px-5 py-2 rounded-full text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-          style={{ background: "#10B981", color: "#000" }}
+          className="dash-btn-primary px-5 py-2 rounded-full text-xs font-semibold disabled:opacity-50"
         >
           {saving ? "Saving..." : initialLocation ? "Update location" : "Save location"}
         </button>
@@ -262,8 +250,7 @@ export function LocationPicker({
           type="button"
           onClick={handleDetect}
           disabled={detecting}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium border transition-all hover:bg-white/[0.04] disabled:opacity-50"
-          style={{ borderColor: "#374151", color: "#9CA3AF" }}
+          className="dash-btn-outline flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium disabled:opacity-50"
         >
           {detecting ? (
             <Loader2 size={12} className="animate-spin" />

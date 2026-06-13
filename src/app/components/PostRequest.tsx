@@ -5,7 +5,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { createPost, fetchMyPosts, closePost, reopenPost, deletePost } from "../../lib/posts";
+import { aero } from "./onboarding/aeroTheme";
 import { getUserLocation } from "../../lib/location";
+import type { ExchangeFormatPreference } from "../../lib/exchange-format";
+import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import type { Post } from "../../types/database";
 
 const categories = [
@@ -39,6 +42,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   const [category, setCategory] = useState<string | null>(null);
   const [postType, setPostType] = useState<"needs" | "offers">(initialPostType);
   const [hours, setHours] = useState(1);
+  const [exchangeFormat, setExchangeFormat] = useState<ExchangeFormatPreference | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -79,6 +83,11 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
     e.preventDefault();
     if (!title || !category || !user) return;
 
+    if (!exchangeFormat) {
+      setError("Choose how this exchange will happen — in person, remote, or either.");
+      return;
+    }
+
     if (isPreview) {
       setError("Preview mode — posting is disabled.");
       return;
@@ -103,6 +112,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         category,
         postType,
         hoursCost: hours,
+        exchangeFormat,
         location,
       });
       setLastPostedType(postType);
@@ -114,6 +124,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         setCategory(null);
         setPostType(initialPostType);
         setHours(1);
+        setExchangeFormat(null);
       }, 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create listing");
@@ -161,19 +172,15 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}
-        >
-          <CheckCircle2 size={32} className="text-emerald-400" />
+        <div className="dash-icon-box w-16 h-16 rounded-full flex items-center justify-center">
+          <CheckCircle2 size={32} className="dash-accent-grass" />
         </div>
-        <h2 className="text-xl font-semibold text-white">Posted to Community!</h2>
-        <p className="text-sm text-[#9CA3AF]">Your listing is now live on the Job Board.</p>
+        <h2 className="text-xl font-semibold dash-heading">Posted to Community!</h2>
+        <p className="text-sm dash-subtext">Your listing is now live on the Job Board.</p>
         {onNavigate && (
           <button
             onClick={() => onNavigate("board", { boardMode: lastPostedType })}
-            className="mt-2 px-6 py-2.5 rounded-full text-sm font-semibold"
-            style={{ background: "#10B981", color: "#000" }}
+            className="dash-btn-primary mt-2 px-6 py-2.5 rounded-full text-sm font-semibold"
           >
             View on Job Board
           </button>
@@ -185,8 +192,8 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   return (
     <div className="max-w-xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white mb-1">Create & Manage Listings</h2>
-        <p className="text-sm text-[#9CA3AF]">
+        <h2 className="text-xl font-semibold dash-heading mb-1">Create & Manage Listings</h2>
+        <p className="text-sm dash-subtext">
           Post in seconds — pick a template or fill in the details.
         </p>
         {isPreview && (
@@ -195,20 +202,15 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
       </div>
 
       {/* Tabs */}
-      <div
-        className="flex rounded-full p-1 w-fit mb-6"
-        style={{ background: "#111827", border: "1px solid #1F2937" }}
-      >
+      <div className="dash-pill-group flex rounded-full p-1 w-fit mb-6">
         {(["create", "listings"] as const).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
-            style={{
-              background: tab === t ? "#10B981" : "transparent",
-              color: tab === t ? "#000" : "#9CA3AF",
-            }}
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              tab === t ? "dash-pill-active" : "dash-pill-inactive"
+            }`}
           >
             {t === "create" ? "Create" : "My Listings"}
           </button>
@@ -219,7 +221,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         <div className="space-y-5">
           {/* Quick templates */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
+            <label className="dash-label">
               Quick start
             </label>
             <div className="flex flex-wrap gap-2">
@@ -228,8 +230,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                   key={template.title}
                   type="button"
                   onClick={() => applyTemplate(template)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border transition-all hover:border-emerald-500/50"
-                  style={{ background: "#111827", borderColor: "#1F2937", color: "#9CA3AF" }}
+                  className="dash-tag px-3 py-1.5 rounded-full text-xs font-medium transition-all hover:border-[rgba(45,212,200,0.5)]"
                 >
                   {template.title}
                 </button>
@@ -239,59 +240,57 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">Listing Type</label>
-              <div
-                className="flex rounded-full p-1 w-fit"
-                style={{ background: "#111827", border: "1px solid #1F2937" }}
-              >
+              <label className="dash-label">Listing Type</label>
+              <div className="dash-pill-group flex rounded-full p-1 w-fit">
                 {(["needs", "offers"] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setPostType(type)}
-                    className="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
-                    style={{
-                      background: postType === type ? "#10B981" : "transparent",
-                      color: postType === type ? "#000" : "#9CA3AF",
-                    }}
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                      postType === type ? "dash-pill-active" : "dash-pill-inactive"
+                    }`}
                   >
                     {type === "needs" ? "Need Help" : "Offering Skill"}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-[#4B5563]">
+              <p className="text-xs dash-subtext opacity-80">
                 {postType === "needs"
                   ? "You'll pay hours from your balance to whoever helps you."
                   : "You'll earn hours from the community pool when someone accepts your offer."}
               </p>
             </div>
 
+            <ExchangeFormatSelector
+              value={exchangeFormat}
+              onChange={setExchangeFormat}
+            />
+
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">Task Title</label>
+              <label className="dash-label">Task Title</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Need help moving furniture"
-                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-[#4B5563] outline-none transition-all duration-200 focus:ring-1 focus:ring-emerald-500"
-                style={{ background: "#111827", border: "1px solid #1F2937" }}
+                className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">Description</label>
+              <label className="dash-label">Description</label>
               <textarea
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
                 placeholder="Optional — add details to help people decide quickly"
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-[#4B5563] outline-none resize-none transition-all duration-200 focus:ring-1 focus:ring-emerald-500"
-                style={{ background: "#111827", border: "1px solid #1F2937" }}
+                className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none resize-none transition-all duration-200"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">Category</label>
+              <label className="dash-label">Category</label>
               <div className="grid grid-cols-3 gap-2">
                 {categories.map((cat) => {
                   const active = category === cat.id;
@@ -300,13 +299,9 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                       key={cat.id}
                       type="button"
                       onClick={() => setCategory(cat.id)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all duration-200"
-                      style={{
-                        background: active ? "rgba(16,185,129,0.1)" : "#111827",
-                        borderColor: active ? "#10B981" : "#1F2937",
-                        color: active ? "#10B981" : "#9CA3AF",
-                        boxShadow: active ? "0 0 12px rgba(16,185,129,0.15)" : "none",
-                      }}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all duration-200 ${
+                        active ? "dash-category-active" : "dash-category-inactive"
+                      }`}
                     >
                       {cat.icon}
                       {cat.label}
@@ -317,33 +312,28 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">Hour Value</label>
-              <div
-                className="flex items-center justify-between p-4 rounded-xl border"
-                style={{ background: "#111827", borderColor: "#1F2937" }}
-              >
+              <label className="dash-label">Hour Value</label>
+              <div className="dash-card flex items-center justify-between p-4 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setHours(Math.max(0.5, hours - 0.5))}
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-white/10"
-                  style={{ border: "1px solid #1F2937", color: "#9CA3AF" }}
+                  className="dash-tag w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-white/40"
                 >
                   <Minus size={16} />
                 </button>
                 <div className="text-center">
                   <p
-                    className="text-4xl font-semibold text-white"
+                    className="text-4xl font-semibold dash-heading"
                     style={{ fontFamily: "'DM Mono', monospace" }}
                   >
                     {hours.toFixed(1)}
                   </p>
-                  <p className="text-xs text-[#9CA3AF] mt-0.5">hours</p>
+                  <p className="text-xs dash-subtext mt-0.5">hours</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setHours(Math.min(8, hours + 0.5))}
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 hover:bg-emerald-500/10"
-                  style={{ border: "1px solid #10B981", color: "#10B981" }}
+                  className="dash-btn-outline w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
                 >
                   <Plus size={16} />
                 </button>
@@ -354,8 +344,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                     key={v}
                     type="button"
                     onClick={() => setHours(v)}
-                    className="text-xs transition-colors duration-200"
-                    style={{ color: hours === v ? "#10B981" : "#4B5563" }}
+                    className={`text-xs transition-colors duration-200 ${hours === v ? "dash-accent font-semibold" : "dash-subtext"}`}
                   >
                     {v}h
                   </button>
@@ -363,17 +352,13 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
 
             <button
               type="submit"
-              disabled={submitting || isPreview || !category}
-              className="w-full py-4 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:shadow-lg active:scale-[0.99] disabled:opacity-60"
-              style={{
-                background: "linear-gradient(135deg, #10B981, #059669)",
-                color: "#000",
-                boxShadow: "0 4px 20px rgba(16,185,129,0.3)",
-              }}
+              disabled={submitting || isPreview || !category || !exchangeFormat}
+              className="dash-btn-primary w-full py-4 rounded-full text-sm font-semibold active:scale-[0.99] disabled:opacity-60"
+              style={{ background: aero.gradientSubmit }}
             >
               {submitting ? "Posting..." : "Post to Community"}
             </button>
@@ -384,19 +369,15 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
           {error && <p className="text-sm text-red-400">{error}</p>}
           {loadingPosts ? (
             <div className="flex justify-center py-12">
-              <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+              <div className="w-8 h-8 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
             </div>
           ) : myPosts.length === 0 ? (
-            <div
-              className="text-center py-12 rounded-2xl border"
-              style={{ background: "#111827", borderColor: "#1F2937" }}
-            >
-              <p className="text-sm text-[#9CA3AF] mb-3">You haven&apos;t posted any listings yet.</p>
+            <div className="dash-card text-center py-12 rounded-2xl">
+              <p className="text-sm dash-subtext mb-3">You haven&apos;t posted any listings yet.</p>
               <button
                 type="button"
                 onClick={() => setTab("create")}
-                className="px-5 py-2 rounded-full text-sm font-semibold"
-                style={{ background: "#10B981", color: "#000" }}
+                className="dash-btn-primary px-5 py-2 rounded-full text-sm font-semibold"
               >
                 Create your first listing
               </button>
@@ -405,23 +386,20 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
             myPosts.map((post) => (
               <div
                 key={post.id}
-                className="rounded-2xl p-4 border flex items-center gap-4"
-                style={{ background: "#111827", borderColor: "#1F2937" }}
+                className="dash-card rounded-2xl p-4 flex items-center gap-4"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-white truncate">{post.title}</h3>
+                    <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>
                     <span
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
-                      style={{
-                        background: post.status === "active" ? "rgba(16,185,129,0.15)" : "rgba(107,114,128,0.15)",
-                        color: post.status === "active" ? "#10B981" : "#9CA3AF",
-                      }}
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${
+                        post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
+                      }`}
                     >
                       {post.status}
                     </span>
                   </div>
-                  <p className="text-xs text-[#9CA3AF]">
+                  <p className="text-xs dash-subtext">
                     {post.post_type === "needs" ? "Need help" : "Offering"} · {post.category} ·{" "}
                     <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
                   </p>
@@ -433,8 +411,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                         type="button"
                         onClick={() => handleCloseListing(post.id)}
                         disabled={actionId === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-amber-500/50"
-                        style={{ borderColor: "#374151", color: "#9CA3AF" }}
+                        className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
                       >
                         <XCircle size={13} />
                         Close
@@ -443,8 +420,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                         type="button"
                         onClick={() => handleDeleteListing(post.id)}
                         disabled={actionId === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-red-500/50"
-                        style={{ borderColor: "#374151", color: "#F87171" }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
                       >
                         <Trash2 size={13} />
                         Delete
@@ -456,8 +432,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                         type="button"
                         onClick={() => handleReopenListing(post.id)}
                         disabled={actionId === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-emerald-500/50"
-                        style={{ borderColor: "#374151", color: "#10B981" }}
+                        className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
                       >
                         <RotateCcw size={13} />
                         Reopen
@@ -466,8 +441,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                         type="button"
                         onClick={() => handleDeleteListing(post.id)}
                         disabled={actionId === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-red-500/50"
-                        style={{ borderColor: "#374151", color: "#F87171" }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
                       >
                         <Trash2 size={13} />
                         Delete

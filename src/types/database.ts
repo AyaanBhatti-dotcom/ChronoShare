@@ -87,6 +87,7 @@ export interface Database {
           country: string | null;
           latitude: number | null;
           longitude: number | null;
+          exchange_format: "in_person" | "remote" | "flexible";
           created_at: string;
           updated_at: string;
         };
@@ -105,6 +106,7 @@ export interface Database {
           country?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          exchange_format?: "in_person" | "remote" | "flexible";
           created_at?: string;
           updated_at?: string;
         };
@@ -123,6 +125,7 @@ export interface Database {
           country?: string | null;
           latitude?: number | null;
           longitude?: number | null;
+          exchange_format?: "in_person" | "remote" | "flexible";
           created_at?: string;
           updated_at?: string;
         };
@@ -141,6 +144,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
           completed_at: string | null;
+          exchange_format: "in_person" | "remote" | null;
         };
         Insert: {
           id?: string;
@@ -155,6 +159,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           completed_at?: string | null;
+          exchange_format?: "in_person" | "remote" | null;
         };
         Update: {
           id?: string;
@@ -169,6 +174,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           completed_at?: string | null;
+          exchange_format?: "in_person" | "remote" | null;
         };
       };
     };
@@ -222,7 +228,7 @@ export interface Database {
         Returns: void;
       };
       accept_post: {
-        Args: { p_post_id: string };
+        Args: { p_post_id: string; p_exchange_format?: string | null };
         Returns: string;
       };
       complete_exchange: {

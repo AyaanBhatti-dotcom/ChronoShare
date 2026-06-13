@@ -1,9 +1,10 @@
 import { supabase } from "./supabase";
 import type { Post, PostWithAuthor } from "../types/database";
+import type { ExchangeFormatPreference } from "./exchange-format";
 import type { UserLocation } from "./location";
 
 const POST_SELECT =
-  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, created_at, profiles(full_name)";
+  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, exchange_format, created_at, profiles(full_name)";
 
 export async function fetchActivePosts(): Promise<PostWithAuthor[]> {
   const { data, error } = await supabase
@@ -44,6 +45,7 @@ export async function createPost(input: {
   category: string;
   postType: "needs" | "offers";
   hoursCost: number;
+  exchangeFormat: ExchangeFormatPreference;
   location?: UserLocation | null;
 }): Promise<void> {
   const { error } = await supabase.from("posts").insert({
@@ -53,6 +55,7 @@ export async function createPost(input: {
     category: input.category,
     post_type: input.postType,
     hours_cost: input.hoursCost,
+    exchange_format: input.exchangeFormat,
     city: input.location?.city ?? null,
     region: input.location?.region ?? null,
     state: input.location?.state ?? null,

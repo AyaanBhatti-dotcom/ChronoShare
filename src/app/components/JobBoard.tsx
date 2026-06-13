@@ -18,6 +18,13 @@ import {
   type UserLocation,
 } from "../../lib/location";
 import { getStoredListingScope, storeListingScope, type ListingScope } from "../../lib/listing-scope";
+import { impactBadgeStyle, impactPanelStyle } from "./onboarding/aeroTheme";
+import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
+import {
+  formatExchangeFormat,
+  isFlexibleFormat,
+  type ExchangeFormatResolved,
+} from "../../lib/exchange-format";
 import { ListingScopeToggle } from "./ListingScopeToggle";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
@@ -57,6 +64,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   const [sort, setSort] = useState<NearbySort>("newest");
   const [radiusMiles] = useState(100);
   const [deleting, setDeleting] = useState(false);
+  const [joinFormat, setJoinFormat] = useState<ExchangeFormatResolved | null>(null);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
@@ -132,14 +140,28 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
     }
   };
 
+  useEffect(() => {
+    setJoinFormat(null);
+    setAcceptError(null);
+  }, [selectedJob?.id]);
+
   const handleAccept = async () => {
     if (!selectedJob || isPreview || (user && selectedJob.user_id === user.userId)) return;
+
+    const needsFormatChoice = isFlexibleFormat(selectedJob.exchange_format);
+    if (needsFormatChoice && !joinFormat) {
+      setAcceptError("Choose how you'd like to do this exchange — in person or remote.");
+      return;
+    }
 
     setAccepting(true);
     setAcceptError(null);
 
     try {
-      await acceptPost(selectedJob.id);
+      await acceptPost(
+        selectedJob.id,
+        needsFormatChoice ? joinFormat ?? undefined : undefined,
+      );
       await refreshUser();
       setAcceptSuccess(true);
       setJobs((prev) => prev.filter((j) => j.id !== selectedJob.id));
@@ -167,7 +189,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
         <div className="space-y-1">
           <ListingScopeToggle scope={scope} onChange={handleScopeChange} />
           {jobs.length > 0 && scopedJobs.length !== jobs.length && (
-            <p className="text-[10px] text-[#6B7280]">
+            <p className="text-[10px] dash-subtext">
               Showing {scopedJobs.length} of {jobs.length} listings — switch to Anywhere to see all
             </p>
           )}
@@ -176,19 +198,14 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
           {scope === "nearby" && !userLocation && (
             <p className="text-xs text-amber-400">Set your location in Settings to filter nearby.</p>
           )}
-          <div
-            className="flex rounded-full p-1 w-fit"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
-          >
+          <div className="dash-pill-group flex rounded-full p-1 w-fit">
             {(["nearest", "newest"] as const).map((option) => (
               <button
                 key={option}
                 onClick={() => setSort(option)}
-                className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
-                style={{
-                  background: sort === option ? "#10B981" : "transparent",
-                  color: sort === option ? "#000" : "#9CA3AF",
-                }}
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  sort === option ? "dash-pill-active" : "dash-pill-inactive"
+                }`}
               >
                 {option === "nearest" ? "Nearest" : "Newest"}
               </button>
@@ -199,19 +216,14 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
 
       {/* Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div
-          className="flex rounded-full p-1 w-fit"
-          style={{ background: "#111827", border: "1px solid #1F2937" }}
-        >
+        <div className="dash-pill-group flex rounded-full p-1 w-fit">
           {(["all", "needs", "offers"] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
-              className="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
-              style={{
-                background: mode === m ? "#10B981" : "transparent",
-                color: mode === m ? "#000" : "#9CA3AF",
-              }}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                mode === m ? "dash-pill-active" : "dash-pill-inactive"
+              }`}
             >
               {m === "all" ? "All Listings" : m === "needs" ? "Needs Help" : "Offering Skills"}
             </button>
@@ -219,30 +231,26 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
         </div>
 
         <div className="flex items-center gap-2">
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 sm:w-48"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
-          >
-            <Search size={14} className="text-[#9CA3AF]" />
+          <div className="dash-search flex items-center gap-2 px-3 py-2 rounded-xl flex-1 sm:w-48">
+            <Search size={14} className="dash-subtext" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search tasks..."
-              className="bg-transparent text-sm text-white placeholder-[#9CA3AF] outline-none w-full"
+              className="bg-transparent text-sm dash-heading placeholder:text-[var(--dash-text-faint)] outline-none w-full"
             />
           </div>
           <div className="relative">
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-2 rounded-xl text-sm text-white outline-none cursor-pointer"
-              style={{ background: "#111827", border: "1px solid #1F2937" }}
+              className="dash-input appearance-none pl-3 pr-8 py-2 rounded-xl text-sm outline-none cursor-pointer"
             >
               {categories.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none" />
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 dash-subtext pointer-events-none" />
           </div>
         </div>
       </div>
@@ -250,14 +258,11 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
       {/* Grid */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div
-          className="text-center py-16 rounded-2xl border"
-          style={{ background: "#111827", borderColor: "#1F2937" }}
-        >
-          <p className="text-[#9CA3AF] text-sm mb-4">
+        <div className="dash-card text-center py-16 rounded-2xl">
+          <p className="dash-subtext text-sm mb-4">
             {jobs.length === 0
               ? "No active listings yet. Be the first to post!"
               : scope === "nearby" && userLocation
@@ -269,8 +274,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
           {onNavigate && (
             <button
               onClick={() => onNavigate("post")}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all hover:opacity-90"
-              style={{ background: "#10B981", color: "#000" }}
+              className="dash-btn-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
             >
               <PlusCircle size={16} />
               Create a listing
@@ -291,85 +295,61 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                   setSelectedJob(job);
                   setAcceptError(null);
                   setAcceptSuccess(false);
+                  setJoinFormat(null);
                 }}
-                className="rounded-2xl p-5 border flex flex-col gap-4 hover:border-emerald-500/40 transition-all duration-200 group text-left"
-                style={{
-                  background: "#111827",
-                  borderColor: isOwn ? "rgba(16,185,129,0.35)" : "#1F2937",
-                }}
+                className={`dash-card dash-card-hover rounded-2xl p-5 flex flex-col gap-4 transition-all duration-200 group text-left ${
+                  isOwn ? "dash-card-own" : ""
+                }`}
               >
                 <div className="flex items-start gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                  >
+                  <div className="dash-avatar w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
                     {getInitials(name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-xs text-[#9CA3AF]">{name}</p>
+                      <p className="text-xs dash-subtext">{name}</p>
                       {isOwn && (
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}
-                        >
+                        <span className="dash-badge-own text-[10px] px-2 py-0.5 rounded-full font-medium">
                           Your listing
                         </span>
                       )}
                     </div>
-                    <h3 className="text-sm font-semibold text-white leading-snug">{job.title}</h3>
+                    <h3 className="text-sm font-semibold dash-heading leading-snug">{job.title}</h3>
                   </div>
                 </div>
                 {job.description && (
-                  <p className="text-xs text-[#9CA3AF] leading-relaxed line-clamp-2">{job.description}</p>
+                  <p className="text-xs dash-subtext leading-relaxed line-clamp-2">{job.description}</p>
                 )}
-                <p className="text-[10px] text-[#6B7280] flex items-center gap-1">
-                  <MapPin size={10} className="text-emerald-400/70" />
+                <p className="text-[10px] dash-subtext flex items-center gap-1">
+                  <MapPin size={10} className="dash-accent opacity-70" />
                   {scope === "nearby" && job.distanceMiles != null
                     ? `${formatPostLocation(job)} · ${formatDistance(job.distanceMiles)}`
                     : formatPostLocation(job)}
                 </p>
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
-                      style={{ background: "#1F2937", borderColor: "#374151", color: "#9CA3AF" }}
-                    >
+                    <span className="dash-tag flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium">
                       {categoryIcon(job.category)}
                       {job.category}
                     </span>
                     <span
-                      className="flex items-center gap-1 text-xs font-medium"
-                      style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}
+                      className="flex items-center gap-1 text-xs font-medium dash-accent"
+                      style={{ fontFamily: "'DM Mono', monospace" }}
                     >
                       <Clock size={11} />
                       {job.hours_cost}h
                     </span>
                   </div>
                   {isOwn ? (
-                    <span
-                      className="px-4 py-1.5 rounded-full text-xs font-semibold"
-                      style={{ background: "#1F2937", color: "#9CA3AF" }}
-                    >
+                    <span className="dash-tag px-4 py-1.5 rounded-full text-xs font-semibold">
                       Live on board
                     </span>
                   ) : (
                     <span
                       className="px-4 py-1.5 rounded-full text-xs font-semibold"
-                      style={{
-                        background:
-                          impact.direction === "earn"
-                            ? "rgba(16,185,129,0.15)"
-                            : impact.direction === "spend"
-                              ? "rgba(6,182,212,0.15)"
-                              : "rgba(107,114,128,0.15)",
-                        color:
-                          impact.direction === "earn"
-                            ? "#10B981"
-                            : impact.direction === "spend"
-                              ? "#06B6D4"
-                              : "#9CA3AF",
-                      }}
+                      style={impactBadgeStyle(
+                        impact.direction === "earn" ? "earn" : impact.direction === "spend" ? "spend" : "neutral",
+                      )}
                     >
                       {formatHourImpactLabel(impact)}
                     </span>
@@ -385,102 +365,99 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
       {selectedJob && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 dash-modal-overlay"
             onClick={() => !accepting && setSelectedJob(null)}
           />
-          <div
-            className="relative w-full max-w-md rounded-2xl border p-6 space-y-5"
-            style={{ background: "#111827", borderColor: "#1F2937" }}
-          >
+          <div className="dash-modal relative w-full max-w-md rounded-2xl p-6 space-y-5">
             <button
               type="button"
               onClick={() => !accepting && setSelectedJob(null)}
-              className="absolute top-4 right-4 text-[#9CA3AF] hover:text-white transition-colors"
+              className="absolute top-4 right-4 dash-subtext hover:dash-heading transition-colors"
             >
               <X size={18} />
             </button>
 
             {acceptSuccess ? (
               <div className="flex flex-col items-center py-8 gap-3 text-center">
-                <CheckCircle2 size={40} className="text-emerald-400" />
-                <h3 className="text-lg font-semibold text-white">You&apos;re matched!</h3>
-                <p className="text-sm text-[#9CA3AF]">
+                <CheckCircle2 size={40} className="dash-accent-grass" />
+                <h3 className="text-lg font-semibold dash-heading">You&apos;re matched!</h3>
+                <p className="text-sm dash-subtext">
                   Check your profile to manage this exchange.
                 </p>
               </div>
             ) : (
               <>
                 <div>
-                  <p className="text-xs text-[#9CA3AF] mb-1">
+                  <p className="text-xs dash-subtext mb-1">
                     {selectedJob.profiles?.full_name ?? "Community member"}
                   </p>
-                  <h3 className="text-lg font-semibold text-white">{selectedJob.title}</h3>
+                  <h3 className="text-lg font-semibold dash-heading">{selectedJob.title}</h3>
                 </div>
 
                 {selectedJob.description && (
-                  <p className="text-sm text-[#9CA3AF] leading-relaxed">{selectedJob.description}</p>
+                  <p className="text-sm dash-subtext leading-relaxed">{selectedJob.description}</p>
                 )}
 
                 <div className="flex items-center gap-3">
-                  <span
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
-                    style={{ background: "#1F2937", borderColor: "#374151", color: "#9CA3AF" }}
-                  >
+                  <span className="dash-tag flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium">
                     {categoryIcon(selectedJob.category)}
                     {selectedJob.category}
                   </span>
                   <span
-                    className="text-sm font-medium"
-                    style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}
+                    className="text-sm font-medium dash-accent"
+                    style={{ fontFamily: "'DM Mono', monospace" }}
                   >
                     {selectedJob.hours_cost}h
                   </span>
-                  <span className="text-xs text-[#9CA3AF] capitalize">
+                  <span className="text-xs dash-subtext capitalize">
                     {selectedJob.post_type === "needs" ? "Needs help" : "Offering skill"}
                   </span>
                 </div>
 
-                <p className="text-xs text-[#9CA3AF] flex items-center gap-1.5">
-                  <MapPin size={12} className="text-emerald-400" />
+                <p className="text-xs dash-subtext flex items-center gap-1.5">
+                  <MapPin size={12} className="dash-accent" />
                   {formatPostLocation(selectedJob)}
                   {selectedJob.distanceMiles != null && (
                     <span>· {formatDistance(selectedJob.distanceMiles)} away</span>
                   )}
                 </p>
 
+                <p className="text-xs dash-subtext">
+                  Exchange format:{" "}
+                  <span className="dash-heading font-medium">
+                    {formatExchangeFormat(selectedJob.exchange_format)}
+                  </span>
+                </p>
+
+                {!isOwnSelected && isFlexibleFormat(selectedJob.exchange_format) && (
+                  <ExchangeFormatSelector
+                    mode="join"
+                    value={joinFormat}
+                    onChange={setJoinFormat}
+                    label="How would you like to do this?"
+                    hint="The poster is open to either — pick what works for you."
+                  />
+                )}
+
                 {hourImpact && (
                   <div
                     className="rounded-xl p-4 flex items-center gap-3"
-                    style={{
-                      background:
-                        hourImpact.direction === "earn"
-                          ? "rgba(16,185,129,0.1)"
-                          : hourImpact.direction === "spend"
-                            ? "rgba(6,182,212,0.1)"
-                            : "rgba(107,114,128,0.1)",
-                      border: `1px solid ${
-                        hourImpact.direction === "earn"
-                          ? "rgba(16,185,129,0.25)"
-                          : hourImpact.direction === "spend"
-                            ? "rgba(6,182,212,0.25)"
-                            : "rgba(107,114,128,0.25)"
-                      }`,
-                    }}
+                    style={impactPanelStyle(hourImpact.direction === "free" ? "free" : hourImpact.direction)}
                   >
                     {hourImpact.direction === "earn" ? (
-                      <ArrowUpRight size={20} className="text-emerald-400" />
+                      <ArrowUpRight size={20} className="dash-accent-grass" />
                     ) : hourImpact.direction === "spend" ? (
-                      <ArrowDownRight size={20} className="text-cyan-400" />
+                      <ArrowDownRight size={20} className="dash-accent" />
                     ) : (
-                      <CheckCircle2 size={20} className="text-[#9CA3AF]" />
+                      <CheckCircle2 size={20} className="dash-subtext" />
                     )}
                     <div>
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium dash-heading">
                         {hourImpact.direction === "free"
                           ? "No cost to join"
                           : `You'll ${hourImpact.direction === "earn" ? "earn" : "spend"} ${hourImpact.amount}h`}
                       </p>
-                      <p className="text-xs text-[#9CA3AF]">
+                      <p className="text-xs dash-subtext">
                         {hourImpact.direction === "earn"
                           ? "Hours transfer to you when you join this exchange."
                           : hourImpact.direction === "spend"
@@ -497,11 +474,8 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
 
                 {isOwnSelected ? (
                   <div className="space-y-3">
-                    <div
-                      className="rounded-xl p-4 text-center"
-                      style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}
-                    >
-                      <p className="text-sm text-emerald-400 font-medium">This is your listing</p>
+                    <div className="dash-badge-earn rounded-xl p-4 text-center">
+                      <p className="text-sm dash-accent font-medium">This is your listing</p>
                       <p className="text-xs text-[#9CA3AF] mt-1">
                         Others can find and join it here, or remove it below.
                       </p>
@@ -510,8 +484,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting || isPreview}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-semibold border transition-all hover:border-red-500/50 disabled:opacity-60"
-                      style={{ borderColor: "#374151", color: "#F87171" }}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-semibold border border-red-400/40 text-red-500 transition-all hover:bg-red-500/10 disabled:opacity-60"
                     >
                       <Trash2 size={16} />
                       {deleting ? "Deleting..." : "Delete listing"}
@@ -521,9 +494,12 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                   <button
                     type="button"
                     onClick={handleAccept}
-                    disabled={accepting || isPreview}
-                    className="w-full py-3.5 rounded-full text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-60"
-                    style={{ background: "#10B981", color: "#000" }}
+                    disabled={
+                      accepting ||
+                      isPreview ||
+                      (isFlexibleFormat(selectedJob.exchange_format) && !joinFormat)
+                    }
+                    className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold disabled:opacity-60"
                   >
                     {accepting ? "Joining..." : isPreview ? "Preview mode" : "Join this exchange"}
                   </button>

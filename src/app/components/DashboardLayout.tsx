@@ -10,7 +10,7 @@ import { PostRequest } from "./PostRequest";
 import { Profile } from "./Profile";
 import { Settings } from "./Settings";
 import { useAuth, getInitials } from "../context/AuthContext";
-import { ShaderBackground } from "./ui/shader-background";
+import { AeroBackground } from "./onboarding/aeroTheme";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 import { consumeNewSignupTour } from "../utils/onboarding";
 import { fetchActivePostCount } from "../../lib/posts";
@@ -81,7 +81,6 @@ export function DashboardLayout({
 
   const sidebarStep = useCallback((screen: Screen = "home") => {
     setScreen(screen);
-    // Only slide the sidebar in on mobile — on desktop it is always visible.
     if (window.matchMedia("(max-width: 639px)").matches) {
       setMobileOpen(true);
     }
@@ -97,7 +96,6 @@ export function DashboardLayout({
     }, 250);
   }, []);
 
-  // Auto-start tour only once immediately after signup (not on refresh)
   useEffect(() => {
     if (previewMode || !user) return;
     if (consumeNewSignupTour()) startTour();
@@ -209,18 +207,17 @@ export function DashboardLayout({
 
   return (
     <div
-      className={`relative overflow-hidden ${previewMode ? "h-full" : "h-screen"}`}
+      className={`dashboard-aero relative overflow-hidden ${previewMode ? "h-full" : "h-screen"}`}
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
-      <ShaderBackground />
+      <AeroBackground />
 
       <div className={`relative z-10 flex overflow-hidden ${previewMode ? "h-full" : "h-screen"}`}>
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
+        className={`dash-glass-sidebar fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ background: "#0D1220", borderColor: "#1F2937" }}
         onTransitionEnd={(e) => {
           if (e.propertyName === "transform") {
             window.dispatchEvent(new CustomEvent("tour-layout-change"));
@@ -228,14 +225,11 @@ export function DashboardLayout({
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b" style={{ borderColor: "#1F2937" }}>
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
-          >
-            <Clock size={16} style={{ color: "#000" }} />
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b dash-divider">
+          <div className="dash-avatar w-8 h-8 rounded-xl flex items-center justify-center">
+            <Clock size={16} />
           </div>
-          <span className="text-sm font-semibold text-white tracking-tight">ChronoShare</span>
+          <span className="text-sm font-semibold dash-heading tracking-tight">ChronoShare</span>
         </div>
 
         {/* Nav */}
@@ -247,20 +241,14 @@ export function DashboardLayout({
                 key={item.id}
                 data-tour={`nav-${item.id}`}
                 onClick={() => navigateScreen(item.id)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-                style={{
-                  background: active ? "rgba(16,185,129,0.12)" : "transparent",
-                  color: active ? "#10B981" : "#9CA3AF",
-                  border: active ? "1px solid rgba(16,185,129,0.2)" : "1px solid transparent",
-                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  active ? "dash-nav-active" : "dash-nav-inactive"
+                }`}
               >
                 {item.icon}
                 {item.label}
                 {item.id === "board" && jobCount > 0 && (
-                  <span
-                    className="ml-auto text-xs px-1.5 py-0.5 rounded-full"
-                    style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}
-                  >
+                  <span className="dash-badge ml-auto text-xs px-1.5 py-0.5 rounded-full">
                     {jobCount}
                   </span>
                 )}
@@ -270,25 +258,22 @@ export function DashboardLayout({
         </nav>
 
         {/* User mini */}
-        <div className="px-3 py-4 border-t space-y-1" style={{ borderColor: "#1F2937" }}>
+        <div className="px-3 py-4 border-t dash-divider space-y-1">
           <button
             onClick={() => navigateScreen("profile")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.04] transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/30 transition-colors"
           >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-            >
+            <div className="dash-avatar w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
               {initials}
             </div>
             <div className="text-left min-w-0" data-tour="hour-balance">
-              <p className="text-xs font-medium text-white truncate">{user?.name}</p>
-              <p className="text-xs text-[#9CA3AF] truncate">{user?.hoursAvailable.toFixed(1)} hrs available</p>
+              <p className="text-xs font-medium dash-heading truncate">{user?.name}</p>
+              <p className="text-xs dash-subtext truncate">{user?.hoursAvailable.toFixed(1)} hrs available</p>
             </div>
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs text-[#9CA3AF] hover:text-red-400 hover:bg-red-500/5 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs dash-subtext hover:text-red-500 hover:bg-red-500/10 transition-colors"
           >
             <LogOut size={14} />
             {previewMode ? "Exit preview" : "Sign out"}
@@ -299,7 +284,7 @@ export function DashboardLayout({
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm sm:hidden"
+          className="fixed inset-0 z-30 dash-modal-overlay sm:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -307,39 +292,32 @@ export function DashboardLayout({
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header
-          className="flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0"
-          style={{ background: "#0D1220", borderColor: "#1F2937" }}
-        >
+        <header className="dash-glass-header flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0">
           <button
-            className="sm:hidden text-[#9CA3AF] hover:text-white transition-colors"
+            className="sm:hidden dash-subtext hover:dash-heading transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <h1 className="text-sm font-semibold text-white">{pageTitles[screen]}</h1>
+          <h1 className="text-sm font-semibold dash-heading">{pageTitles[screen]}</h1>
 
           <div
-            className="flex-1 max-w-xs ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
+            className="dash-search flex-1 max-w-xs ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl"
             data-tour="header-search"
           >
-            <Search size={13} className="text-[#9CA3AF]" />
+            <Search size={13} className="dash-subtext" />
             <input
               placeholder="Search people, tasks..."
-              className="bg-transparent text-xs text-white placeholder-[#4B5563] outline-none w-full"
+              className="bg-transparent text-xs dash-heading placeholder:text-[var(--dash-text-faint)] outline-none w-full"
             />
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <button className="relative text-[#9CA3AF] hover:text-white transition-colors">
+            <button className="relative dash-subtext hover:dash-heading transition-colors">
               <Bell size={18} />
               {notifications > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold"
-                  style={{ background: "#10B981", color: "#000" }}
-                >
+                <span className="dash-btn-primary absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold">
                   {notifications}
                 </span>
               )}
@@ -347,8 +325,7 @@ export function DashboardLayout({
 
             <button
               onClick={() => navigateScreen("profile")}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+              className="dash-avatar w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
             >
               {initials}
             </button>
@@ -356,10 +333,7 @@ export function DashboardLayout({
         </header>
 
         {/* Content */}
-        <main
-          className="flex-1 overflow-y-auto px-5 py-6 sm:px-8"
-          style={{ background: "#0B0F19" }}
-        >
+        <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
           {screen === "board" && (
             <JobBoard initialMode={boardMode} onNavigate={navigateScreen} />

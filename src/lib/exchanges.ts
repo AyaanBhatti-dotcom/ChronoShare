@@ -1,8 +1,16 @@
 import { supabase } from "./supabase";
 import type { ExchangeWithProfiles } from "../types/database";
 
-export async function acceptPost(postId: string): Promise<string> {
-  const { data, error } = await supabase.rpc("accept_post", { p_post_id: postId });
+import type { ExchangeFormatResolved } from "./exchange-format";
+
+export async function acceptPost(
+  postId: string,
+  exchangeFormat?: ExchangeFormatResolved,
+): Promise<string> {
+  const { data, error } = await supabase.rpc("accept_post", {
+    p_post_id: postId,
+    p_exchange_format: exchangeFormat ?? null,
+  });
 
   if (error) throw new Error(error.message);
   return data as string;
@@ -23,7 +31,7 @@ export async function fetchMyExchanges(userId: string): Promise<ExchangeWithProf
     .from("exchanges")
     .select(`
       id, post_id, poster_id, acceptor_id, title, category, post_type, hours, status,
-      created_at, completed_at,
+      created_at, completed_at, exchange_format,
       poster:profiles!exchanges_poster_id_fkey(full_name),
       acceptor:profiles!exchanges_acceptor_id_fkey(full_name)
     `)
@@ -39,7 +47,7 @@ export async function fetchRecentExchanges(userId: string, limit = 5): Promise<E
     .from("exchanges")
     .select(`
       id, post_id, poster_id, acceptor_id, title, category, post_type, hours, status,
-      created_at, completed_at,
+      created_at, completed_at, exchange_format,
       poster:profiles!exchanges_poster_id_fkey(full_name),
       acceptor:profiles!exchanges_acceptor_id_fkey(full_name)
     `)
