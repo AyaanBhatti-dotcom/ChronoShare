@@ -99,14 +99,14 @@ export function LandingPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="text-sm font-medium text-[#9CA3AF] hover:text-white transition-colors px-3 py-1.5"
+              className="text-sm font-medium text-white/85 hover:text-white transition-colors px-3 py-1.5"
             >
               Log in
             </Link>
             <Link
               to="/signup"
-              className="text-sm font-semibold px-4 py-2 rounded-xl transition-opacity hover:opacity-90"
-              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+              className="text-sm font-semibold px-4 py-2 rounded-xl text-[#0B0F19] transition-all hover:brightness-110 hover:scale-[1.02]"
+              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
             >
               Get started
             </Link>
