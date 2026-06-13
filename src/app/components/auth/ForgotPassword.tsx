@@ -34,38 +34,28 @@ export function ForgotPassword() {
       footer={
         <>
           Remember your password?{" "}
-          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
+          <Link to="/login" className="auth-link">
             Sign in
           </Link>
         </>
       }
     >
       {success ? (
-        <div
-          className="rounded-xl px-4 py-4 text-sm text-emerald-400 border space-y-3"
-          style={{ background: "rgba(16,185,129,0.08)", borderColor: "rgba(16,185,129,0.2)" }}
-        >
-          <p>Check your inbox — we sent a password reset link to <strong className="text-white">{email}</strong>.</p>
-          <Link
-            to="/login"
-            className="inline-block text-emerald-400 hover:text-emerald-300 font-medium"
-          >
+        <div className="auth-alert-success space-y-3">
+          <p>
+            Check your inbox — we sent a password reset link to{" "}
+            <strong className="auth-aero-title">{email}</strong>.
+          </p>
+          <Link to="/login" className="auth-link">
             Back to sign in
           </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div
-              className="rounded-xl px-4 py-3 text-sm text-red-400 border"
-              style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)" }}
-            >
-              {error}
-            </div>
-          )}
+          {error && <div className="auth-alert-error">{error}</div>}
 
           <div className="space-y-1.5">
-            <label htmlFor="email" className="text-xs font-medium text-[#9CA3AF]">
+            <label htmlFor="email" className="auth-label">
               Email
             </label>
             <input
@@ -76,20 +66,11 @@ export function ForgotPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#4B5563] outline-none transition-colors focus:border-emerald-500/50"
-              style={{ background: "#111827", border: "1px solid #1F2937" }}
+              className="auth-input"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl py-2.5 text-sm font-semibold transition-opacity disabled:opacity-60"
-            style={{
-              background: "linear-gradient(135deg, #10B981, #06B6D4)",
-              color: "#000",
-            }}
-          >
+          <button type="submit" disabled={loading} className="auth-btn-primary">
             {loading ? "Sending link..." : "Send reset link"}
           </button>
         </form>

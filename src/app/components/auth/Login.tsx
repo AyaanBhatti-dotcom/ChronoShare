@@ -42,24 +42,17 @@ export function Login() {
       footer={
         <>
           Don&apos;t have an account?{" "}
-          <Link to="/signup" className="text-emerald-400 hover:text-emerald-300 font-medium">
+          <Link to="/signup" className="auth-link">
             Sign up
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div
-            className="rounded-xl px-4 py-3 text-sm text-red-400 border"
-            style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)" }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-alert-error">{error}</div>}
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-xs font-medium text-[#9CA3AF]">
+          <label htmlFor="email" className="auth-label">
             Email
           </label>
           <input
@@ -70,20 +63,16 @@ export function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#4B5563] outline-none transition-colors focus:border-emerald-500/50"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
+            className="auth-input"
           />
         </div>
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs font-medium text-[#9CA3AF]">
+            <label htmlFor="password" className="auth-label">
               Password
             </label>
-            <Link
-              to="/forgot-password"
-              className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
+            <Link to="/forgot-password" className="text-xs auth-link">
               Forgot password?
             </Link>
           </div>
@@ -95,28 +84,15 @@ export function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#4B5563] outline-none transition-colors focus:border-emerald-500/50"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
+            className="auth-input"
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl py-2.5 text-sm font-semibold transition-opacity disabled:opacity-60"
-          style={{
-            background: "linear-gradient(135deg, #10B981, #06B6D4)",
-            color: "#000",
-          }}
-        >
+        <button type="submit" disabled={loading} className="auth-btn-primary">
           {loading ? "Signing in..." : "Sign in"}
         </button>
 
-        <Link
-          to="/admin"
-          className="block w-full rounded-xl py-2.5 text-sm font-medium text-center transition-colors hover:text-white"
-          style={{ border: "1px solid #1F2937", color: "#9CA3AF" }}
-        >
+        <Link to="/admin" className="auth-btn-secondary">
           Dev Admin
         </Link>
       </form>

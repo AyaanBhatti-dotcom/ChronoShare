@@ -32,7 +32,12 @@ html {
   .landing-how-orb,
   .landing-how-ring,
   .landing-feature-card,
-  .landing-feature-accent-bar {
+  .landing-feature-accent-bar,
+  .auth-aero-wave,
+  .auth-aero-shimmer,
+  .auth-aero-spark,
+  .auth-glass-card,
+  .auth-aero-brand {
     animation: none !important;
   }
 
@@ -908,6 +913,422 @@ html {
   }
   50% {
     transform: translateY(6px);
+  }
+}
+
+/* ── Auth: Frutiger Aero × Solarpunk (ocean + grass) ── */
+.auth-aero-page {
+  --auth-text: #0a3344;
+  --auth-text-muted: #1a5568;
+  --auth-text-faint: #4a8499;
+  --auth-aqua: #0d7a72;
+  --auth-grass: #2a7348;
+  position: relative;
+  overflow: hidden;
+  color: var(--auth-text);
+}
+
+.auth-aero-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    #87ceeb 0%,
+    #6ec6e8 18%,
+    #4db8e8 38%,
+    #2aa8d8 52%,
+    #1e9a6e 68%,
+    #3d9b5a 82%,
+    #5bc77a 92%,
+    #7ad99a 100%
+  );
+}
+
+.auth-aero-sky {
+  position: absolute;
+  inset: 0 0 55%;
+  background: linear-gradient(
+    180deg,
+    #c5ebfa 0%,
+    #8ed4f0 45%,
+    rgba(110, 198, 232, 0.4) 100%
+  );
+}
+
+.auth-aero-sun {
+  position: absolute;
+  top: 6%;
+  right: 12%;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 209, 102, 0.75) 35%, transparent 72%);
+  filter: blur(1px);
+  animation: auth-sun-pulse 8s ease-in-out infinite;
+}
+
+.auth-aero-ocean {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 28%;
+  height: 42%;
+  background: linear-gradient(
+    180deg,
+    rgba(46, 168, 210, 0.85) 0%,
+    rgba(30, 140, 190, 0.92) 35%,
+    rgba(24, 120, 170, 0.95) 70%,
+    rgba(20, 100, 150, 0.88) 100%
+  );
+  border-radius: 50% 50% 0 0 / 8% 8% 0 0;
+  box-shadow:
+    inset 0 12px 40px rgba(255, 255, 255, 0.25),
+    inset 0 -8px 24px rgba(0, 60, 90, 0.15);
+}
+
+.auth-aero-wave {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 4rem;
+  border-radius: 50%;
+  opacity: 0.55;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(142, 212, 240, 0.2) 100%);
+}
+
+.auth-aero-wave-1 {
+  top: 26%;
+  animation: auth-wave-drift 7s ease-in-out infinite;
+}
+
+.auth-aero-wave-2 {
+  top: 32%;
+  opacity: 0.35;
+  animation: auth-wave-drift 9s ease-in-out infinite reverse;
+}
+
+.auth-aero-shimmer {
+  position: absolute;
+  inset: 28% 0 35%;
+  background: repeating-linear-gradient(
+    105deg,
+    transparent 0,
+    transparent 40px,
+    rgba(255, 255, 255, 0.04) 40px,
+    rgba(255, 255, 255, 0.04) 42px
+  );
+  opacity: 0.6;
+  animation: auth-shimmer-slide 12s linear infinite;
+  pointer-events: none;
+}
+
+.auth-aero-grass {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.auth-aero-grass-back {
+  height: 38%;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 100%, rgba(46, 125, 82, 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 85% 100%, rgba(61, 139, 94, 0.65) 0%, transparent 50%),
+    linear-gradient(180deg, transparent 0%, rgba(91, 199, 122, 0.35) 40%, rgba(61, 139, 94, 0.55) 100%);
+}
+
+.auth-aero-grass-front {
+  height: 28%;
+  background:
+    radial-gradient(ellipse 55% 80% at 30% 100%, rgba(122, 217, 154, 0.85) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 75% at 70% 100%, rgba(91, 199, 122, 0.8) 0%, transparent 58%),
+    linear-gradient(180deg, transparent 0%, rgba(184, 232, 160, 0.5) 100%);
+}
+
+.auth-aero-spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+  animation: auth-spark-twinkle 3s ease-in-out infinite;
+}
+
+.auth-aero-spark-1 {
+  top: 18%;
+  left: 22%;
+  animation-delay: 0s;
+}
+
+.auth-aero-spark-2 {
+  top: 42%;
+  right: 18%;
+  animation-delay: -1.2s;
+}
+
+.auth-aero-spark-3 {
+  bottom: 32%;
+  left: 14%;
+  animation-delay: -2.1s;
+}
+
+.auth-aero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-aero-brand {
+  animation: hero-line-fall-blur-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-aero-logo {
+  box-shadow:
+    0 4px 20px rgba(45, 212, 200, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.85);
+}
+
+.auth-aero-brand-name {
+  color: var(--auth-text);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.auth-aero-brand-tag {
+  color: var(--auth-text-muted);
+}
+
+.auth-glass-card {
+  position: relative;
+  isolation: isolate;
+  padding: 2rem;
+  border-radius: 1.75rem;
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow:
+    0 16px 48px rgba(26, 95, 122, 0.2),
+    0 4px 16px rgba(45, 212, 200, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  animation: hero-panel-fall-in 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.12s;
+}
+
+.auth-glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.2) 42%,
+    transparent 62%
+  );
+  pointer-events: none;
+}
+
+.auth-glass-card::after {
+  content: "";
+  position: absolute;
+  top: -35%;
+  left: -15%;
+  width: 130%;
+  height: 130%;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(142, 212, 240, 0.1) 40%,
+    transparent 65%
+  );
+  animation: liquid-glass-shimmer 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.auth-glass-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-aero-title {
+  color: var(--auth-text);
+  letter-spacing: -0.02em;
+}
+
+.auth-aero-subtitle {
+  color: var(--auth-text-muted);
+}
+
+.auth-aero-footer {
+  color: var(--auth-text-muted);
+  animation: hero-line-fall-blur-in 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.35s;
+}
+
+.auth-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--auth-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.auth-input {
+  width: 100%;
+  border-radius: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--auth-text);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 8px rgba(58, 158, 196, 0.08);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: var(--auth-text-faint);
+}
+
+.auth-input:focus {
+  border-color: rgba(94, 255, 240, 0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    0 0 0 3px rgba(45, 212, 200, 0.2);
+}
+
+.auth-link {
+  color: var(--auth-aqua);
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover {
+  color: var(--auth-grass);
+}
+
+.auth-btn-primary {
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--auth-text);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #8ed4f0 32%, #3dd9c8 68%, #5bc77a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 4px 20px rgba(45, 212, 200, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 0 rgba(45, 212, 200, 0.2);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 28px rgba(45, 212, 200, 0.42),
+    inset 0 2px 0 rgba(255, 255, 255, 0.95);
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-btn-secondary {
+  display: block;
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--auth-text-muted);
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  transition: transform 0.25s ease, background 0.25s ease, color 0.25s ease;
+}
+
+.auth-btn-secondary:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--auth-text);
+}
+
+.auth-alert-error {
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #b91c1c;
+  background: rgba(254, 226, 226, 0.75);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.auth-alert-success {
+  border-radius: 0.875rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--auth-grass);
+  background: rgba(220, 252, 231, 0.72);
+  border: 1px solid rgba(91, 199, 122, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@keyframes auth-wave-drift {
+  0%,
+  100% {
+    transform: translateX(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-3%) scaleY(1.08);
+  }
+}
+
+@keyframes auth-shimmer-slide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-80px);
+  }
+}
+
+@keyframes auth-sun-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes auth-spark-twinkle {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
   }
 }
 

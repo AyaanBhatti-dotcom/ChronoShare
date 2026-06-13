@@ -78,25 +78,16 @@ export function ResetPassword() {
       title="Set a new password"
       subtitle="Choose a strong password for your account"
       footer={
-        <>
-          <Link to="/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
-            Back to sign in
-          </Link>
-        </>
+        <Link to="/login" className="auth-link">
+          Back to sign in
+        </Link>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div
-            className="rounded-xl px-4 py-3 text-sm text-red-400 border"
-            style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)" }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-alert-error">{error}</div>}
 
         <div className="space-y-1.5">
-          <label htmlFor="password" className="text-xs font-medium text-[#9CA3AF]">
+          <label htmlFor="password" className="auth-label">
             New password
           </label>
           <input
@@ -108,16 +99,15 @@ export function ResetPassword() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="At least 6 characters"
-            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#4B5563] outline-none transition-colors focus:border-emerald-500/50"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
+            className="auth-input"
           />
           {passwordInsecure && (
-            <p className="text-xs text-red-400">{INSECURE_PASSWORD_MESSAGE}</p>
+            <p className="text-xs text-red-700">{INSECURE_PASSWORD_MESSAGE}</p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="confirmPassword" className="text-xs font-medium text-[#9CA3AF]">
+          <label htmlFor="confirmPassword" className="auth-label">
             Confirm new password
           </label>
           <input
@@ -128,19 +118,14 @@ export function ResetPassword() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
-            className="w-full rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#4B5563] outline-none transition-colors focus:border-emerald-500/50"
-            style={{ background: "#111827", border: "1px solid #1F2937" }}
+            className="auth-input"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading || checkingPassword || passwordInsecure}
-          className="w-full rounded-xl py-2.5 text-sm font-semibold transition-opacity disabled:opacity-60"
-          style={{
-            background: "linear-gradient(135deg, #10B981, #06B6D4)",
-            color: "#000",
-          }}
+          className="auth-btn-primary"
         >
           {loading ? "Updating..." : "Update password"}
         </button>
