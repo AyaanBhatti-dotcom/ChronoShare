@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
@@ -12,6 +12,7 @@ import { Settings } from "./Settings";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { ShaderBackground } from "./ui/shader-background";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
+import { isTourPending, clearTourPending } from "../utils/onboarding";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
 
@@ -38,7 +39,7 @@ export function DashboardLayout({
   previewMode?: boolean;
   onExitPreview?: () => void;
 } = {}) {
-  const { user, logout } = useAuth();
+  const { user, logout, completeOnboarding } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [screen, setScreen] = useState<Screen>("home");
@@ -46,6 +47,7 @@ export function DashboardLayout({
   const [notifications] = useState(3);
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
+  const tourInitRef = useRef(false);
 
   const initials = user ? getInitials(user.name) : "?";
 
@@ -61,14 +63,20 @@ export function DashboardLayout({
     window.setTimeout(() => {
       setTourKey((k) => k + 1);
       setShowTour(true);
-    }, 150);
+    }, 200);
   }, []);
 
   useEffect(() => {
+    if (tourInitRef.current) return;
+
+    const wantsTour = searchParams.get("tour") === "1" || isTourPending();
+    if (!wantsTour) return;
+
+    tourInitRef.current = true;
     if (searchParams.get("tour") === "1") {
       setSearchParams({}, { replace: true });
-      startTour();
     }
+    startTour();
   }, [searchParams, setSearchParams, startTour]);
 
   const tourSteps: TourStep[] = useMemo(
@@ -130,7 +138,13 @@ export function DashboardLayout({
     [navigateScreen],
   );
 
-  const handleTourComplete = () => setShowTour(false);
+  const handleTourComplete = useCallback(async () => {
+    setShowTour(false);
+    clearTourPending();
+    if (user && !user.onboardingCompleted) {
+      await completeOnboarding();
+    }
+  }, [user, completeOnboarding]);
 
   const handleLogout = async () => {
     if (previewMode) {

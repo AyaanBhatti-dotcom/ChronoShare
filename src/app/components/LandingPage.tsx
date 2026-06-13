@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, Navigate } from "react-router";
+import { Link } from "react-router";
 import {
   Clock,
   ArrowRight,
@@ -11,6 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { AuthenticatedRedirect } from "./OnboardingRoute";
 import { MountainVistaParallax } from "./ui/mountain-vista-bg";
 
 const features = [
@@ -76,7 +77,7 @@ export function LandingPage() {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <AuthenticatedRedirect />;
   }
 
   return (

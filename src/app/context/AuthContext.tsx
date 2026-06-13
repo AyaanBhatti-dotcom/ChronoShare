@@ -9,6 +9,7 @@ import {
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../types/database";
+import { clearTourPending } from "../utils/onboarding";
 
 export interface Session {
   userId: string;
@@ -28,6 +29,7 @@ interface AuthContextValue {
   updatePassword: (password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<string | null>;
+  resetOnboarding: () => Promise<string | null>;
   refreshUser: () => Promise<void>;
 }
 
@@ -209,19 +211,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
-  const completeOnboarding = async (): Promise<string | null> => {
+  const completeOnboarding = useCallback(async (): Promise<string | null> => {
     if (!user) return "Not signed in.";
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .update({ onboarding_completed_at: new Date().toISOString() })
-      .eq("id", user.userId);
+      .eq("id", user.userId)
+      .select("id")
+      .maybeSingle();
 
     if (error) return error.message;
+    if (!data) return "Could not save onboarding progress. Please try again.";
 
+    clearTourPending();
     setUser((prev) => (prev ? { ...prev, onboardingCompleted: true } : null));
     return null;
-  };
+  }, [user]);
+
+  const resetOnboarding = useCallback(async (): Promise<string | null> => {
+    if (!user) return "Not signed in.";
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ onboarding_completed_at: null })
+      .eq("id", user.userId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) return error.message;
+    if (!data) return "Could not reset onboarding. Please try again.";
+
+    clearTourPending();
+    setUser((prev) => (prev ? { ...prev, onboardingCompleted: false } : null));
+    return null;
+  }, [user]);
 
   const refreshUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -242,6 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updatePassword,
         logout,
         completeOnboarding,
+        resetOnboarding,
         refreshUser,
       }}
     >
@@ -271,6 +296,7 @@ export function AuthPreviewProvider({
         updatePassword: noop,
         logout: async () => {},
         completeOnboarding: noop,
+        resetOnboarding: noop,
         refreshUser: async () => {},
       }}
     >

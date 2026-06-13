@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { AeroBackground, aero } from "./aeroTheme";
+import { setTourPending } from "../../utils/onboarding";
 
 interface Step {
   id: string;
@@ -145,24 +146,40 @@ export function OnboardingFlow() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [finishing, setFinishing] = useState(false);
+  const [error, setError] = useState("");
 
   const firstName = user?.name.split(" ")[0] ?? "there";
 
   const handleFinish = async (withTour: boolean) => {
+    setError("");
     setFinishing(true);
+
+    if (withTour) {
+      setTourPending();
+      setFinishing(false);
+      navigate("/dashboard?tour=1", { replace: true });
+      return;
+    }
+
     const err = await completeOnboarding();
     if (err) {
+      setError(err);
       setFinishing(false);
       return;
     }
-    navigate(withTour ? "/dashboard?tour=1" : "/dashboard", { replace: true });
+    navigate("/dashboard", { replace: true });
   };
 
   const handleSkipAll = async () => {
+    setError("");
     setFinishing(true);
     const err = await completeOnboarding();
-    if (!err) navigate("/dashboard", { replace: true });
-    setFinishing(false);
+    if (err) {
+      setError(err);
+      setFinishing(false);
+      return;
+    }
+    navigate("/dashboard", { replace: true });
   };
 
   const steps: Step[] = [
@@ -430,6 +447,19 @@ export function OnboardingFlow() {
                 {current.subtitle}
               </p>
             </div>
+
+            {error && (
+              <div
+                className="mb-4 rounded-xl px-4 py-3 text-sm border"
+                style={{
+                  background: "rgba(239,68,68,0.12)",
+                  borderColor: "rgba(239,68,68,0.3)",
+                  color: "#B91C1C",
+                }}
+              >
+                {error}
+              </div>
+            )}
 
             <div className="mb-7 max-h-[50vh] overflow-y-auto pr-1">{current.content}</div>
 

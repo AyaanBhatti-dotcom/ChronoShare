@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass } from "lucide-react";
+import { useNavigate } from "react-router";
+import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass, RotateCcw } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
@@ -54,8 +55,10 @@ export const Settings = ({
   onLogout?: () => void;
   onStartTour?: () => void;
 }) => {
-  const { user } = useAuth();
+  const { user, resetOnboarding } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState(user?.email ?? "");
+  const [resetting, setResetting] = useState(false);
   const [toggles, setToggles] = useState({
     publicProfile: true,
     showRating: true,
@@ -69,6 +72,13 @@ export const Settings = ({
 
   const set = (key: keyof typeof toggles) => (v: boolean) =>
     setToggles((t) => ({ ...t, [key]: v }));
+
+  const handleRestartOnboarding = async () => {
+    setResetting(true);
+    const err = await resetOnboarding();
+    setResetting(false);
+    if (!err) navigate("/onboarding", { replace: true });
+  };
 
   const cardProps = {
     className: "rounded-2xl p-5 border mb-4",
@@ -179,6 +189,21 @@ export const Settings = ({
               style={{ background: "#10B981", color: "#000" }}
             >
               Start tour
+            </button>
+          </SettingRow>
+          <SettingRow
+            label="Restart onboarding"
+            desc="Go through the welcome wizard again from the beginning"
+          >
+            <button
+              type="button"
+              onClick={handleRestartOnboarding}
+              disabled={resetting}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold border transition-all duration-200 hover:bg-white/[0.04] disabled:opacity-60"
+              style={{ borderColor: "#374151", color: "#9CA3AF" }}
+            >
+              <RotateCcw size={12} />
+              {resetting ? "Resetting..." : "Restart"}
             </button>
           </SettingRow>
         </div>

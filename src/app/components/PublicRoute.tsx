@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { AuthenticatedRedirect } from "./OnboardingRoute";
 
 export function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -18,7 +19,7 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <AuthenticatedRedirect />;
   }
 
   return <>{children}</>;
