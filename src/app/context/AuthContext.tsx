@@ -15,6 +15,7 @@ export interface Session {
   name: string;
   email: string;
   hoursAvailable: number;
+  onboardingCompleted: boolean;
 }
 
 interface AuthContextValue {
@@ -26,6 +27,8 @@ interface AuthContextValue {
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
   logout: () => Promise<void>;
+  completeOnboarding: () => Promise<string | null>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -82,6 +85,7 @@ function toSession(authUser: SupabaseUser, profile: Profile | null): Session {
     name,
     email: authUser.email ?? profile?.email ?? "",
     hoursAvailable: profile?.hours_available ?? 1.0,
+    onboardingCompleted: profile?.onboarding_completed_at != null,
   };
 }
 
@@ -205,9 +209,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
+  const completeOnboarding = async (): Promise<string | null> => {
+    if (!user) return "Not signed in.";
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_completed_at: new Date().toISOString() })
+      .eq("id", user.userId);
+
+    if (error) return error.message;
+
+    setUser((prev) => (prev ? { ...prev, onboardingCompleted: true } : null));
+    return null;
+  };
+
+  const refreshUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      await resolveSession(session.user);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isPreview: false, login, signup, resetPassword, updatePassword, logout }}
+      value={{
+        user,
+        isLoading,
+        isPreview: false,
+        login,
+        signup,
+        resetPassword,
+        updatePassword,
+        logout,
+        completeOnboarding,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -226,7 +262,7 @@ export function AuthPreviewProvider({
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: { ...user, onboardingCompleted: true },
         isLoading: false,
         isPreview: true,
         login: noop,
@@ -234,6 +270,8 @@ export function AuthPreviewProvider({
         resetPassword: noop,
         updatePassword: noop,
         logout: async () => {},
+        completeOnboarding: noop,
+        refreshUser: async () => {},
       }}
     >
       {children}

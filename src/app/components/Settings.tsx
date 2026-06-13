@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut } from "lucide-react";
+import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
@@ -47,7 +47,13 @@ const SettingRow = ({ label, desc, children }: { label: string; desc?: string; c
   </div>
 );
 
-export const Settings = ({ onLogout }: { onLogout?: () => void }) => {
+export const Settings = ({
+  onLogout,
+  onStartTour,
+}: {
+  onLogout?: () => void;
+  onStartTour?: () => void;
+}) => {
   const { user } = useAuth();
   const [email, setEmail] = useState(user?.email ?? "");
   const [toggles, setToggles] = useState({
@@ -153,6 +159,29 @@ export const Settings = ({ onLogout }: { onLogout?: () => void }) => {
           </div>
         </div>
       </div>
+
+      {/* Help */}
+      {onStartTour && (
+        <div {...cardProps}>
+          <SectionHeader
+            icon={<Compass size={16} />}
+            title="Help & Onboarding"
+            desc="Revisit the app walkthrough anytime"
+          />
+          <SettingRow
+            label="App tour"
+            desc="Replay the guided walkthrough of navigation and key features"
+          >
+            <button
+              onClick={onStartTour}
+              className="px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:opacity-90"
+              style={{ background: "#10B981", color: "#000" }}
+            >
+              Start tour
+            </button>
+          </SettingRow>
+        </div>
+      )}
 
       {/* Danger zone */}
       <div

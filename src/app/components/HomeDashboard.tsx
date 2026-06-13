@@ -131,7 +131,7 @@ export const HomeDashboard = ({ onNavigate }: { onNavigate: (s: string) => void 
           1.0
         </p>
         <p className="text-emerald-400 text-lg mb-8">Hours</p>
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center gap-3" data-tour="quick-actions">
           <button
             onClick={() => onNavigate("post")}
             className="px-8 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"

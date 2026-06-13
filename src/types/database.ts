@@ -15,6 +15,7 @@ export interface Database {
           full_name: string | null;
           email: string | null;
           hours_available: number;
+          onboarding_completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -23,6 +24,7 @@ export interface Database {
           full_name?: string | null;
           email?: string | null;
           hours_available?: number;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -31,6 +33,7 @@ export interface Database {
           full_name?: string | null;
           email?: string | null;
           hours_available?: number;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

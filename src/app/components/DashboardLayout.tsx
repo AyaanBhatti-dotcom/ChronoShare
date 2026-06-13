@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
   Clock, Bell, Search, Menu, X, LogOut,
@@ -11,6 +11,7 @@ import { Profile } from "./Profile";
 import { Settings } from "./Settings";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { ShaderBackground } from "./ui/shader-background";
+import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
 
@@ -39,15 +40,89 @@ export function DashboardLayout({
 } = {}) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [screen, setScreen] = useState<Screen>("home");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications] = useState(3);
+  const [showTour, setShowTour] = useState(false);
 
   const initials = user ? getInitials(user.name) : "?";
 
-  const navigateScreen = (s: string) => {
+  const navigateScreen = useCallback((s: string) => {
     setScreen(s as Screen);
     setMobileOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get("tour") === "1") {
+      setShowTour(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const tourSteps: TourStep[] = useMemo(
+    () => [
+      {
+        target: '[data-tour="nav-home"]',
+        title: "Your dashboard",
+        description:
+          "Home is your command center. See your hour balance, earned vs. spent charts, and recent exchanges all in one place.",
+        position: "right",
+        onEnter: () => navigateScreen("home"),
+      },
+      {
+        target: '[data-tour="hour-balance"]',
+        title: "Your time bank",
+        description:
+          "This is your available hour balance. Earn hours by helping others, spend them when you need help. It's always visible in the sidebar.",
+        position: "right",
+      },
+      {
+        target: '[data-tour="quick-actions"]',
+        title: "Quick actions",
+        description:
+          "Use these buttons to quickly offer your skills or request help from the community. Both take you to the Post Request screen.",
+        position: "bottom",
+        onEnter: () => navigateScreen("home"),
+      },
+      {
+        target: '[data-tour="nav-board"]',
+        title: "Job Board",
+        description:
+          "Browse active posts from the community. Find people offering skills you need, or see who's looking for help you can provide.",
+        position: "right",
+        onEnter: () => navigateScreen("home"),
+      },
+      {
+        target: '[data-tour="nav-post"]',
+        title: "Post a request",
+        description:
+          "Create a new listing — offer your skills to earn hours, or post what you need and how many hours you're willing to spend.",
+        position: "right",
+      },
+      {
+        target: '[data-tour="nav-profile"]',
+        title: "Your profile",
+        description:
+          "Track your exchange history, view your public profile, and see how the community rates your contributions.",
+        position: "right",
+      },
+      {
+        target: '[data-tour="header-search"]',
+        title: "Search",
+        description:
+          "Search for people, tasks, and skills across the platform. Use it to quickly find the right exchange partner.",
+        position: "bottom",
+        onEnter: () => navigateScreen("home"),
+      },
+    ],
+    [navigateScreen],
+  );
+
+  const handleTourComplete = () => setShowTour(false);
+  const handleStartTour = () => {
+    setScreen("home");
+    setShowTour(true);
   };
 
   const handleLogout = async () => {
@@ -92,6 +167,7 @@ export function DashboardLayout({
             return (
               <button
                 key={item.id}
+                data-tour={`nav-${item.id}`}
                 onClick={() => navigateScreen(item.id)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                 style={{
@@ -127,7 +203,7 @@ export function DashboardLayout({
             >
               {initials}
             </div>
-            <div className="text-left min-w-0">
+            <div className="text-left min-w-0" data-tour="hour-balance">
               <p className="text-xs font-medium text-white truncate">{user?.name}</p>
               <p className="text-xs text-[#9CA3AF] truncate">{user?.hoursAvailable.toFixed(1)} hrs available</p>
             </div>
@@ -171,6 +247,7 @@ export function DashboardLayout({
           <div
             className="flex-1 max-w-xs ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl"
             style={{ background: "#111827", border: "1px solid #1F2937" }}
+            data-tour="header-search"
           >
             <Search size={13} className="text-[#9CA3AF]" />
             <input
@@ -210,10 +287,18 @@ export function DashboardLayout({
           {screen === "board" && <JobBoard />}
           {screen === "post" && <PostRequest />}
           {screen === "profile" && <Profile />}
-          {screen === "settings" && <Settings onLogout={handleLogout} />}
+          {screen === "settings" && <Settings onLogout={handleLogout} onStartTour={handleStartTour} />}
         </main>
       </div>
       </div>
+
+      {showTour && !previewMode && (
+        <OnboardingTour
+          steps={tourSteps}
+          onComplete={handleTourComplete}
+          onSkip={handleTourComplete}
+        />
+      )}
     </div>
   );
 }
