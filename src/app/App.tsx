@@ -5,8 +5,7 @@ import { Signup } from "./components/auth/Signup";
 import { ForgotPassword } from "./components/auth/ForgotPassword";
 import { ResetPassword } from "./components/auth/ResetPassword";
 import { DashboardLayout } from "./components/DashboardLayout";
-import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
-import { OnboardingRoute, DashboardRoute } from "./components/OnboardingRoute";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
 import { AdminPage } from "./components/admin/AdminPage";
 
@@ -39,20 +38,13 @@ export default function App() {
         }
       />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route
-        path="/onboarding"
-        element={
-          <OnboardingRoute>
-            <OnboardingFlow />
-          </OnboardingRoute>
-        }
-      />
+      <Route path="/onboarding" element={<Navigate to="/dashboard" replace />} />
       <Route
         path="/dashboard"
         element={
-          <DashboardRoute>
+          <ProtectedRoute>
             <DashboardLayout />
-          </DashboardRoute>
+          </ProtectedRoute>
         }
       />
       <Route path="/admin" element={<AdminPage />} />

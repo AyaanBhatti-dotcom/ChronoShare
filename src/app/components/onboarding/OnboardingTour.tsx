@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { X, ArrowRight, ArrowLeft } from "lucide-react";
 
 export interface TourStep {
-  target: string;
+  target?: string;
   title: string;
   description: string;
   position?: "right" | "bottom" | "top" | "left";
@@ -108,7 +108,10 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
   const isLast = currentStep === steps.length - 1;
 
   const updateRect = useCallback(() => {
-    if (!step) return;
+    if (!step?.target) {
+      setRect(null);
+      return;
+    }
     setRect(getTargetRect(step.target));
   }, [step]);
 

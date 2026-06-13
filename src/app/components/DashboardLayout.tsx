@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate } from "react-router";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
   Clock, Bell, Search, Menu, X, LogOut,
@@ -12,7 +12,6 @@ import { Settings } from "./Settings";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { ShaderBackground } from "./ui/shader-background";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
-import { isTourPending, clearTourPending } from "../utils/onboarding";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
 
@@ -39,17 +38,17 @@ export function DashboardLayout({
   previewMode?: boolean;
   onExitPreview?: () => void;
 } = {}) {
-  const { user, logout, completeOnboarding } = useAuth();
+  const { user, logout, completeOnboarding, resetOnboarding } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [screen, setScreen] = useState<Screen>("home");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications] = useState(3);
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
-  const tourInitRef = useRef(false);
+  const autoTourStarted = useRef(false);
 
   const initials = user ? getInitials(user.name) : "?";
+  const firstName = user?.name.split(" ")[0] ?? "there";
 
   const navigateScreen = useCallback((s: string) => {
     setScreen(s as Screen);
@@ -63,29 +62,33 @@ export function DashboardLayout({
     window.setTimeout(() => {
       setTourKey((k) => k + 1);
       setShowTour(true);
-    }, 200);
+    }, 250);
   }, []);
 
+  // First-time users: auto-start in-dashboard walkthrough
   useEffect(() => {
-    if (tourInitRef.current) return;
-
-    const wantsTour = searchParams.get("tour") === "1" || isTourPending();
-    if (!wantsTour) return;
-
-    tourInitRef.current = true;
-    if (searchParams.get("tour") === "1") {
-      setSearchParams({}, { replace: true });
-    }
+    if (previewMode || !user || user.onboardingCompleted || autoTourStarted.current) return;
+    autoTourStarted.current = true;
     startTour();
-  }, [searchParams, setSearchParams, startTour]);
+  }, [user, previewMode, startTour]);
 
   const tourSteps: TourStep[] = useMemo(
     () => [
       {
+        title: `Welcome, ${firstName}!`,
+        description:
+          "ChronoShare lets you trade skills using hours, not money. This quick tour will show you around your dashboard.",
+      },
+      {
+        title: "How time banking works",
+        description:
+          "Offer your skills to earn hours, browse the Job Board when you need help, and track your balance right here. Everyone starts with 1 hour.",
+      },
+      {
         target: '[data-tour="nav-home"]',
         title: "Your dashboard",
         description:
-          "Home is your command center. See your hour balance, earned vs. spent charts, and recent exchanges all in one place.",
+          "Home is your command center — hour balance, charts, and recent exchanges all in one place.",
         position: "right",
         onEnter: () => navigateScreen("home"),
       },
@@ -93,14 +96,15 @@ export function DashboardLayout({
         target: '[data-tour="hour-balance"]',
         title: "Your time bank",
         description:
-          "This is your available hour balance. Earn hours by helping others, spend them when you need help. It's always visible in the sidebar.",
+          "Your available hours are always shown here in the sidebar. Earn hours by helping others, spend them when you need help.",
         position: "right",
+        onEnter: () => navigateScreen("home"),
       },
       {
         target: '[data-tour="quick-actions"]',
         title: "Quick actions",
         description:
-          "Use these buttons to quickly offer your skills or request help from the community. Both take you to the Post Request screen.",
+          "Offer your skills or request help from the community. Both buttons take you to Post Request.",
         position: "bottom",
         onEnter: () => navigateScreen("home"),
       },
@@ -108,7 +112,7 @@ export function DashboardLayout({
         target: '[data-tour="nav-board"]',
         title: "Job Board",
         description:
-          "Browse active posts from the community. Find people offering skills you need, or see who's looking for help you can provide.",
+          "Browse active posts — find people offering skills you need, or see who's looking for help you can provide.",
         position: "right",
         onEnter: () => navigateScreen("home"),
       },
@@ -116,35 +120,46 @@ export function DashboardLayout({
         target: '[data-tour="nav-post"]',
         title: "Post a request",
         description:
-          "Create a new listing — offer your skills to earn hours, or post what you need and how many hours you're willing to spend.",
+          "Create a listing to offer your skills or request help. Set how many hours each exchange is worth.",
         position: "right",
+        onEnter: () => navigateScreen("home"),
       },
       {
         target: '[data-tour="nav-profile"]',
         title: "Your profile",
         description:
-          "Track your exchange history, view your public profile, and see how the community rates your contributions.",
+          "View your exchange history, public profile, and community ratings.",
         position: "right",
+        onEnter: () => navigateScreen("home"),
       },
       {
         target: '[data-tour="header-search"]',
         title: "Search",
         description:
-          "Search for people, tasks, and skills across the platform. Use it to quickly find the right exchange partner.",
+          "Search for people, tasks, and skills across the platform.",
         position: "bottom",
         onEnter: () => navigateScreen("home"),
       },
+      {
+        title: "You're ready to go!",
+        description:
+          "That's everything you need to get started. Browse the Job Board or post your first offer — happy trading!",
+      },
     ],
-    [navigateScreen],
+    [firstName, navigateScreen],
   );
 
   const handleTourComplete = useCallback(async () => {
     setShowTour(false);
-    clearTourPending();
     if (user && !user.onboardingCompleted) {
       await completeOnboarding();
     }
   }, [user, completeOnboarding]);
+
+  const handleRestartOnboarding = useCallback(async () => {
+    const err = await resetOnboarding();
+    if (!err) startTour();
+  }, [resetOnboarding, startTour]);
 
   const handleLogout = async () => {
     if (previewMode) {
@@ -254,7 +269,6 @@ export function DashboardLayout({
           className="flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0"
           style={{ background: "#0D1220", borderColor: "#1F2937" }}
         >
-          {/* Mobile hamburger */}
           <button
             className="sm:hidden text-[#9CA3AF] hover:text-white transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -264,7 +278,6 @@ export function DashboardLayout({
 
           <h1 className="text-sm font-semibold text-white">{pageTitles[screen]}</h1>
 
-          {/* Search */}
           <div
             className="flex-1 max-w-xs ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl"
             style={{ background: "#111827", border: "1px solid #1F2937" }}
@@ -278,7 +291,6 @@ export function DashboardLayout({
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            {/* Notifications */}
             <button className="relative text-[#9CA3AF] hover:text-white transition-colors">
               <Bell size={18} />
               {notifications > 0 && (
@@ -291,7 +303,6 @@ export function DashboardLayout({
               )}
             </button>
 
-            {/* Avatar */}
             <button
               onClick={() => navigateScreen("profile")}
               className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
@@ -309,7 +320,11 @@ export function DashboardLayout({
           {screen === "post" && <PostRequest />}
           {screen === "profile" && <Profile />}
           {screen === "settings" && (
-            <Settings onLogout={handleLogout} onStartTour={startTour} />
+            <Settings
+              onLogout={handleLogout}
+              onStartTour={startTour}
+              onRestartOnboarding={handleRestartOnboarding}
+            />
           )}
         </main>
       </div>

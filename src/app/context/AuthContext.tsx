@@ -9,7 +9,11 @@ import {
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import type { Profile } from "../../types/database";
-import { clearTourPending } from "../utils/onboarding";
+import {
+  markOnboardingDoneLocal,
+  isOnboardingDoneLocal,
+  clearOnboardingDoneLocal,
+} from "../utils/onboarding";
 
 export interface Session {
   userId: string;
@@ -87,7 +91,8 @@ function toSession(authUser: SupabaseUser, profile: Profile | null): Session {
     name,
     email: authUser.email ?? profile?.email ?? "",
     hoursAvailable: profile?.hours_available ?? 1.0,
-    onboardingCompleted: profile?.onboarding_completed_at != null,
+    onboardingCompleted:
+      profile?.onboarding_completed_at != null || isOnboardingDoneLocal(authUser.id),
   };
 }
 
@@ -224,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return error.message;
     if (!data) return "Could not save onboarding progress. Please try again.";
 
-    clearTourPending();
+    markOnboardingDoneLocal(user.userId);
     setUser((prev) => (prev ? { ...prev, onboardingCompleted: true } : null));
     return null;
   }, [user]);
@@ -242,7 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return error.message;
     if (!data) return "Could not reset onboarding. Please try again.";
 
-    clearTourPending();
+    clearOnboardingDoneLocal();
     setUser((prev) => (prev ? { ...prev, onboardingCompleted: false } : null));
     return null;
   }, [user]);

@@ -30,7 +30,7 @@ export function Signup() {
       return;
     }
 
-    navigate("/onboarding", { replace: true });
+    navigate("/dashboard", { replace: true });
   };
 
   return (

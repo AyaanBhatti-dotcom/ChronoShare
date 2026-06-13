@@ -1,17 +1,13 @@
-export const TOUR_PENDING_KEY = "chronoshare-tour-pending";
+const ONBOARDING_DONE_KEY = "chronoshare-onboarding-done";
 
-export function isTourPending(): boolean {
-  return sessionStorage.getItem(TOUR_PENDING_KEY) === "1";
+export function markOnboardingDoneLocal(userId: string): void {
+  localStorage.setItem(ONBOARDING_DONE_KEY, userId);
 }
 
-export function setTourPending(): void {
-  sessionStorage.setItem(TOUR_PENDING_KEY, "1");
+export function isOnboardingDoneLocal(userId: string): boolean {
+  return localStorage.getItem(ONBOARDING_DONE_KEY) === userId;
 }
 
-export function clearTourPending(): void {
-  sessionStorage.removeItem(TOUR_PENDING_KEY);
-}
-
-export function getAppHomePath(onboardingCompleted: boolean): string {
-  return onboardingCompleted ? "/dashboard" : "/onboarding";
+export function clearOnboardingDoneLocal(): void {
+  localStorage.removeItem(ONBOARDING_DONE_KEY);
 }

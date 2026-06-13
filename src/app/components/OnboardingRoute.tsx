@@ -1,6 +1,5 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
-import { getAppHomePath, isTourPending } from "../utils/onboarding";
 
 function AuthLoading() {
   return (
@@ -13,33 +12,12 @@ function AuthLoading() {
   );
 }
 
-export function OnboardingRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) return <AuthLoading />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.onboardingCompleted) return <Navigate to="/dashboard" replace />;
-
-  return <>{children}</>;
-}
-
-export function DashboardRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) return <AuthLoading />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!user.onboardingCompleted && !isTourPending()) {
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  return <>{children}</>;
-}
-
+/** Logged-in users always land on the dashboard. Onboarding runs as an in-app tour. */
 export function AuthenticatedRedirect() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <AuthLoading />;
   if (!user) return <Navigate to="/login" replace />;
 
-  return <Navigate to={getAppHomePath(user.onboardingCompleted)} replace />;
+  return <Navigate to="/dashboard" replace />;
 }
