@@ -81,3 +81,14 @@ export async function reopenPost(postId: string): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function deletePost(postId: string): Promise<void> {
+  const { error } = await supabase.from("posts").delete().eq("id", postId);
+
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error("This listing was matched in an exchange and can't be deleted.");
+    }
+    throw new Error(error.message);
+  }
+}

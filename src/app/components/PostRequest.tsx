@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
-  Minus, Plus, CheckCircle2, Clock, XCircle, RotateCcw,
+  Minus, Plus, CheckCircle2, Clock, XCircle, RotateCcw, Trash2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { createPost, fetchMyPosts, closePost, reopenPost } from "../../lib/posts";
+import { createPost, fetchMyPosts, closePost, reopenPost, deletePost } from "../../lib/posts";
 import { getUserLocation } from "../../lib/location";
 import type { Post } from "../../types/database";
 
@@ -140,6 +140,20 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
       await loadMyPosts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not reopen listing");
+    }
+    setActionId(null);
+  };
+
+  const handleDeleteListing = async (postId: string) => {
+    if (!window.confirm("Delete this listing? This can't be undone.")) return;
+
+    setActionId(postId);
+    setError(null);
+    try {
+      await deletePost(postId);
+      await loadMyPosts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete listing");
     }
     setActionId(null);
   };
@@ -367,6 +381,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         </div>
       ) : (
         <div className="space-y-3">
+          {error && <p className="text-sm text-red-400">{error}</p>}
           {loadingPosts ? (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
@@ -411,29 +426,55 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                     <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
                   </p>
                 </div>
-                {post.status === "active" ? (
-                  <button
-                    type="button"
-                    onClick={() => handleCloseListing(post.id)}
-                    disabled={actionId === post.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-red-500/50"
-                    style={{ borderColor: "#374151", color: "#9CA3AF" }}
-                  >
-                    <XCircle size={13} />
-                    Close
-                  </button>
-                ) : post.status === "closed" ? (
-                  <button
-                    type="button"
-                    onClick={() => handleReopenListing(post.id)}
-                    disabled={actionId === post.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-emerald-500/50"
-                    style={{ borderColor: "#374151", color: "#10B981" }}
-                  >
-                    <RotateCcw size={13} />
-                    Reopen
-                  </button>
-                ) : null}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {post.status === "active" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleCloseListing(post.id)}
+                        disabled={actionId === post.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-amber-500/50"
+                        style={{ borderColor: "#374151", color: "#9CA3AF" }}
+                      >
+                        <XCircle size={13} />
+                        Close
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteListing(post.id)}
+                        disabled={actionId === post.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-red-500/50"
+                        style={{ borderColor: "#374151", color: "#F87171" }}
+                      >
+                        <Trash2 size={13} />
+                        Delete
+                      </button>
+                    </>
+                  ) : post.status === "closed" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleReopenListing(post.id)}
+                        disabled={actionId === post.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-emerald-500/50"
+                        style={{ borderColor: "#374151", color: "#10B981" }}
+                      >
+                        <RotateCcw size={13} />
+                        Reopen
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteListing(post.id)}
+                        disabled={actionId === post.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors hover:border-red-500/50"
+                        style={{ borderColor: "#374151", color: "#F87171" }}
+                      >
+                        <Trash2 size={13} />
+                        Delete
+                      </button>
+                    </>
+                  ) : null}
+                </div>
               </div>
             ))
           )}

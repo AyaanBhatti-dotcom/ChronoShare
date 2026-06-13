@@ -43,12 +43,12 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const [postsLoading, setPostsLoading] = useState(true);
   const [radiusMiles, setRadiusMiles] = useState(25);
   const [sort, setSort] = useState<NearbySort>("nearest");
-  const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope());
+  const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope("home"));
   const [exchanges, setExchanges] = useState<ExchangeWithProfiles[]>([]);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
-    storeListingScope(next);
+    storeListingScope(next, "home");
   };
 
   const loadLocation = useCallback(async () => {

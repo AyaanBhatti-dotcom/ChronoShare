@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
   Clock, ChevronDown, Search, X, ArrowUpRight, ArrowDownRight,
-  CheckCircle2, PlusCircle, MapPin,
+  CheckCircle2, PlusCircle, MapPin, Trash2,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
-import { fetchActivePosts } from "../../lib/posts";
+import { deletePost, fetchActivePosts } from "../../lib/posts";
 import { acceptPost, getHourImpact, formatHourImpactLabel } from "../../lib/exchanges";
 import {
   enrichPostsWithDistance,
@@ -53,13 +53,14 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   const [acceptError, setAcceptError] = useState<string | null>(null);
   const [acceptSuccess, setAcceptSuccess] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope());
+  const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope("board"));
   const [sort, setSort] = useState<NearbySort>("newest");
   const [radiusMiles] = useState(100);
+  const [deleting, setDeleting] = useState(false);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
-    storeListingScope(next);
+    storeListingScope(next, "board");
   };
 
   useEffect(() => {
@@ -114,6 +115,23 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
     return matchMode && matchCat && matchSearch;
   });
 
+  const handleDelete = async () => {
+    if (!selectedJob || isPreview || !isOwnSelected) return;
+    if (!window.confirm("Delete this listing? This can't be undone.")) return;
+
+    setDeleting(true);
+    setAcceptError(null);
+    try {
+      await deletePost(selectedJob.id);
+      setJobs((prev) => prev.filter((j) => j.id !== selectedJob.id));
+      setSelectedJob(null);
+    } catch (err) {
+      setAcceptError(err instanceof Error ? err.message : "Could not delete listing");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleAccept = async () => {
     if (!selectedJob || isPreview || (user && selectedJob.user_id === user.userId)) return;
 
@@ -146,7 +164,14 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
     <div className="space-y-5">
       {/* Scope + sort */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <ListingScopeToggle scope={scope} onChange={handleScopeChange} />
+        <div className="space-y-1">
+          <ListingScopeToggle scope={scope} onChange={handleScopeChange} />
+          {jobs.length > 0 && scopedJobs.length !== jobs.length && (
+            <p className="text-[10px] text-[#6B7280]">
+              Showing {scopedJobs.length} of {jobs.length} listings — switch to Anywhere to see all
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {scope === "nearby" && !userLocation && (
             <p className="text-xs text-amber-400">Set your location in Settings to filter nearby.</p>
@@ -471,26 +496,26 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                 )}
 
                 {isOwnSelected ? (
-                  <div
-                    className="rounded-xl p-4 text-center"
-                    style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}
-                  >
-                    <p className="text-sm text-emerald-400 font-medium">This is your listing</p>
-                    <p className="text-xs text-[#9CA3AF] mt-1">
-                      Others can find and join it here. Manage it under My Listings.
-                    </p>
-                    {onNavigate && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedJob(null);
-                          onNavigate("post");
-                        }}
-                        className="mt-3 text-xs text-emerald-400 hover:text-emerald-300"
-                      >
-                        Go to My Listings
-                      </button>
-                    )}
+                  <div className="space-y-3">
+                    <div
+                      className="rounded-xl p-4 text-center"
+                      style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}
+                    >
+                      <p className="text-sm text-emerald-400 font-medium">This is your listing</p>
+                      <p className="text-xs text-[#9CA3AF] mt-1">
+                        Others can find and join it here, or remove it below.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting || isPreview}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-semibold border transition-all hover:border-red-500/50 disabled:opacity-60"
+                      style={{ borderColor: "#374151", color: "#F87171" }}
+                    >
+                      <Trash2 size={16} />
+                      {deleting ? "Deleting..." : "Delete listing"}
+                    </button>
                   </div>
                 ) : (
                   <button
