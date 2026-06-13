@@ -13,6 +13,7 @@ import { useAuth, getInitials } from "../context/AuthContext";
 import { ShaderBackground } from "./ui/shader-background";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 import { consumeNewSignupTour } from "../utils/onboarding";
+import { fetchActivePostCount } from "../../lib/posts";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
 
@@ -43,17 +44,24 @@ export function DashboardLayout({
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("home");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifications] = useState(3);
+  const [notifications] = useState(0);
+  const [jobCount, setJobCount] = useState(0);
+  const [postType, setPostType] = useState<"needs" | "offers">("needs");
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
 
   const initials = user ? getInitials(user.name) : "?";
   const firstName = user?.name.split(" ")[0] ?? "there";
 
-  const navigateScreen = useCallback((s: string) => {
+  const navigateScreen = useCallback((s: string, options?: { postType?: "needs" | "offers" }) => {
+    if (options?.postType) setPostType(options.postType);
     setScreen(s as Screen);
     setMobileOpen(false);
   }, []);
+
+  useEffect(() => {
+    fetchActivePostCount().then(setJobCount).catch(() => setJobCount(0));
+  }, [screen]);
 
   const sidebarStep = useCallback((screen: Screen = "home") => {
     setScreen(screen);
@@ -232,12 +240,12 @@ export function DashboardLayout({
               >
                 {item.icon}
                 {item.label}
-                {item.id === "board" && (
+                {item.id === "board" && jobCount > 0 && (
                   <span
                     className="ml-auto text-xs px-1.5 py-0.5 rounded-full"
                     style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}
                   >
-                    12
+                    {jobCount}
                   </span>
                 )}
               </button>
@@ -334,8 +342,10 @@ export function DashboardLayout({
         {/* Content */}
         <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
-          {screen === "board" && <JobBoard />}
-          {screen === "post" && <PostRequest />}
+          {screen === "board" && <JobBoard onNavigate={navigateScreen} />}
+          {screen === "post" && (
+            <PostRequest initialPostType={postType} onNavigate={navigateScreen} />
+          )}
           {screen === "profile" && <Profile />}
           {screen === "settings" && (
             <Settings

@@ -76,6 +76,50 @@ export interface Database {
           updated_at?: string;
         };
       };
+      exchanges: {
+        Row: {
+          id: string;
+          post_id: string;
+          poster_id: string;
+          acceptor_id: string;
+          title: string;
+          category: string;
+          post_type: "needs" | "offers";
+          hours: number;
+          status: "in_progress" | "completed" | "cancelled";
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          poster_id: string;
+          acceptor_id: string;
+          title: string;
+          category: string;
+          post_type: "needs" | "offers";
+          hours: number;
+          status?: "in_progress" | "completed" | "cancelled";
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          poster_id?: string;
+          acceptor_id?: string;
+          title?: string;
+          category?: string;
+          post_type?: "needs" | "offers";
+          hours?: number;
+          status?: "in_progress" | "completed" | "cancelled";
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -126,6 +170,18 @@ export interface Database {
         Args: { p_key: string; p_post_id: string };
         Returns: void;
       };
+      accept_post: {
+        Args: { p_post_id: string };
+        Returns: string;
+      };
+      complete_exchange: {
+        Args: { p_exchange_id: string };
+        Returns: void;
+      };
+      cancel_exchange: {
+        Args: { p_exchange_id: string };
+        Returns: void;
+      };
     };
     Enums: Record<string, never>;
   };
@@ -160,4 +216,11 @@ export interface AdminPost {
 
 export type PostWithAuthor = Post & {
   profiles: Pick<Profile, "full_name"> | null;
+};
+
+export type Exchange = Database["public"]["Tables"]["exchanges"]["Row"];
+
+export type ExchangeWithProfiles = Exchange & {
+  poster: Pick<Profile, "full_name"> | null;
+  acceptor: Pick<Profile, "full_name"> | null;
 };

@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
-  Clock, ChevronDown, Search
+  Clock, ChevronDown, Search, X, ArrowUpRight, ArrowDownRight,
+  CheckCircle2, PlusCircle,
 } from "lucide-react";
-import { supabase } from "../../lib/supabase";
-import { getInitials } from "../context/AuthContext";
+import { useAuth, getInitials } from "../context/AuthContext";
+import { fetchActivePosts } from "../../lib/posts";
+import { acceptPost, getHourImpact } from "../../lib/exchanges";
 import type { PostWithAuthor } from "../../types/database";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
@@ -21,57 +23,81 @@ const categoryIcon = (cat: string) => {
   return map[cat] || <Monitor size={14} />;
 };
 
-export const JobBoard = () => {
+interface JobBoardProps {
+  onNavigate?: (screen: string) => void;
+}
+
+export const JobBoard = ({ onNavigate }: JobBoardProps) => {
+  const { user, refreshUser, isPreview } = useAuth();
   const [mode, setMode] = useState<"needs" | "offers">("needs");
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [jobs, setJobs] = useState<PostWithAuthor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState<PostWithAuthor | null>(null);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
+  const [acceptSuccess, setAcceptSuccess] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadPosts() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("posts")
-        .select("id, title, description, category, post_type, hours_cost, profiles(full_name)")
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
-
-      if (!mounted) return;
-
-      if (error) {
-        console.warn("Could not load posts:", error.message);
-        setJobs([]);
-      } else {
-        setJobs((data ?? []) as PostWithAuthor[]);
-      }
-      setLoading(false);
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchActivePosts();
+      setJobs(data);
+    } catch (err) {
+      console.warn("Could not load posts:", err);
+      setJobs([]);
     }
-
-    loadPosts();
-    return () => {
-      mounted = false;
-    };
+    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
+
   const filtered = jobs.filter((j) => {
+    if (user && j.user_id === user.userId) return false;
     const authorName = j.profiles?.full_name ?? "User";
     const matchMode = j.post_type === mode;
     const matchCat = category === "All" || j.category === category;
     const matchSearch =
       !search ||
       j.title.toLowerCase().includes(search.toLowerCase()) ||
-      authorName.toLowerCase().includes(search.toLowerCase());
+      authorName.toLowerCase().includes(search.toLowerCase()) ||
+      (j.description ?? "").toLowerCase().includes(search.toLowerCase());
     return matchMode && matchCat && matchSearch;
   });
+
+  const handleAccept = async () => {
+    if (!selectedJob || isPreview) return;
+
+    setAccepting(true);
+    setAcceptError(null);
+
+    try {
+      await acceptPost(selectedJob.id);
+      await refreshUser();
+      setAcceptSuccess(true);
+      setJobs((prev) => prev.filter((j) => j.id !== selectedJob.id));
+      setTimeout(() => {
+        setSelectedJob(null);
+        setAcceptSuccess(false);
+      }, 2000);
+    } catch (err) {
+      setAcceptError(err instanceof Error ? err.message : "Could not accept listing");
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const hourImpact = selectedJob && user
+    ? getHourImpact(selectedJob.post_type, true, selectedJob.hours_cost)
+    : null;
 
   return (
     <div className="space-y-5">
       {/* Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Toggle */}
         <div
           className="flex rounded-full p-1 w-fit"
           style={{ background: "#111827", border: "1px solid #1F2937" }}
@@ -91,7 +117,6 @@ export const JobBoard = () => {
           ))}
         </div>
 
-        {/* Search + Category */}
         <div className="flex items-center gap-2">
           <div
             className="flex items-center gap-2 px-3 py-2 rounded-xl flex-1 sm:w-48"
@@ -127,15 +152,41 @@ export const JobBoard = () => {
           <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-[#9CA3AF] text-sm">No listings match your filters.</div>
+        <div
+          className="text-center py-16 rounded-2xl border"
+          style={{ background: "#111827", borderColor: "#1F2937" }}
+        >
+          <p className="text-[#9CA3AF] text-sm mb-4">
+            {jobs.length === 0
+              ? "No active listings yet. Be the first to post!"
+              : "No listings match your filters."}
+          </p>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate("post")}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all hover:opacity-90"
+              style={{ background: "#10B981", color: "#000" }}
+            >
+              <PlusCircle size={16} />
+              Create a listing
+            </button>
+          )}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filtered.map((job) => {
             const name = job.profiles?.full_name ?? "User";
+            const impact = getHourImpact(job.post_type, true, job.hours_cost);
             return (
-              <div
+              <button
                 key={job.id}
-                className="rounded-2xl p-5 border flex flex-col gap-4 hover:border-emerald-500/40 transition-all duration-200 group"
+                type="button"
+                onClick={() => {
+                  setSelectedJob(job);
+                  setAcceptError(null);
+                  setAcceptSuccess(false);
+                }}
+                className="rounded-2xl p-5 border flex flex-col gap-4 hover:border-emerald-500/40 transition-all duration-200 group text-left"
                 style={{ background: "#111827", borderColor: "#1F2937" }}
               >
                 <div className="flex items-start gap-3">
@@ -151,7 +202,7 @@ export const JobBoard = () => {
                   </div>
                 </div>
                 {job.description && (
-                  <p className="text-xs text-[#9CA3AF] leading-relaxed">{job.description}</p>
+                  <p className="text-xs text-[#9CA3AF] leading-relaxed line-clamp-2">{job.description}</p>
                 )}
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-2">
@@ -170,16 +221,126 @@ export const JobBoard = () => {
                       {job.hours_cost}h
                     </span>
                   </div>
-                  <button
-                    className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
-                    style={{ background: "#10B981", color: "#000" }}
+                  <span
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                    style={{
+                      background: impact.direction === "earn" ? "rgba(16,185,129,0.15)" : "rgba(6,182,212,0.15)",
+                      color: impact.direction === "earn" ? "#10B981" : "#06B6D4",
+                    }}
                   >
-                    Accept
-                  </button>
+                    {impact.direction === "earn" ? "Earn" : "Spend"} {impact.amount}h
+                  </span>
                 </div>
-              </div>
+              </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Detail / Accept modal */}
+      {selectedJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => !accepting && setSelectedJob(null)}
+          />
+          <div
+            className="relative w-full max-w-md rounded-2xl border p-6 space-y-5"
+            style={{ background: "#111827", borderColor: "#1F2937" }}
+          >
+            <button
+              type="button"
+              onClick={() => !accepting && setSelectedJob(null)}
+              className="absolute top-4 right-4 text-[#9CA3AF] hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {acceptSuccess ? (
+              <div className="flex flex-col items-center py-8 gap-3 text-center">
+                <CheckCircle2 size={40} className="text-emerald-400" />
+                <h3 className="text-lg font-semibold text-white">You&apos;re matched!</h3>
+                <p className="text-sm text-[#9CA3AF]">
+                  Check your profile to manage this exchange.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <p className="text-xs text-[#9CA3AF] mb-1">
+                    {selectedJob.profiles?.full_name ?? "Community member"}
+                  </p>
+                  <h3 className="text-lg font-semibold text-white">{selectedJob.title}</h3>
+                </div>
+
+                {selectedJob.description && (
+                  <p className="text-sm text-[#9CA3AF] leading-relaxed">{selectedJob.description}</p>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <span
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border"
+                    style={{ background: "#1F2937", borderColor: "#374151", color: "#9CA3AF" }}
+                  >
+                    {categoryIcon(selectedJob.category)}
+                    {selectedJob.category}
+                  </span>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}
+                  >
+                    {selectedJob.hours_cost}h
+                  </span>
+                  <span className="text-xs text-[#9CA3AF] capitalize">
+                    {selectedJob.post_type === "needs" ? "Needs help" : "Offering skill"}
+                  </span>
+                </div>
+
+                {hourImpact && (
+                  <div
+                    className="rounded-xl p-4 flex items-center gap-3"
+                    style={{
+                      background: hourImpact.direction === "earn"
+                        ? "rgba(16,185,129,0.1)"
+                        : "rgba(6,182,212,0.1)",
+                      border: `1px solid ${hourImpact.direction === "earn" ? "rgba(16,185,129,0.25)" : "rgba(6,182,212,0.25)"}`,
+                    }}
+                  >
+                    {hourImpact.direction === "earn" ? (
+                      <ArrowUpRight size={20} className="text-emerald-400" />
+                    ) : (
+                      <ArrowDownRight size={20} className="text-cyan-400" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        You&apos;ll {hourImpact.direction === "earn" ? "earn" : "spend"}{" "}
+                        {hourImpact.amount}h
+                      </p>
+                      <p className="text-xs text-[#9CA3AF]">
+                        {hourImpact.direction === "earn"
+                          ? "Hours transfer to you when you join this exchange."
+                          : `Requires ${hourImpact.amount}h in your balance.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {acceptError && (
+                  <p className="text-sm text-red-400">{acceptError}</p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleAccept}
+                  disabled={accepting || isPreview}
+                  className="w-full py-3.5 rounded-full text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-60"
+                  style={{ background: "#10B981", color: "#000" }}
+                >
+                  {accepting ? "Joining..." : isPreview ? "Preview mode" : "Join this exchange"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
