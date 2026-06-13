@@ -45,12 +45,21 @@ function formatDate(iso: string) {
 }
 
 const DESKTOP_ICONS = [
-  { id: "ledger", label: "Exchange\nLedger", Icon: FolderOpen },
-  { id: "listings", label: "My\nListings", Icon: Briefcase },
-  { id: "computer", label: "My\nComputer", Icon: Monitor },
-  { id: "recycle", label: "Recycle\nBin", Icon: Trash2 },
-  { id: "help", label: "Chrono\nHelp", Icon: HelpCircle },
+  { id: "profile", label: "My\nProfile", Icon: HardDrive, window: "profile" as const },
+  { id: "ledger", label: "Exchange\nLedger", Icon: FolderOpen, window: "ledger" as const },
+  { id: "listings", label: "My\nListings", Icon: Briefcase, window: "profile" as const },
+  { id: "computer", label: "My\nComputer", Icon: Monitor, window: null },
+  { id: "recycle", label: "Recycle\nBin", Icon: Trash2, window: null },
+  { id: "help", label: "Chrono\nHelp", Icon: HelpCircle, window: null },
 ] as const;
+
+type ProfileWindowId = "profile" | "ledger" | "pending";
+
+const WINDOW_LABELS: Record<ProfileWindowId, string> = {
+  profile: "My Profile",
+  ledger: "Exchange Ledger",
+  pending: "Awaiting Confirmation",
+};
 
 const START_TIPS = [
   "Trade an hour of guitar for an hour of gardening — everyone's time counts equally.",
@@ -83,6 +92,8 @@ export const Profile = () => {
   const [startTipIndex, setStartTipIndex] = useState(0);
   const [showSystemInfo, setShowSystemInfo] = useState(false);
   const [avatarBounces, setAvatarBounces] = useState(false);
+  const [openWindows, setOpenWindows] = useState<Set<ProfileWindowId>>(() => new Set());
+  const [activeWindow, setActiveWindow] = useState<ProfileWindowId | null>(null);
 
   const showEgg = useCallback((title: string, body: string) => {
     setEggToast({ title, body });
@@ -194,27 +205,52 @@ export const Profile = () => {
     setActionId(null);
   };
 
-  const scrollToId = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const openWindow = useCallback((id: ProfileWindowId) => {
+    setOpenWindows((prev) => new Set(prev).add(id));
+    setActiveWindow(id);
+  }, []);
 
-  const handleDesktopIcon = (id: (typeof DESKTOP_ICONS)[number]["id"]) => {
-    if (id === "ledger") scrollToId("profile-ledger");
-    if (id === "listings") {
-      showEgg(
-        "My Listings",
-        `${listingStats.active} active · ${listingStats.total} total — manage them from Post Request.`,
-      );
-      scrollToId("profile-stats");
+  const closeWindow = useCallback((id: ProfileWindowId) => {
+    setOpenWindows((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setActiveWindow((current) => (current === id ? null : current));
+  }, []);
+
+  const toggleWindow = useCallback((id: ProfileWindowId) => {
+    setOpenWindows((prev) => {
+      if (prev.has(id)) {
+        const next = new Set(prev);
+        next.delete(id);
+        setActiveWindow((current) => (current === id ? null : current));
+        return next;
+      }
+      setActiveWindow(id);
+      return new Set(prev).add(id);
+    });
+  }, []);
+
+  const handleDesktopIcon = (icon: (typeof DESKTOP_ICONS)[number]) => {
+    if (icon.window) {
+      openWindow(icon.window);
+      if (icon.id === "listings") {
+        showEgg(
+          "My Listings",
+          `${listingStats.active} active · ${listingStats.total} total — manage them from Post Request.`,
+        );
+      }
+      return;
     }
-    if (id === "computer") setShowSystemInfo(true);
-    if (id === "recycle") {
+    if (icon.id === "computer") setShowSystemInfo(true);
+    if (icon.id === "recycle") {
       showEgg(
         "Recycle Bin",
         "Nothing here but composted minutes and a faint smell of 2007. Hours never die — they feed the community garden.",
       );
     }
-    if (id === "help") {
+    if (icon.id === "help") {
       showEgg("Chrono Help", "Press the ChronoStart orb for tips. Triple-click Verified for a secret. You're welcome.");
     }
   };
@@ -265,19 +301,34 @@ export const Profile = () => {
       />
 
       <div className="profile-desktop-icons">
-        {DESKTOP_ICONS.map(({ id, label, Icon }) => (
+        {DESKTOP_ICONS.map((icon) => {
+          const isOpen = icon.window ? openWindows.has(icon.window) : false;
+          return (
+            <button
+              key={icon.id}
+              type="button"
+              className={`profile-desktop-icon ${isOpen ? "profile-desktop-icon-open" : ""}`}
+              onClick={() => handleDesktopIcon(icon)}
+            >
+              <span className="profile-desktop-icon-img">
+                <icon.Icon size={22} strokeWidth={1.75} />
+              </span>
+              <span className="profile-desktop-icon-label">{icon.label}</span>
+            </button>
+          );
+        })}
+        {pending.length > 0 && (
           <button
-            key={id}
             type="button"
-            className="profile-desktop-icon"
-            onClick={() => handleDesktopIcon(id)}
+            className={`profile-desktop-icon profile-desktop-icon-alert ${openWindows.has("pending") ? "profile-desktop-icon-open" : ""}`}
+            onClick={() => openWindow("pending")}
           >
             <span className="profile-desktop-icon-img">
-              <Icon size={22} strokeWidth={1.75} />
+              <Loader2 size={22} strokeWidth={1.75} className="animate-spin" />
             </span>
-            <span className="profile-desktop-icon-label">{label}</span>
+            <span className="profile-desktop-icon-label">{pending.length} Pending</span>
           </button>
-        ))}
+        )}
       </div>
 
       <aside className="profile-gadgets">
@@ -322,70 +373,84 @@ export const Profile = () => {
       </aside>
 
       <div className="profile-windows">
-        <ProfileWin7Window
-          title={user?.name ?? "User Profile"}
-          subtitle="Personal folder"
-          icon={<HardDrive size={14} strokeWidth={2.5} />}
-          className="profile-window-user"
-        >
-          <div className="flex flex-col sm:flex-row items-start gap-5 p-5">
-            <button
-              type="button"
-              className={`dash-avatar w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 profile-avatar-btn ${avatarBounces ? "profile-avatar-bounce" : ""}`}
-              onDoubleClick={handleAvatarDoubleClick}
-            >
-              {user ? getInitials(user.name) : "?"}
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h2 className="text-lg font-bold dash-heading">{user?.name ?? "User"}</h2>
-                <button
-                  type="button"
-                  onClick={handleBadgeClick}
-                  className="dash-badge-earn flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                >
-                  <ShieldCheck size={11} />
-                  Verified Identity
-                </button>
-              </div>
-              <p className="text-sm dash-subtext">{user?.email}</p>
-              {user?.username && (
-                <p className="text-xs dash-subtext mt-1">@{user.username}</p>
-              )}
-              <div className="flex flex-wrap gap-2 mt-3">
-                <span className="profile-chip">
-                  <Clock size={12} /> {user?.hoursAvailable.toFixed(1)} hrs free
-                </span>
-                <span className="profile-chip">
-                  <Briefcase size={12} /> {listingStats.active} live listings
-                </span>
+        {openWindows.size === 0 && (
+          <p className="profile-desktop-hint">
+            Click a desktop icon to open a window — just like Windows 7.
+          </p>
+        )}
+
+        {openWindows.has("profile") && (
+          <ProfileWin7Window
+            title={user?.name ?? "User Profile"}
+            subtitle="Personal folder"
+            icon={<HardDrive size={14} strokeWidth={2.5} />}
+            className="profile-window-user"
+            active={activeWindow === "profile"}
+            onClose={() => closeWindow("profile")}
+            onFocus={() => setActiveWindow("profile")}
+          >
+            <div className="flex flex-col sm:flex-row items-start gap-5 p-5">
+              <button
+                type="button"
+                className={`dash-avatar w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 profile-avatar-btn ${avatarBounces ? "profile-avatar-bounce" : ""}`}
+                onDoubleClick={handleAvatarDoubleClick}
+              >
+                {user ? getInitials(user.name) : "?"}
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h2 className="text-lg font-bold dash-heading">{user?.name ?? "User"}</h2>
+                  <button
+                    type="button"
+                    onClick={handleBadgeClick}
+                    className="dash-badge-earn flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  >
+                    <ShieldCheck size={11} />
+                    Verified Identity
+                  </button>
+                </div>
+                <p className="text-sm dash-subtext">{user?.email}</p>
+                {user?.username && (
+                  <p className="text-xs dash-subtext mt-1">@{user.username}</p>
+                )}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="profile-chip">
+                    <Clock size={12} /> {user?.hoursAvailable.toFixed(1)} hrs free
+                  </span>
+                  <span className="profile-chip">
+                    <Briefcase size={12} /> {listingStats.active} live listings
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </ProfileWin7Window>
 
-        <div id="profile-stats" className="profile-stats-grid">
-          {[
-            { label: "Total Exchanges", value: String(history.length), color: dashColors.earn },
-            { label: "Hours Earned", value: `+${hoursEarned.toFixed(1)}h`, color: dashColors.earn },
-            { label: "Hours Spent", value: `-${hoursSpent.toFixed(1)}h`, color: dashColors.sun },
-            { label: "Net Flow", value: `${netHours >= 0 ? "+" : ""}${netHours.toFixed(1)}h`, color: dashColors.spend },
-          ].map((stat) => (
-            <div key={stat.label} className="profile-stat-gadget">
-              <p className="profile-stat-value" style={{ fontFamily: "'DM Mono', monospace", color: stat.color }}>
-                {stat.value}
-              </p>
-              <p className="profile-stat-label">{stat.label}</p>
+            <div id="profile-stats" className="profile-stats-grid px-5 pb-5">
+              {[
+                { label: "Total Exchanges", value: String(history.length), color: dashColors.earn },
+                { label: "Hours Earned", value: `+${hoursEarned.toFixed(1)}h`, color: dashColors.earn },
+                { label: "Hours Spent", value: `-${hoursSpent.toFixed(1)}h`, color: dashColors.sun },
+                { label: "Net Flow", value: `${netHours >= 0 ? "+" : ""}${netHours.toFixed(1)}h`, color: dashColors.spend },
+              ].map((stat) => (
+                <div key={stat.label} className="profile-stat-gadget">
+                  <p className="profile-stat-value" style={{ fontFamily: "'DM Mono', monospace", color: stat.color }}>
+                    {stat.value}
+                  </p>
+                  <p className="profile-stat-label">{stat.label}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </ProfileWin7Window>
+        )}
 
-        {pending.length > 0 && (
+        {openWindows.has("pending") && pending.length > 0 && (
           <ProfileWin7Window
             title="Awaiting Confirmation"
             subtitle={`${pending.length} pending`}
             icon={<Loader2 size={14} className="animate-spin" />}
             className="profile-window-pending"
+            active={activeWindow === "pending"}
+            onClose={() => closeWindow("pending")}
+            onFocus={() => setActiveWindow("pending")}
           >
             <p className="px-5 pt-4 text-xs dash-subtext">
               Both people must confirm before hours are transferred.
@@ -444,17 +509,21 @@ export const Profile = () => {
           </ProfileWin7Window>
         )}
 
-        {error && (
+        {error && openWindows.size > 0 && (
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">{error}</p>
         )}
 
-        <ProfileWin7Window
-          title="Exchange Ledger"
-          subtitle={tab}
-          icon={<FolderOpen size={14} strokeWidth={2.5} />}
-          className="profile-window-ledger"
-          id="profile-ledger"
-        >
+        {openWindows.has("ledger") && (
+          <ProfileWin7Window
+            title="Exchange Ledger"
+            subtitle={tab}
+            icon={<FolderOpen size={14} strokeWidth={2.5} />}
+            className="profile-window-ledger"
+            id="profile-ledger"
+            active={activeWindow === "ledger"}
+            onClose={() => closeWindow("ledger")}
+            onFocus={() => setActiveWindow("ledger")}
+          >
           <div className="flex items-center justify-between px-5 py-3 border-b dash-divider">
             <p className="text-xs dash-subtext">{filtered.length} completed exchange{filtered.length === 1 ? "" : "s"}</p>
             <div className="dash-pill-group flex rounded-full p-0.5">
@@ -531,7 +600,8 @@ export const Profile = () => {
               ))}
             </div>
           )}
-        </ProfileWin7Window>
+          </ProfileWin7Window>
+        )}
       </div>
 
       <div className="profile-taskbar">
@@ -540,9 +610,24 @@ export const Profile = () => {
           <span>ChronoStart</span>
         </button>
         <div className="profile-taskbar-apps">
-          <span className="profile-taskbar-app profile-taskbar-app-active">My Profile</span>
-          {pending.length > 0 && (
-            <span className="profile-taskbar-app">{pending.length} pending</span>
+          {(["profile", "ledger", "pending"] as const).map((windowId) => {
+            if (windowId === "pending" && pending.length === 0) return null;
+            if (!openWindows.has(windowId) && windowId !== "pending") return null;
+            const isActive = activeWindow === windowId && openWindows.has(windowId);
+            return (
+              <button
+                key={windowId}
+                type="button"
+                className={`profile-taskbar-app ${isActive ? "profile-taskbar-app-active" : ""}`}
+                onClick={() => toggleWindow(windowId)}
+              >
+                {WINDOW_LABELS[windowId]}
+                {windowId === "pending" ? ` (${pending.length})` : ""}
+              </button>
+            );
+          })}
+          {openWindows.size === 0 && (
+            <span className="profile-taskbar-hint">No windows open</span>
           )}
         </div>
         <div className="profile-taskbar-tray">

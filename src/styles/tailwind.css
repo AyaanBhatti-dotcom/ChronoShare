@@ -46,7 +46,19 @@ html {
     animation: none !important;
   }
 
-  .landing-feature-card:nth-child(n) {
+  .profile-desktop-icon,
+  .profile-window-slot,
+  .profile-win7-window {
+    animation: none !important;
+  }
+
+  .profile-window-slot {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .landing-feature-grid > *:nth-child(n) .landing-feature-card {
     transform: none !important;
     margin-top: 0 !important;
   }
@@ -2355,6 +2367,24 @@ html {
     text-shadow: 0 1px 2px rgba(0, 40, 80, 0.65);
   }
 
+  .profile-desktop-icon-open .profile-desktop-icon-img {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(94, 255, 240, 0.65) 100%);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 2px 10px rgba(45, 212, 200, 0.35);
+  }
+
+  .profile-desktop-icon-alert .profile-desktop-icon-img {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 209, 102, 0.65) 100%);
+  }
+
+  .profile-desktop-hint {
+    padding: 2rem 1rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 3px rgba(0, 40, 80, 0.45);
+  }
+
   .profile-gadgets {
     position: relative;
     z-index: 2;
@@ -2476,6 +2506,39 @@ html {
     gap: 0.75rem;
     overflow: hidden;
     clear: both;
+    min-height: 8rem;
+  }
+
+  .profile-window-slot {
+    animation: profile-window-open 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: center 20%;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .profile-window-active {
+    box-shadow:
+      0 16px 48px rgba(26, 95, 122, 0.24),
+      0 0 0 1px rgba(94, 255, 240, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    transform: scale(1);
+  }
+
+  .profile-win7-window:not(.profile-window-active) {
+    opacity: 0.92;
+    transform: scale(0.995);
+  }
+
+  @keyframes profile-window-open {
+    0% {
+      opacity: 0;
+      transform: scale(0.88) translateY(16px);
+      filter: blur(6px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
   }
 
   .profile-win7-window {
@@ -2525,9 +2588,16 @@ html {
     display: block;
     width: 0.7rem;
     height: 0.7rem;
+    padding: 0;
     border-radius: 2px;
     border: 1px solid rgba(0, 50, 100, 0.25);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+
+  .profile-win7-btn:hover {
+    filter: brightness(1.12);
   }
 
   .profile-win7-btn-min,
@@ -2661,6 +2731,19 @@ html {
     background: rgba(255, 255, 255, 0.45);
     border: 1px solid transparent;
     white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .profile-taskbar-app:hover {
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--dash-text);
+  }
+
+  .profile-taskbar-hint {
+    font-size: 0.625rem;
+    color: var(--dash-text-faint);
+    padding: 0.3rem 0.5rem;
   }
 
   .profile-taskbar-app-active {
