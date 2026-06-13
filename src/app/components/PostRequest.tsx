@@ -18,12 +18,12 @@ const categories = [
 ];
 
 const quickTemplates = [
-  { title: "Help moving furniture", category: "Labor", postType: "needs" as const, hours: 2 },
-  { title: "Tutoring session", category: "Education", postType: "offers" as const, hours: 1 },
-  { title: "Tech support / setup", category: "Tech", postType: "offers" as const, hours: 1.5 },
-  { title: "Need a ride to the airport", category: "Labor", postType: "needs" as const, hours: 1 },
-  { title: "Meal prep help", category: "Cooking", postType: "needs" as const, hours: 1.5 },
-  { title: "Logo or graphic design", category: "Design", postType: "offers" as const, hours: 2 },
+  { title: "Help moving furniture", category: "Labor", hours: 2 },
+  { title: "Tutoring session", category: "Education", hours: 1 },
+  { title: "Tech support / setup", category: "Tech", hours: 1.5 },
+  { title: "Need a ride to the airport", category: "Labor", hours: 1 },
+  { title: "Meal prep help", category: "Cooking", hours: 1.5 },
+  { title: "Logo or graphic design", category: "Design", hours: 2 },
 ];
 
 interface PostRequestProps {
@@ -70,7 +70,6 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   const applyTemplate = (template: (typeof quickTemplates)[0]) => {
     setTitle(template.title);
     setCategory(template.category);
-    setPostType(template.postType);
     setHours(template.hours);
     setDesc("");
     setTab("create");
@@ -82,6 +81,13 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
 
     if (isPreview) {
       setError("Preview mode — posting is disabled.");
+      return;
+    }
+
+    if (postType === "needs" && user.hoursAvailable < hours) {
+      setError(
+        `You need at least ${hours.toFixed(1)} hours in your balance to request help for this amount.`,
+      );
       return;
     }
 

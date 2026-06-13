@@ -61,7 +61,11 @@ export function DashboardLayout({
   const firstName = user?.name.split(" ")[0] ?? "there";
 
   const navigateScreen = useCallback((s: string, options?: NavigateOptions) => {
-    if (options?.postType) setPostType(options.postType);
+    if (options?.postType) {
+      setPostType(options.postType);
+    } else if (s === "post") {
+      setPostType("needs");
+    }
     if (options?.boardMode) {
       setBoardMode(options.boardMode);
     } else if (s === "board") {

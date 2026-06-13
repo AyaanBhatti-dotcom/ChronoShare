@@ -235,7 +235,10 @@ export function LocationPicker({
               className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border shadow-lg"
               style={{ background: "#0B0F19", borderColor: "#374151" }}
             >
-              {suggestions.length === 0 && !searching && (
+              {searching && (
+                <li className="px-4 py-3 text-xs text-[#6B7280]">Searching…</li>
+              )}
+              {!searching && suggestions.length === 0 && (
                 <li className="px-4 py-3 text-xs text-[#6B7280]">No matches — try another spelling</li>
               )}
               {suggestions.map((suggestion) => (
