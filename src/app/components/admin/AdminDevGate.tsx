@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Shield, KeyRound, ArrowRight } from "lucide-react";
-import { verifyAdminKey, setAdminKey } from "../../../lib/admin";
+import { verifyAdminKey } from "../../../lib/admin";
 
 interface AdminDevGateProps {
-  onAccessGranted: () => void;
+  onAccessGranted: (key: string) => void;
 }
 
 export function AdminDevGate({ onAccessGranted }: AdminDevGateProps) {
@@ -30,8 +30,7 @@ export function AdminDevGate({ onAccessGranted }: AdminDevGateProps) {
       return;
     }
 
-    setAdminKey(trimmed);
-    onAccessGranted();
+    onAccessGranted(trimmed);
   };
 
   return (

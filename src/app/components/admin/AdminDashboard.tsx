@@ -9,10 +9,8 @@ import {
   Calendar,
 } from "lucide-react";
 import {
-  clearAdminKey,
   fetchAdminPosts,
   fetchAdminProfiles,
-  getAdminKey,
   updateAdminPostStatus,
 } from "../../../lib/admin";
 import type { AdminPost, AdminProfile } from "../../../types/database";
@@ -20,6 +18,7 @@ import type { AdminPost, AdminProfile } from "../../../types/database";
 type Tab = "users" | "posts";
 
 interface AdminDashboardProps {
+  adminKey: string;
   onLogout: () => void;
 }
 
@@ -42,7 +41,7 @@ function initials(name: string) {
     .toUpperCase() || "?";
 }
 
-export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminProfile[]>([]);
   const [posts, setPosts] = useState<AdminPost[]>([]);
@@ -51,19 +50,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    const key = getAdminKey();
-    if (!key) {
-      onLogout();
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
       const [profilesData, postsData] = await Promise.all([
-        fetchAdminProfiles(key),
-        fetchAdminPosts(key),
+        fetchAdminProfiles(adminKey),
+        fetchAdminPosts(adminKey),
       ]);
       setUsers(profilesData);
       setPosts(postsData);
@@ -72,24 +65,20 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     } finally {
       setLoading(false);
     }
-  }, [onLogout]);
+  }, [adminKey]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handleLogout = () => {
-    clearAdminKey();
     onLogout();
   };
 
   const handleStatusChange = async (postId: string, status: "active" | "closed" | "archived") => {
-    const key = getAdminKey();
-    if (!key) return;
-
     setStatusUpdating(postId);
     try {
-      await updateAdminPostStatus(key, postId, status);
+      await updateAdminPostStatus(adminKey, postId, status);
       setPosts((prev) =>
         prev.map((post) => (post.id === postId ? { ...post, status } : post)),
       );

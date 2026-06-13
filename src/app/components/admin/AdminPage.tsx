@@ -1,14 +1,23 @@
-import { useState } from "react";
-import { getAdminKey } from "../../../lib/admin";
+import { useEffect, useState } from "react";
+import { clearAdminKey } from "../../../lib/admin";
 import { AdminDevGate } from "./AdminDevGate";
 import { AdminDashboard } from "./AdminDashboard";
 
 export function AdminPage() {
-  const [hasAccess, setHasAccess] = useState(() => !!getAdminKey());
+  const [adminKey, setAdminKey] = useState<string | null>(null);
 
-  if (!hasAccess) {
-    return <AdminDevGate onAccessGranted={() => setHasAccess(true)} />;
+  useEffect(() => {
+    clearAdminKey();
+
+    return () => {
+      clearAdminKey();
+      setAdminKey(null);
+    };
+  }, []);
+
+  if (!adminKey) {
+    return <AdminDevGate onAccessGranted={setAdminKey} />;
   }
 
-  return <AdminDashboard onLogout={() => setHasAccess(false)} />;
+  return <AdminDashboard adminKey={adminKey} onLogout={() => setAdminKey(null)} />;
 }

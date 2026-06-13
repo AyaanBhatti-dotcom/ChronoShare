@@ -3,14 +3,7 @@ import type { AdminPost, AdminProfile } from "../types/database";
 
 const ADMIN_KEY_STORAGE = "chronoshare_admin_key";
 
-export function getAdminKey(): string | null {
-  return sessionStorage.getItem(ADMIN_KEY_STORAGE);
-}
-
-export function setAdminKey(key: string) {
-  sessionStorage.setItem(ADMIN_KEY_STORAGE, key);
-}
-
+/** Clears any legacy persisted admin key from older sessions. */
 export function clearAdminKey() {
   sessionStorage.removeItem(ADMIN_KEY_STORAGE);
 }
