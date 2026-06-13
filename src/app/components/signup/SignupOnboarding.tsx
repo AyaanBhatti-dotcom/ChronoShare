@@ -28,7 +28,6 @@ import {
 } from "../../../lib/profile";
 import type { UserLocation } from "../../../lib/location";
 import { LocationPicker } from "../LocationPicker";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "../ui/input-otp";
 import { setNewSignupTourPending } from "../../utils/onboarding";
 
 const DRAFT_KEY = "chronoshare-signup-draft";
@@ -125,7 +124,7 @@ function StepShell({
 }
 
 export function SignupOnboarding() {
-  const { user, signup, verifySignupEmail, resendSignupEmail, finishProfileSetup, refreshUser } =
+  const { user, signup, signInAfterEmailConfirmation, resendSignupEmail, finishProfileSetup, refreshUser } =
     useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -145,13 +144,11 @@ export function SignupOnboarding() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [emailCode, setEmailCode] = useState("");
   const [emailVerified, setEmailVerified] = useState(
     draft?.emailVerified ?? hasSession,
   );
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
-  const verifyAttemptRef = useRef("");
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -178,6 +175,15 @@ export function SignupOnboarding() {
   }, [user, step]);
 
   useEffect(() => {
+    if (step !== 3 || emailVerified) return;
+    const onFocus = () => {
+      void refreshUser();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [step, emailVerified, refreshUser]);
+
+  useEffect(() => {
     if (!username || !isValidUsername(username)) {
       setUsernameOk(null);
       return;
@@ -198,37 +204,25 @@ export function SignupOnboarding() {
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, minStep));
 
-  const handleVerifyEmail = useCallback(
-    async (codeOverride?: string) => {
-      const code = (codeOverride ?? emailCode).trim();
-      if (code.length !== 6) {
-        setError("Enter the 6-digit code from your email.");
-        return;
-      }
+  const handleContinueAfterLink = async () => {
+    if (!password) {
+      setError("Password missing — go back and create your account again.");
+      return;
+    }
 
-      setVerifyingEmail(true);
-      setError("");
-      const err = await verifySignupEmail(email, code, password);
-      setVerifyingEmail(false);
+    setCheckingEmail(true);
+    setError("");
+    const err = await signInAfterEmailConfirmation(email, password);
+    setCheckingEmail(false);
 
-      if (err) {
-        verifyAttemptRef.current = "";
-        setError(err);
-        return;
-      }
+    if (err) {
+      setError(err);
+      return;
+    }
 
-      setEmailVerified(true);
-      setStep(4);
-    },
-    [email, emailCode, password, verifySignupEmail],
-  );
-
-  useEffect(() => {
-    if (step !== 3 || emailVerified || verifyingEmail || emailCode.length !== 6) return;
-    if (verifyAttemptRef.current === emailCode) return;
-    verifyAttemptRef.current = emailCode;
-    void handleVerifyEmail(emailCode);
-  }, [emailCode, step, emailVerified, verifyingEmail, handleVerifyEmail]);
+    setEmailVerified(true);
+    setStep(4);
+  };
 
   const handleCreateAccount = async () => {
     setError("");
@@ -251,7 +245,6 @@ export function SignupOnboarding() {
     }
 
     if (result.needsEmailVerification) {
-      verifyAttemptRef.current = "";
       setResendCooldown(60);
       goNext();
     } else {
@@ -260,7 +253,7 @@ export function SignupOnboarding() {
     }
   };
 
-  const handleResendCode = async () => {
+  const handleResendLink = async () => {
     if (resendCooldown > 0 || emailVerified) return;
     setError("");
     setLoading(true);
@@ -617,7 +610,7 @@ export function SignupOnboarding() {
                     className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
                     style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
                   >
-                    {loading ? "Creating account..." : "Continue — we'll email you a code"}
+                    {loading ? "Creating account..." : "Continue — we'll email you a link"}
                   </button>
                 </div>
               </StepShell>
@@ -625,13 +618,13 @@ export function SignupOnboarding() {
 
             {step === 3 && (
               <StepShell
-                title="Verify your email"
-                subtitle={`We sent a 6-digit code to ${email}. Enter it below to confirm your account.`}
+                title="Confirm your email"
+                subtitle={`We sent a confirmation link to ${email}. Open it to verify your account, then return here to continue setup.`}
               >
                 {emailVerified ? (
                   <div className="text-center py-6 mb-4">
                     <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3" />
-                    <p className="text-sm text-white font-medium">Email verified!</p>
+                    <p className="text-sm text-white font-medium">Email confirmed!</p>
                   </div>
                 ) : (
                   <div className="space-y-4 mb-6">
@@ -641,40 +634,28 @@ export function SignupOnboarding() {
                     >
                       <Mail size={32} className="text-emerald-400 mx-auto mb-3" />
                       <p className="text-sm text-[#9CA3AF] leading-relaxed">
-                        Check your inbox (and spam folder) for a code from ChronoShare.
+                        Check your inbox (and spam folder) for an email from ChronoShare with a
+                        confirmation link. Click the link, then come back to this tab.
                       </p>
-                    </div>
-                    <div className="flex justify-center">
-                      <InputOTP maxLength={6} value={emailCode} onChange={setEmailCode}>
-                        <InputOTPGroup>
-                          {[0, 1, 2, 3, 4, 5].map((i) => (
-                            <InputOTPSlot
-                              key={i}
-                              index={i}
-                              className="w-10 h-12 text-lg border-[#374151] bg-[#0B0F19] text-white"
-                            />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleVerifyEmail()}
-                      disabled={verifyingEmail || emailCode.length !== 6}
+                      onClick={handleContinueAfterLink}
+                      disabled={checkingEmail || !password}
                       className="w-full py-3 rounded-full text-sm font-semibold disabled:opacity-40"
                       style={{ background: "#10B981", color: "#000" }}
                     >
-                      {verifyingEmail ? "Verifying..." : "Verify email"}
+                      {checkingEmail ? "Checking..." : "I've clicked the link — continue"}
                     </button>
                     <button
                       type="button"
-                      onClick={handleResendCode}
+                      onClick={handleResendLink}
                       disabled={loading || resendCooldown > 0}
                       className="w-full text-xs text-[#9CA3AF] hover:text-emerald-400 disabled:opacity-50 transition-colors"
                     >
                       {resendCooldown > 0
-                        ? `Resend code in ${resendCooldown}s`
-                        : "Didn't get it? Resend code"}
+                        ? `Resend link in ${resendCooldown}s`
+                        : "Didn't get it? Resend confirmation link"}
                     </button>
                   </div>
                 )}

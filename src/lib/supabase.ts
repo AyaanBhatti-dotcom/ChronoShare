@@ -10,4 +10,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    detectSessionInUrl: true,
+    flowType: "pkce",
+  },
+});
+
+export function signupEmailRedirectUrl(): string {
+  return `${window.location.origin}/signup`;
+}

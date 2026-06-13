@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
+import { signupEmailRedirectUrl, supabase } from "../../lib/supabase";
 import { completeProfileSetup as markProfileSetupDone } from "../../lib/profile";
 import type { Profile } from "../../types/database";
 import {
@@ -45,11 +45,7 @@ interface AuthContextValue {
   isPreview: boolean;
   login: (email: string, password: string) => Promise<string | null>;
   signup: (input: SignupInput) => Promise<SignupResult>;
-  verifySignupEmail: (
-    email: string,
-    code: string,
-    password?: string,
-  ) => Promise<string | null>;
+  signInAfterEmailConfirmation: (email: string, password: string) => Promise<string | null>;
   resendSignupEmail: (email: string) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
@@ -82,10 +78,10 @@ function mapAuthError(message: string): string {
     return "An account with this email already exists.";
   }
   if (lower.includes("email not confirmed")) {
-    return "Please confirm your email before signing in.";
+    return "Click the confirmation link in your email first, then try again.";
   }
   if (lower.includes("token has expired") || lower.includes("invalid otp")) {
-    return "That code is invalid or expired. Request a new one.";
+    return "That confirmation link has expired. Request a new one.";
   }
   if (lower.includes("rate limit") || lower.includes("over_email_send")) {
     return "Too many emails sent. Wait a few minutes, then try again.";
@@ -205,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: input.password,
       options: {
         data: { full_name: trimmedName, username: normalizedUsername },
+        emailRedirectTo: signupEmailRedirectUrl(),
       },
     });
 
@@ -226,61 +223,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null, needsEmailVerification: false };
   };
 
-  const signInAfterVerification = async (
-    normalizedEmail: string,
+  const signInAfterEmailConfirmation = async (
+    email: string,
     password: string,
   ): Promise<string | null> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-
-    if (error) return mapAuthError(error.message);
-    if (!data.user) return "Sign in failed after verification. Please try again.";
-
-    await resolveSession(data.user);
-    return null;
-  };
-
-  const verifySignupEmail = async (
-    email: string,
-    code: string,
-    password?: string,
-  ): Promise<string | null> => {
     const normalizedEmail = email.trim().toLowerCase();
-    const token = code.trim();
-
     if (!normalizedEmail) return "Email is required.";
-    if (token.length < 6) return "Enter the 6-digit code from your email.";
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: normalizedEmail,
-      token,
-      type: "signup",
-    });
-
-    if (error) {
-      const msg = error.message.toLowerCase();
-      const canTrySignIn =
-        !!password &&
-        (msg.includes("invalid otp") ||
-          msg.includes("token has expired") ||
-          msg.includes("already been verified") ||
-          msg.includes("already confirmed"));
-
-      if (canTrySignIn) {
-        return signInAfterVerification(normalizedEmail, password);
-      }
-
-      return mapAuthError(error.message);
-    }
-
-    if (!data.user) return "Verification failed. Please try again.";
-
-    if (data.session) {
-      await resolveSession(data.user);
-      return null;
-    }
+    if (password.length < 6) return "Password is required.";
 
     const { data: sessionData } = await supabase.auth.getSession();
     if (sessionData.session?.user) {
@@ -288,11 +237,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    if (password) {
-      return signInAfterVerification(normalizedEmail, password);
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
 
-    return "Verification succeeded but sign-in failed. Try signing in with your password.";
+    if (error) return mapAuthError(error.message);
+    if (!data.user) return "Sign in failed. Please try again.";
+
+    await resolveSession(data.user);
+    return null;
   };
 
   const resendSignupEmail = async (email: string): Promise<string | null> => {
@@ -302,6 +256,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: normalizedEmail,
+      options: {
+        emailRedirectTo: signupEmailRedirectUrl(),
+      },
     });
 
     if (error) return mapAuthError(error.message);
@@ -397,7 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isPreview: false,
         login,
         signup,
-        verifySignupEmail,
+        signInAfterEmailConfirmation,
         resendSignupEmail,
         resetPassword,
         updatePassword,
@@ -435,7 +392,7 @@ export function AuthPreviewProvider({
         isPreview: true,
         login: noop,
         signup: previewSignup,
-        verifySignupEmail: noop,
+        signInAfterEmailConfirmation: noop,
         resendSignupEmail: noop,
         resetPassword: noop,
         updatePassword: noop,
