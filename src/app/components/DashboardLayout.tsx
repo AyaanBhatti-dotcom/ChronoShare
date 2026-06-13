@@ -10,6 +10,7 @@ import { PostRequest } from "./PostRequest";
 import { Profile } from "./Profile";
 import { Settings } from "./Settings";
 import { useAuth, getInitials } from "../context/AuthContext";
+import { ShaderBackground } from "./ui/shader-background";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
 
@@ -49,10 +50,10 @@ export function DashboardLayout() {
   };
 
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: "#0B0F19", fontFamily: "'Inter', sans-serif" }}
-    >
+    <div className="relative h-screen overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <ShaderBackground />
+
+      <div className="relative z-10 flex h-screen overflow-hidden">
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
@@ -198,6 +199,7 @@ export function DashboardLayout() {
           {screen === "profile" && <Profile />}
           {screen === "settings" && <Settings onLogout={handleLogout} />}
         </main>
+      </div>
       </div>
     </div>
   );
