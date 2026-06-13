@@ -29,11 +29,11 @@ import {
   cancelExchange,
   hasUserConfirmed,
   isPartnerConfirmed,
-} from "../../../lib/exchanges";
-import { fetchMyPosts } from "../../../lib/posts";
-import type { ExchangeWithProfiles } from "../../../types/database";
-import { dashColors } from "../onboarding/aeroTheme";
-import { formatExchangeFormat } from "../../../lib/exchange-format";
+} from "../../lib/exchanges";
+import { fetchMyPosts } from "../../lib/posts";
+import type { ExchangeWithProfiles } from "../../types/database";
+import { dashColors } from "./onboarding/aeroTheme";
+import { formatExchangeFormat } from "../../lib/exchange-format";
 import { ProfileWin7Window } from "./profile/ProfileWin7Window";
 
 function formatDate(iso: string) {
