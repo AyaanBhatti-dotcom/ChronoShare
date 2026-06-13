@@ -107,8 +107,10 @@ function MountainVistaParallax({
             transform: `translateY(${scrollProgress * 48}px)`,
           }}
         >
-          {title && <h1 className="hero-title">{title}</h1>}
-          {subtitle && <p className="hero-subtitle">{subtitle}</p>}
+          <div className="hero-text-panel">
+            {title && <h1 className="hero-title">{title}</h1>}
+            {subtitle && <p className="hero-subtitle">{subtitle}</p>}
+          </div>
         </div>
       )}
 
