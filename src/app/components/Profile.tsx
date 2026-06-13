@@ -34,6 +34,7 @@ import { fetchMyPosts } from "../../lib/posts";
 import type { ExchangeWithProfiles } from "../../types/database";
 import { dashColors } from "./onboarding/aeroTheme";
 import { formatExchangeFormat } from "../../lib/exchange-format";
+import { ProfileFloatingWindow } from "./profile/ProfileFloatingWindow";
 import { ProfileWin7Window } from "./profile/ProfileWin7Window";
 
 function formatDate(iso: string) {
@@ -59,6 +60,18 @@ const WINDOW_LABELS: Record<ProfileWindowId, string> = {
   profile: "My Profile",
   ledger: "Exchange Ledger",
   pending: "Awaiting Confirmation",
+};
+
+const WINDOW_WIDTHS: Record<ProfileWindowId, number> = {
+  profile: 520,
+  ledger: 460,
+  pending: 420,
+};
+
+const DEFAULT_POSITIONS: Record<ProfileWindowId, { x: number; y: number }> = {
+  profile: { x: 16, y: 8 },
+  ledger: { x: 52, y: 44 },
+  pending: { x: 88, y: 72 },
 };
 
 const START_TIPS = [
@@ -94,6 +107,8 @@ export const Profile = () => {
   const [avatarBounces, setAvatarBounces] = useState(false);
   const [openWindows, setOpenWindows] = useState<Set<ProfileWindowId>>(() => new Set());
   const [activeWindow, setActiveWindow] = useState<ProfileWindowId | null>(null);
+  const [windowStack, setWindowStack] = useState<ProfileWindowId[]>([]);
+  const [windowPositions, setWindowPositions] = useState(DEFAULT_POSITIONS);
 
   const showEgg = useCallback((title: string, body: string) => {
     setEggToast({ title, body });
@@ -205,10 +220,18 @@ export const Profile = () => {
     setActionId(null);
   };
 
-  const openWindow = useCallback((id: ProfileWindowId) => {
-    setOpenWindows((prev) => new Set(prev).add(id));
+  const focusWindow = useCallback((id: ProfileWindowId) => {
     setActiveWindow(id);
+    setWindowStack((prev) => [...prev.filter((w) => w !== id), id]);
   }, []);
+
+  const openWindow = useCallback(
+    (id: ProfileWindowId) => {
+      setOpenWindows((prev) => new Set(prev).add(id));
+      focusWindow(id);
+    },
+    [focusWindow],
+  );
 
   const closeWindow = useCallback((id: ProfileWindowId) => {
     setOpenWindows((prev) => {
@@ -216,25 +239,43 @@ export const Profile = () => {
       next.delete(id);
       return next;
     });
-    setActiveWindow((current) => (current === id ? null : current));
-  }, []);
-
-  const toggleWindow = useCallback((id: ProfileWindowId) => {
-    setOpenWindows((prev) => {
-      if (prev.has(id)) {
-        const next = new Set(prev);
-        next.delete(id);
-        setActiveWindow((current) => (current === id ? null : current));
-        return next;
-      }
-      setActiveWindow(id);
-      return new Set(prev).add(id);
+    setWindowStack((prev) => {
+      const next = prev.filter((w) => w !== id);
+      setActiveWindow((current) => (current === id ? (next[next.length - 1] ?? null) : current));
+      return next;
     });
   }, []);
 
+  const toggleWindow = useCallback(
+    (id: ProfileWindowId) => {
+      if (!openWindows.has(id)) {
+        openWindow(id);
+        return;
+      }
+      if (activeWindow === id) {
+        closeWindow(id);
+      } else {
+        focusWindow(id);
+      }
+    },
+    [openWindows, activeWindow, openWindow, closeWindow, focusWindow],
+  );
+
+  const getWindowZ = useCallback(
+    (id: ProfileWindowId) => {
+      const idx = windowStack.indexOf(id);
+      return 10 + (idx >= 0 ? idx : 0);
+    },
+    [windowStack],
+  );
+
   const handleDesktopIcon = (icon: (typeof DESKTOP_ICONS)[number]) => {
     if (icon.window) {
-      openWindow(icon.window);
+      if (openWindows.has(icon.window)) {
+        focusWindow(icon.window);
+      } else {
+        openWindow(icon.window);
+      }
       if (icon.id === "listings") {
         showEgg(
           "My Listings",
@@ -321,7 +362,7 @@ export const Profile = () => {
           <button
             type="button"
             className={`profile-desktop-icon profile-desktop-icon-alert ${openWindows.has("pending") ? "profile-desktop-icon-open" : ""}`}
-            onClick={() => openWindow("pending")}
+            onClick={() => (openWindows.has("pending") ? focusWindow("pending") : openWindow("pending"))}
           >
             <span className="profile-desktop-icon-img">
               <Loader2 size={22} strokeWidth={1.75} className="animate-spin" />
@@ -380,15 +421,23 @@ export const Profile = () => {
         )}
 
         {openWindows.has("profile") && (
-          <ProfileWin7Window
-            title={user?.name ?? "User Profile"}
-            subtitle="Personal folder"
-            icon={<HardDrive size={14} strokeWidth={2.5} />}
-            className="profile-window-user"
-            active={activeWindow === "profile"}
-            onClose={() => closeWindow("profile")}
-            onFocus={() => setActiveWindow("profile")}
+          <ProfileFloatingWindow
+            x={windowPositions.profile.x}
+            y={windowPositions.profile.y}
+            width={WINDOW_WIDTHS.profile}
+            zIndex={getWindowZ("profile")}
+            onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, profile: { x, y } }))}
+            onFocus={() => focusWindow("profile")}
           >
+            <ProfileWin7Window
+              title={user?.name ?? "User Profile"}
+              subtitle="Personal folder"
+              icon={<HardDrive size={14} strokeWidth={2.5} />}
+              className="profile-window-user"
+              active={activeWindow === "profile"}
+              onClose={() => closeWindow("profile")}
+              onFocus={() => focusWindow("profile")}
+            >
             <div className="flex flex-col sm:flex-row items-start gap-5 p-5">
               <button
                 type="button"
@@ -440,9 +489,18 @@ export const Profile = () => {
               ))}
             </div>
           </ProfileWin7Window>
+          </ProfileFloatingWindow>
         )}
 
         {openWindows.has("pending") && pending.length > 0 && (
+          <ProfileFloatingWindow
+            x={windowPositions.pending.x}
+            y={windowPositions.pending.y}
+            width={WINDOW_WIDTHS.pending}
+            zIndex={getWindowZ("pending")}
+            onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, pending: { x, y } }))}
+            onFocus={() => focusWindow("pending")}
+          >
           <ProfileWin7Window
             title="Awaiting Confirmation"
             subtitle={`${pending.length} pending`}
@@ -450,7 +508,7 @@ export const Profile = () => {
             className="profile-window-pending"
             active={activeWindow === "pending"}
             onClose={() => closeWindow("pending")}
-            onFocus={() => setActiveWindow("pending")}
+            onFocus={() => focusWindow("pending")}
           >
             <p className="px-5 pt-4 text-xs dash-subtext">
               Both people must confirm before hours are transferred.
@@ -507,6 +565,7 @@ export const Profile = () => {
               })}
             </div>
           </ProfileWin7Window>
+          </ProfileFloatingWindow>
         )}
 
         {error && openWindows.size > 0 && (
@@ -514,6 +573,14 @@ export const Profile = () => {
         )}
 
         {openWindows.has("ledger") && (
+          <ProfileFloatingWindow
+            x={windowPositions.ledger.x}
+            y={windowPositions.ledger.y}
+            width={WINDOW_WIDTHS.ledger}
+            zIndex={getWindowZ("ledger")}
+            onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, ledger: { x, y } }))}
+            onFocus={() => focusWindow("ledger")}
+          >
           <ProfileWin7Window
             title="Exchange Ledger"
             subtitle={tab}
@@ -522,7 +589,7 @@ export const Profile = () => {
             id="profile-ledger"
             active={activeWindow === "ledger"}
             onClose={() => closeWindow("ledger")}
-            onFocus={() => setActiveWindow("ledger")}
+            onFocus={() => focusWindow("ledger")}
           >
           <div className="flex items-center justify-between px-5 py-3 border-b dash-divider">
             <p className="text-xs dash-subtext">{filtered.length} completed exchange{filtered.length === 1 ? "" : "s"}</p>
@@ -601,6 +668,7 @@ export const Profile = () => {
             </div>
           )}
           </ProfileWin7Window>
+          </ProfileFloatingWindow>
         )}
       </div>
 

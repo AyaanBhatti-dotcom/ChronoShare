@@ -2501,18 +2501,30 @@ html {
   .profile-windows {
     position: relative;
     z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    overflow: hidden;
+    min-height: 28rem;
+    margin-left: 5.5rem;
+    margin-right: 12.5rem;
+    overflow: visible;
     clear: both;
-    min-height: 8rem;
+  }
+
+  .profile-window-float {
+    position: absolute;
+    max-width: calc(100% - 2rem);
+    animation: profile-window-open 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: center 20%;
+  }
+
+  .profile-window-float.profile-window-dragging {
+    animation: none;
+  }
+
+  .profile-window-float .profile-win7-window {
+    width: 100%;
   }
 
   .profile-window-slot {
-    animation: profile-window-open 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-    transform-origin: center 20%;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition: box-shadow 0.2s ease;
   }
 
   .profile-window-active {
@@ -2520,12 +2532,20 @@ html {
       0 16px 48px rgba(26, 95, 122, 0.24),
       0 0 0 1px rgba(94, 255, 240, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    transform: scale(1);
   }
 
   .profile-win7-window:not(.profile-window-active) {
-    opacity: 0.92;
-    transform: scale(0.995);
+    opacity: 0.96;
+  }
+
+  .profile-win7-titlebar {
+    cursor: default;
+    user-select: none;
+  }
+
+  .profile-window-float.profile-window-dragging .profile-win7-titlebar,
+  .profile-win7-titlebar:active {
+    cursor: grabbing;
   }
 
   @keyframes profile-window-open {

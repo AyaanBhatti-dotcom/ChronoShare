@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode } from "react";
+import type { MouseEvent, PointerEvent, ReactNode } from "react";
 
 interface ProfileWin7WindowProps {
   title: string;
@@ -10,6 +10,7 @@ interface ProfileWin7WindowProps {
   active?: boolean;
   onClose?: () => void;
   onFocus?: () => void;
+  onTitlePointerDown?: (e: PointerEvent) => void;
 }
 
 export function ProfileWin7Window({
@@ -22,19 +23,32 @@ export function ProfileWin7Window({
   active = true,
   onClose,
   onFocus,
+  onTitlePointerDown,
 }: ProfileWin7WindowProps) {
   const handleChromeClick = (e: MouseEvent) => {
     e.stopPropagation();
     onFocus?.();
   };
 
+  const handleTitlePointerDown = (e: PointerEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    onTitlePointerDown?.(e);
+  };
+
   return (
     <div
       id={id}
       className={`profile-win7-window profile-window-slot ${active ? "profile-window-active" : ""} ${className}`}
-      onMouseDown={onFocus}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+        onFocus?.();
+      }}
     >
-      <div className="profile-win7-titlebar" onMouseDown={handleChromeClick}>
+      <div
+        className="profile-win7-titlebar"
+        onMouseDown={handleChromeClick}
+        onPointerDown={handleTitlePointerDown}
+      >
         <div className="profile-win7-title">
           {icon}
           <span>{title}</span>
