@@ -281,6 +281,10 @@ export function SignupOnboarding() {
       return;
     }
 
+    if (result.warning) {
+      setError(result.warning);
+    }
+
     if (result.needsEmailVerification) {
       setResendCooldown(60);
       goNext();

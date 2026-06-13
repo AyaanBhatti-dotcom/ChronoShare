@@ -2,8 +2,10 @@ const PROJECT_REF = "vthefxwlwecyjsrznchr";
 const SITE_URL = "https://chrono-share.vercel.app";
 const REDIRECTS = [
   "http://localhost:5173/reset-password",
+  "http://localhost:5173/signup",
   "http://localhost:5173/**",
   "https://chrono-share.vercel.app/reset-password",
+  "https://chrono-share.vercel.app/signup",
   "https://chrono-share.vercel.app/**",
   "https://*.vercel.app/**",
 ];
@@ -63,6 +65,15 @@ async function main() {
   console.log("Supabase auth configured successfully.");
   console.log("Site URL:", updated.site_url ?? SITE_URL);
   console.log("Redirect URLs:", updated.uri_allow_list ?? merged.join(","));
+  console.log(
+    "Signup confirmation emails:",
+    updated.mailer_autoconfirm ? "DISABLED (instant signup)" : "ENABLED",
+  );
+  if (!updated.mailer_autoconfirm) {
+    console.warn(
+      "Warning: mailer_autoconfirm is still false. In Dashboard → Auth → Email, turn OFF Confirm email.",
+    );
+  }
 }
 
 main().catch((err) => {

@@ -7,12 +7,15 @@ project_id = "vthefxwlwecyjsrznchr"
 site_url = "https://chrono-share.vercel.app"
 additional_redirect_urls = [
   "https://chrono-share.vercel.app/reset-password",
+  "https://chrono-share.vercel.app/signup",
   "https://chrono-share.vercel.app/**",
   "https://*.vercel.app/**",
   "http://localhost:5173/reset-password",
+  "http://localhost:5173/signup",
   "http://localhost:5173/**",
 ]
 
 [auth.email]
 enable_signup = true
+# When false, signup returns a session immediately (no confirmation email, no rate limits).
 enable_confirmations = false

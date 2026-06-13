@@ -38,6 +38,7 @@ interface SignupInput {
 export interface SignupResult {
   error: string | null;
   needsEmailVerification: boolean;
+  warning?: string | null;
 }
 
 interface AuthContextValue {
@@ -85,7 +86,7 @@ function mapAuthError(message: string): string {
     return "That confirmation link has expired. Request a new one.";
   }
   if (lower.includes("rate limit") || lower.includes("over_email_send")) {
-    return "Too many emails sent. Wait a few minutes, then try again.";
+    return "Too many confirmation emails were sent for this address. Wait about an hour, try a different email, or ask the project owner to run npm run setup:supabase-auth (disables signup confirmation emails).";
   }
   if (lower.includes("duplicate key") || lower.includes("profiles_username")) {
     return "That username is already taken.";
@@ -202,6 +203,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: leakedPasswordError, needsEmailVerification: false };
     }
 
+    const upsertSignupProfile = async (userId: string) => {
+      await supabase.from("profiles").upsert({
+        id: userId,
+        full_name: trimmedName,
+        email: normalizedEmail,
+        username: normalizedUsername,
+      });
+    };
+
+    const finishSignupSession = async (authUser: SupabaseUser): Promise<SignupResult> => {
+      await upsertSignupProfile(authUser.id);
+      await resolveSession(authUser);
+      return { error: null, needsEmailVerification: false };
+    };
+
+    const trySignInAfterSignup = async (): Promise<SignupResult | null> => {
+      const signIn = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: input.password,
+      });
+
+      if (!signIn.error && signIn.data.user) {
+        return finishSignupSession(signIn.data.user);
+      }
+
+      return null;
+    };
+
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password: input.password,
@@ -211,30 +240,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    if (error) return { error: mapAuthError(error.message), needsEmailVerification: false };
+    if (error) {
+      const msg = error.message.toLowerCase();
+      const rateLimited =
+        msg.includes("rate limit") || msg.includes("over_email_send");
+
+      if (rateLimited) {
+        const recovered = await trySignInAfterSignup();
+        if (recovered) return recovered;
+
+        return {
+          error: null,
+          needsEmailVerification: true,
+          warning:
+            "Too many confirmation emails were sent. Your account may still have been created — try continuing, or wait about an hour.",
+        };
+      }
+
+      return { error: mapAuthError(error.message), needsEmailVerification: false };
+    }
     if (!data.user) return { error: "Sign up failed. Please try again.", needsEmailVerification: false };
 
     const isExistingAccount = (data.user.identities?.length ?? 0) === 0;
     if (isExistingAccount) {
-      const signIn = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password: input.password,
-      });
-
-      if (!signIn.error && signIn.data.user) {
-        await supabase.from("profiles").upsert({
-          id: signIn.data.user.id,
-          full_name: trimmedName,
-          email: normalizedEmail,
-          username: normalizedUsername,
-        });
-        await resolveSession(signIn.data.user);
-        return { error: null, needsEmailVerification: false };
-      }
-
-      if (signIn.error?.message.toLowerCase().includes("email not confirmed")) {
-        return { error: null, needsEmailVerification: true };
-      }
+      const recovered = await trySignInAfterSignup();
+      if (recovered) return recovered;
 
       return {
         error:
@@ -243,19 +273,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    await supabase.from("profiles").upsert({
-      id: data.user.id,
-      full_name: trimmedName,
-      email: normalizedEmail,
-      username: normalizedUsername,
-    });
-
     if (!data.session) {
+      const recovered = await trySignInAfterSignup();
+      if (recovered) return recovered;
       return { error: null, needsEmailVerification: true };
     }
 
-    await resolveSession(data.user);
-    return { error: null, needsEmailVerification: false };
+    return finishSignupSession(data.user);
   };
 
   const signInAfterEmailConfirmation = async (
