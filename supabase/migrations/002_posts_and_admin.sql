@@ -112,11 +112,12 @@ begin
   select
     p.id,
     p.full_name,
-    p.email,
+    coalesce(nullif(p.email, ''), u.email),
     p.hours_available,
     p.created_at,
-    p.updated_at
+    coalesce(p.updated_at, p.created_at)
   from public.profiles p
+  left join auth.users u on u.id = p.id
   order by p.created_at desc;
 end;
 $$;
@@ -150,7 +151,7 @@ begin
     po.id,
     po.user_id,
     coalesce(pr.full_name, 'Unknown'),
-    pr.email,
+    coalesce(nullif(pr.email, ''), u.email),
     po.title,
     po.description,
     po.category,
@@ -161,6 +162,7 @@ begin
     po.updated_at
   from public.posts po
   left join public.profiles pr on pr.id = po.user_id
+  left join auth.users u on u.id = po.user_id
   order by po.created_at desc;
 end;
 $$;
