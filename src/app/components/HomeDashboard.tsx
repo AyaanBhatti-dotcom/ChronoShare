@@ -335,7 +335,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
 
       {/* Compact balance + recent */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="dash-card rounded-2xl p-6 text-center" data-tour="quick-actions">
+        <div className="dash-card dash-card-hero rounded-2xl p-6 text-center" data-tour="quick-actions">
           <p className="text-xs dash-subtext uppercase tracking-wide mb-2">Available Balance</p>
           <p
             className="text-5xl font-semibold dash-heading mb-1"

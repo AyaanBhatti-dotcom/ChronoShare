@@ -28,17 +28,17 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
 
       <div className="auth-aero-content min-h-screen flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <div className="flex flex-col items-center mb-8 auth-aero-brand">
+          <div className="auth-glass-strip auth-aero-brand flex flex-col items-center mb-8 text-center">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 auth-aero-logo"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 auth-aero-logo"
               style={{ background: aero.gradientPrimary }}
             >
               <Clock size={22} style={{ color: aero.text }} />
             </div>
-            <Link to="/" className="text-lg font-bold auth-aero-brand-name tracking-tight hover:opacity-90">
+            <Link to="/" className="text-lg font-extrabold auth-aero-brand-name tracking-tight hover:opacity-90">
               ChronoShare
             </Link>
-            <p className="text-xs auth-aero-brand-tag mt-1">Trade time, not money</p>
+            <p className="text-sm auth-aero-brand-tag mt-1">Trade time, not money</p>
           </div>
 
           <div className="auth-glass-card">
@@ -49,7 +49,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
             {children}
           </div>
 
-          <p className="text-center text-sm auth-aero-footer mt-6">{footer}</p>
+          <div className="auth-glass-strip auth-aero-footer mt-6 text-center text-sm">{footer}</div>
         </div>
       </div>
     </div>

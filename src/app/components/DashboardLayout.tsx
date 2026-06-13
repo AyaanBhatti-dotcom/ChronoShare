@@ -215,7 +215,7 @@ export function DashboardLayout({
       <div className={`relative z-10 flex overflow-hidden ${previewMode ? "h-full" : "h-screen"}`}>
       {/* Sidebar */}
       <aside
-        className={`dash-glass-sidebar fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
+        className={`dash-glass-sidebar dash-liquid-surface fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         onTransitionEnd={(e) => {
@@ -292,7 +292,7 @@ export function DashboardLayout({
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="dash-glass-header flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0">
+        <header className="dash-glass-header dash-liquid-surface flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0">
           <button
             className="sm:hidden dash-subtext hover:dash-heading transition-colors"
             onClick={() => setMobileOpen(!mobileOpen)}
@@ -300,7 +300,7 @@ export function DashboardLayout({
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <h1 className="text-sm font-semibold dash-heading">{pageTitles[screen]}</h1>
+          <h1 className="text-sm font-bold dash-page-title">{pageTitles[screen]}</h1>
 
           <div
             className="dash-search flex-1 max-w-xs ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl"

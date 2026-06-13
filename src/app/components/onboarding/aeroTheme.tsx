@@ -86,45 +86,20 @@ export function impactPanelStyle(direction: "earn" | "spend" | "free") {
 
 export function AeroBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ background: aero.gradientBg }}>
-      {/* Solarpunk sun glow */}
-      <div
-        className="absolute -top-16 right-[8%] w-72 h-72 rounded-full opacity-70"
-        style={{
-          background: "radial-gradient(circle, rgba(255,209,102,0.55) 0%, rgba(255,209,102,0.15) 40%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-60"
-        style={{
-          background: "radial-gradient(circle, rgba(255,255,255,0.75) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-1/3 -left-32 w-80 h-80 rounded-full opacity-50"
-        style={{
-          background: "radial-gradient(circle, rgba(94,255,240,0.45) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute bottom-0 right-1/4 w-[500px] h-64 rounded-full opacity-45"
-        style={{
-          background: "radial-gradient(ellipse, rgba(91,199,122,0.5) 0%, rgba(61,139,94,0.2) 50%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute bottom-[-10%] left-[-5%] w-[420px] h-48 rounded-full opacity-35"
-        style={{
-          background: "radial-gradient(ellipse, rgba(46,125,82,0.4) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-25"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.04) 2px, rgba(255,255,255,0.04) 4px)",
-        }}
-      />
+    <div className="dash-aero-scene" aria-hidden="true">
+      <div className="dash-aero-sky" />
+      <div className="dash-aero-sun" />
+      <div className="dash-aero-ocean" />
+      <div className="dash-aero-wave dash-aero-wave-1" />
+      <div className="dash-aero-wave dash-aero-wave-2" />
+      <div className="dash-aero-shimmer-grid" />
+      <div className="dash-aero-grass dash-aero-grass-back" />
+      <div className="dash-aero-grass dash-aero-grass-front" />
+      <div className="dash-aero-orb dash-aero-orb-aqua" />
+      <div className="dash-aero-orb dash-aero-orb-grass" />
+      <div className="dash-aero-spark dash-aero-spark-1" />
+      <div className="dash-aero-spark dash-aero-spark-2" />
+      <div className="dash-aero-spark dash-aero-spark-3" />
     </div>
   );
 }
