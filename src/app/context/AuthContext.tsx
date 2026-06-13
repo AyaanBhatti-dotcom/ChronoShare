@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
+import { completeProfileSetup as markProfileSetupDone } from "../../lib/profile";
 import type { Profile } from "../../types/database";
 import {
   markOnboardingDoneLocal,
@@ -18,9 +19,19 @@ import {
 export interface Session {
   userId: string;
   name: string;
+  username: string | null;
   email: string;
+  avatarUrl: string | null;
   hoursAvailable: number;
+  profileSetupCompleted: boolean;
   onboardingCompleted: boolean;
+}
+
+interface SignupInput {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
 }
 
 interface AuthContextValue {
@@ -28,10 +39,11 @@ interface AuthContextValue {
   isLoading: boolean;
   isPreview: boolean;
   login: (email: string, password: string) => Promise<string | null>;
-  signup: (name: string, email: string, password: string) => Promise<string | null>;
+  signup: (input: SignupInput) => Promise<string | null>;
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
   logout: () => Promise<void>;
+  finishProfileSetup: () => Promise<string | null>;
   completeOnboarding: () => Promise<string | null>;
   resetOnboarding: () => Promise<string | null>;
   refreshUser: () => Promise<void>;
@@ -61,6 +73,9 @@ function mapAuthError(message: string): string {
   if (lower.includes("email not confirmed")) {
     return "Please confirm your email before signing in.";
   }
+  if (lower.includes("duplicate key") || lower.includes("profiles_username")) {
+    return "That username is already taken.";
+  }
   return message;
 }
 
@@ -89,8 +104,11 @@ function toSession(authUser: SupabaseUser, profile: Profile | null): Session {
   return {
     userId: authUser.id,
     name,
+    username: profile?.username ?? null,
     email: authUser.email ?? profile?.email ?? "",
+    avatarUrl: profile?.avatar_url ?? null,
     hoursAvailable: profile?.hours_available ?? 1.0,
+    profileSetupCompleted: profile?.profile_setup_completed_at != null,
     onboardingCompleted:
       profile?.onboarding_completed_at != null || isOnboardingDoneLocal(authUser.id),
   };
@@ -153,34 +171,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
-  const signup = async (
-    name: string,
-    email: string,
-    password: string,
-  ): Promise<string | null> => {
-    const trimmedName = name.trim();
-    const normalizedEmail = email.trim().toLowerCase();
+  const signup = async (input: SignupInput): Promise<string | null> => {
+    const trimmedName = input.name.trim();
+    const normalizedUsername = input.username.trim().toLowerCase();
+    const normalizedEmail = input.email.trim().toLowerCase();
 
     if (!trimmedName) return "Name is required.";
+    if (!normalizedUsername) return "Username is required.";
     if (!normalizedEmail) return "Email is required.";
-    if (password.length < 6) return "Password must be at least 6 characters.";
+    if (input.password.length < 6) return "Password must be at least 6 characters.";
 
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
-      password,
+      password: input.password,
       options: {
-        data: { full_name: trimmedName },
+        data: { full_name: trimmedName, username: normalizedUsername },
       },
     });
 
     if (error) return mapAuthError(error.message);
     if (!data.user) return "Sign up failed. Please try again.";
 
-    // Fallback if DB trigger hasn't been applied yet
     await supabase.from("profiles").upsert({
       id: data.user.id,
       full_name: trimmedName,
       email: normalizedEmail,
+      username: normalizedUsername,
     });
 
     if (!data.session) {
@@ -215,6 +231,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return mapAuthError(error.message);
     return null;
   };
+
+  const finishProfileSetup = useCallback(async (): Promise<string | null> => {
+    if (!user) return "Not signed in.";
+
+    try {
+      await markProfileSetupDone(user.userId);
+    } catch (err) {
+      return err instanceof Error ? err.message : "Could not finish setup.";
+    }
+
+    setUser((prev) => (prev ? { ...prev, profileSetupCompleted: true } : null));
+    return null;
+  }, [user]);
 
   const completeOnboarding = useCallback(async (): Promise<string | null> => {
     if (!user) return "Not signed in.";
@@ -270,6 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetPassword,
         updatePassword,
         logout,
+        finishProfileSetup,
         completeOnboarding,
         resetOnboarding,
         refreshUser,
@@ -292,7 +322,7 @@ export function AuthPreviewProvider({
   return (
     <AuthContext.Provider
       value={{
-        user: { ...user, onboardingCompleted: true },
+        user: { ...user, profileSetupCompleted: true, onboardingCompleted: true },
         isLoading: false,
         isPreview: true,
         login: noop,
@@ -300,6 +330,7 @@ export function AuthPreviewProvider({
         resetPassword: noop,
         updatePassword: noop,
         logout: async () => {},
+        finishProfileSetup: noop,
         completeOnboarding: noop,
         resetOnboarding: noop,
         refreshUser: async () => {},

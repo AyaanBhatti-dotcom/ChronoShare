@@ -1,0 +1,92 @@
+import { supabase } from "./supabase";
+
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
+export function isValidUsername(username: string): boolean {
+  return USERNAME_RE.test(username);
+}
+
+export async function isUsernameAvailable(
+  username: string,
+  excludeUserId?: string,
+): Promise<boolean> {
+  if (!isValidUsername(username)) return false;
+
+  let query = supabase
+    .from("profiles")
+    .select("id")
+    .ilike("username", username)
+    .limit(1);
+
+  if (excludeUserId) {
+    query = query.neq("id", excludeUserId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.warn("Username check failed:", error.message);
+    return false;
+  }
+
+  return (data ?? []).length === 0;
+}
+
+export async function updateProfileFields(
+  userId: string,
+  fields: {
+    fullName?: string;
+    username?: string;
+    avatarUrl?: string | null;
+    mfaEnabled?: boolean;
+  },
+): Promise<void> {
+  const payload: Record<string, unknown> = {};
+  if (fields.fullName !== undefined) payload.full_name = fields.fullName.trim();
+  if (fields.username !== undefined) payload.username = fields.username.trim().toLowerCase();
+  if (fields.avatarUrl !== undefined) payload.avatar_url = fields.avatarUrl;
+  if (fields.mfaEnabled !== undefined) payload.mfa_enabled = fields.mfaEnabled;
+
+  const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
+  if (error) throw new Error(error.message);
+}
+
+export async function completeProfileSetup(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ profile_setup_completed_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${userId}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) throw new Error(uploadError.message);
+
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+export function getPasswordStrength(password: string): {
+  score: number;
+  label: string;
+  color: string;
+} {
+  let score = 0;
+  if (password.length >= 6) score += 1;
+  if (password.length >= 10) score += 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+  if (/\d/.test(password)) score += 1;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+  if (score <= 1) return { score, label: "Weak", color: "#EF4444" };
+  if (score <= 3) return { score, label: "Fair", color: "#F59E0B" };
+  if (score <= 4) return { score, label: "Good", color: "#06B6D4" };
+  return { score, label: "Strong", color: "#10B981" };
+}

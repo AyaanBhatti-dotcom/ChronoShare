@@ -12,13 +12,14 @@ function AuthLoading() {
   );
 }
 
-/** Logged-in users with completed profile setup land on the dashboard. */
-export function AuthenticatedRedirect() {
+/** Signup onboarding — accessible until profile setup is complete. */
+export function SignupRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) return <AuthLoading />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!user.profileSetupCompleted) return <Navigate to="/signup" replace />;
+  if (user?.profileSetupCompleted) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
-  return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 }

@@ -21,5 +21,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  if (!user.profileSetupCompleted) {
+    return <Navigate to="/signup" replace />;
+  }
+
   return <>{children}</>;
 }

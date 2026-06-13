@@ -7,6 +7,7 @@ import { ResetPassword } from "./components/auth/ResetPassword";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
+import { SignupRoute } from "./components/SignupRoute";
 import { AdminPage } from "./components/admin/AdminPage";
 
 export default function App() {
@@ -24,9 +25,9 @@ export default function App() {
       <Route
         path="/signup"
         element={
-          <PublicRoute>
+          <SignupRoute>
             <Signup />
-          </PublicRoute>
+          </SignupRoute>
         }
       />
       <Route

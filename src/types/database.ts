@@ -23,6 +23,10 @@ export interface Database {
           latitude: number | null;
           longitude: number | null;
           location_updated_at: string | null;
+          username: string | null;
+          avatar_url: string | null;
+          profile_setup_completed_at: string | null;
+          mfa_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -39,6 +43,10 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           location_updated_at?: string | null;
+          username?: string | null;
+          avatar_url?: string | null;
+          profile_setup_completed_at?: string | null;
+          mfa_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -55,6 +63,10 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           location_updated_at?: string | null;
+          username?: string | null;
+          avatar_url?: string | null;
+          profile_setup_completed_at?: string | null;
+          mfa_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };

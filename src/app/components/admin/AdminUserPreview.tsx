@@ -7,16 +7,24 @@ import type { AdminProfile } from "../../../types/database";
 const SAMPLE_USER: Session = {
   userId: "00000000-0000-0000-0000-000000000000",
   name: "Sample User",
+  username: "sample_user",
   email: "sample@chronoshare.app",
+  avatarUrl: null,
   hoursAvailable: 1.0,
+  profileSetupCompleted: true,
+  onboardingCompleted: true,
 };
 
 function toSession(profile: AdminProfile): Session {
   return {
     userId: profile.id,
     name: profile.full_name || "Unknown",
+    username: null,
     email: profile.email || "",
+    avatarUrl: null,
     hoursAvailable: Number(profile.hours_available) || 1.0,
+    profileSetupCompleted: true,
+    onboardingCompleted: true,
   };
 }
 
