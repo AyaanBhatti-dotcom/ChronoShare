@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { getAuthenticatedHomePath } from "../utils/auth-routes";
 
 function AuthLoading() {
   return (
@@ -18,7 +19,6 @@ export function AuthenticatedRedirect() {
 
   if (isLoading) return <AuthLoading />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!user.profileSetupCompleted) return <Navigate to="/" replace />;
 
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to={getAuthenticatedHomePath(user)} replace />;
 }

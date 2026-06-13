@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link } from "react-router";
+import { Link, Navigate } from "react-router";
 import {
   Clock,
   ArrowRight,
@@ -11,6 +11,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { getAuthenticatedHomePath } from "../utils/auth-routes";
 import { MountainVistaParallax } from "./ui/mountain-vista-bg";
 
 const features = [
@@ -75,8 +76,9 @@ export function LandingPage() {
     );
   }
 
-  const isLoggedIn = !!user;
-  const canEnterDashboard = user?.profileSetupCompleted ?? false;
+  if (user) {
+    return <Navigate to={getAuthenticatedHomePath(user)} replace />;
+  }
 
   return (
     <div
@@ -96,39 +98,19 @@ export function LandingPage() {
             <span className="text-sm font-semibold text-white tracking-tight">ChronoShare</span>
           </div>
           <div className="flex items-center gap-3">
-            {canEnterDashboard ? (
-              <Link
-                to="/dashboard"
-                className="text-sm font-semibold px-4 py-2 rounded-xl text-[#0B0F19] transition-all hover:brightness-110 hover:scale-[1.02]"
-                style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
-              >
-                Go to dashboard
-              </Link>
-            ) : isLoggedIn ? (
-              <Link
-                to="/signup"
-                className="text-sm font-semibold px-4 py-2 rounded-xl text-[#0B0F19] transition-all hover:brightness-110 hover:scale-[1.02]"
-                style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
-              >
-                Continue setup
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-sm font-medium text-white/85 hover:text-white transition-colors px-3 py-1.5"
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/signup"
-                  className="text-sm font-semibold px-4 py-2 rounded-xl text-[#0B0F19] transition-all hover:brightness-110 hover:scale-[1.02]"
-                  style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
-                >
-                  Get started
-                </Link>
-              </>
-            )}
+            <Link
+              to="/login"
+              className="text-sm font-medium text-white/85 hover:text-white transition-colors px-3 py-1.5"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/signup"
+              className="text-sm font-semibold px-4 py-2 rounded-xl text-[#0B0F19] transition-all hover:brightness-110 hover:scale-[1.02]"
+              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
+            >
+              Get started
+            </Link>
           </div>
         </div>
       </header>
@@ -175,43 +157,21 @@ export function LandingPage() {
               Offer what you know, get what you need.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {canEnterDashboard ? (
-                <Link
-                  to="/dashboard"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 w-full sm:w-auto justify-center"
-                  style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                >
-                  Open your dashboard
-                  <ArrowRight size={16} />
-                </Link>
-              ) : isLoggedIn ? (
-                <Link
-                  to="/signup"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 w-full sm:w-auto justify-center"
-                  style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                >
-                  Continue account setup
-                  <ArrowRight size={16} />
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    to="/signup"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 w-full sm:w-auto justify-center"
-                    style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                  >
-                    Create free account
-                    <ArrowRight size={16} />
-                  </Link>
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white border transition-colors hover:bg-white/[0.04] w-full sm:w-auto justify-center"
-                    style={{ borderColor: "#1F2937" }}
-                  >
-                    Log in to your account
-                  </Link>
-                </>
-              )}
+              <Link
+                to="/signup"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 w-full sm:w-auto justify-center"
+                style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+              >
+                Create free account
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white border transition-colors hover:bg-white/[0.04] w-full sm:w-auto justify-center"
+                style={{ borderColor: "#1F2937" }}
+              >
+                Log in to your account
+              </Link>
             </div>
           </div>
 
@@ -276,15 +236,11 @@ export function LandingPage() {
                 Sign up in seconds and access your personal dashboard, job board, and hour ledger.
               </p>
               <Link
-                to={canEnterDashboard ? "/dashboard" : "/signup"}
+                to="/signup"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
                 style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
               >
-                {canEnterDashboard
-                  ? "Go to your dashboard"
-                  : isLoggedIn
-                    ? "Finish setting up your account"
-                    : "Get started free"}
+                Get started free
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -303,14 +259,8 @@ export function LandingPage() {
               <span className="text-xs text-[#9CA3AF]">© 2026 ChronoShare</span>
             </div>
             <div className="flex gap-4 text-xs text-[#9CA3AF]">
-              {canEnterDashboard ? (
-                <Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-              ) : (
-                <>
-                  <Link to="/login" className="hover:text-white transition-colors">Log in</Link>
-                  <Link to="/signup" className="hover:text-white transition-colors">Sign up</Link>
-                </>
-              )}
+              <Link to="/login" className="hover:text-white transition-colors">Log in</Link>
+              <Link to="/signup" className="hover:text-white transition-colors">Sign up</Link>
             </div>
           </div>
         </footer>

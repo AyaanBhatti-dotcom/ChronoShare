@@ -1,5 +1,6 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
+import { getAuthenticatedHomePath } from "../utils/auth-routes";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -22,7 +23,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user.profileSetupCompleted) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/signup" replace />;
   }
 
   return <>{children}</>;

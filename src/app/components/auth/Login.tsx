@@ -1,15 +1,23 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
+import { getAuthenticatedHomePath } from "../../utils/auth-routes";
 import { AuthLayout } from "./AuthLayout";
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const pendingRedirect = useRef(false);
+
+  useEffect(() => {
+    if (!pendingRedirect.current || !user) return;
+    pendingRedirect.current = false;
+    navigate(getAuthenticatedHomePath(user), { replace: true });
+  }, [user, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -23,7 +31,8 @@ export function Login() {
       return;
     }
 
-    navigate("/", { replace: true });
+    pendingRedirect.current = true;
+    setLoading(false);
   };
 
   return (
