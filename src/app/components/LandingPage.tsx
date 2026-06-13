@@ -18,32 +18,49 @@ import { aero } from "./onboarding/aeroTheme";
 
 const features = [
   {
-    icon: <Clock size={20} />,
+    step: "01",
+    accent: "aqua",
+    tag: "The exchange",
+    icon: <Clock size={22} strokeWidth={2.25} />,
     title: "Trade time, not money",
     desc: "Exchange skills and services using hours instead of cash. Everyone's time has equal value.",
   },
   {
-    icon: <Briefcase size={20} />,
+    step: "02",
+    accent: "sky",
+    tag: "Discover",
+    icon: <Briefcase size={22} strokeWidth={2.25} />,
     title: "Post & discover requests",
     desc: "Browse the job board or post what you need — from tutoring to home repairs.",
   },
   {
-    icon: <Users size={20} />,
+    step: "03",
+    accent: "grass",
+    tag: "Community",
+    icon: <Users size={22} strokeWidth={2.25} />,
     title: "Community-driven",
     desc: "Connect with verified members, build your reputation, and grow your hour balance.",
   },
   {
-    icon: <Shield size={20} />,
+    step: "04",
+    accent: "sun",
+    tag: "Trust",
+    icon: <Shield size={22} strokeWidth={2.25} />,
     title: "Trusted exchanges",
     desc: "Track every transaction on your ledger with ratings and verified identity.",
   },
-];
+] as const;
 
 const stats = [
-  { value: "2,400+", label: "Active members" },
-  { value: "18k", label: "Hours exchanged" },
-  { value: "4.9", label: "Avg. rating", icon: <Star size={14} className="text-[#c47a12] fill-[#ffd166]" /> },
-];
+  { value: "2,400+", label: "Active members", accent: "aqua" },
+  { value: "18k", label: "Hours exchanged", accent: "sky" },
+  {
+    value: "4.9",
+    label: "Avg. rating",
+    accent: "sun",
+    icon: <Star size={14} className="text-[#c47a12] fill-[#ffd166]" />,
+  },
+] as const;
 
 export function LandingPage() {
   const { user, isLoading } = useAuth();
@@ -172,7 +189,7 @@ export function LandingPage() {
           <div className="relative grid grid-cols-3 gap-4 max-w-lg mx-auto mt-16">
             {stats.map((stat, index) => (
               <LandingReveal key={stat.label} delay={320 + index * 100}>
-                <div className="landing-glass landing-glass-stat text-center">
+                <div className={`landing-glass landing-glass-stat landing-stat-${stat.accent} text-center`}>
                   <p className="landing-stat-value flex items-center justify-center gap-1">
                     {stat.value}
                     {stat.icon}
@@ -184,24 +201,45 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-5 pb-24">
+        <section className="landing-how-section max-w-6xl mx-auto px-5 pb-24">
+          <div className="landing-how-atmosphere" aria-hidden="true">
+            <div className="landing-how-orb landing-how-orb-sun" />
+            <div className="landing-how-orb landing-how-orb-aqua" />
+            <div className="landing-how-orb landing-how-orb-grass" />
+            <div className="landing-how-ring" />
+          </div>
+
           <LandingReveal>
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-3xl landing-heading mb-3">How it works</h2>
-              <p className="landing-body max-w-md mx-auto">
+            <div className="landing-how-header text-center mb-14 sm:mb-16">
+              <span className="landing-how-eyebrow">Simple · Local · Human</span>
+              <h2 className="landing-how-title">How it works</h2>
+              <p className="landing-body max-w-md mx-auto mt-3">
                 Join a growing community of people exchanging skills, one hour at a time.
               </p>
+              <div className="landing-how-divider" aria-hidden="true">
+                <span />
+                <Star size={14} className="landing-how-divider-star" />
+                <span />
+              </div>
             </div>
           </LandingReveal>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="landing-feature-grid">
             {features.map((feature, index) => (
-              <LandingReveal key={feature.title} delay={120 + index * 90}>
-                <div className="landing-glass landing-glass-card h-full">
-                  <div className="landing-icon-well mb-4">{feature.icon}</div>
-                  <h3 className="text-base font-semibold landing-heading mb-2">{feature.title}</h3>
-                  <p className="text-sm landing-body leading-relaxed">{feature.desc}</p>
-                </div>
+              <LandingReveal key={feature.title} delay={100 + index * 110}>
+                <article
+                  className={`landing-glass landing-feature-card landing-feature-${feature.accent}`}
+                  style={{ animationDelay: `${index * 0.15}s` }}
+                >
+                  <div className="landing-feature-card-top">
+                    <span className="landing-feature-step">{feature.step}</span>
+                    <div className="landing-feature-icon">{feature.icon}</div>
+                  </div>
+                  <span className="landing-feature-tag">{feature.tag}</span>
+                  <h3 className="landing-feature-title">{feature.title}</h3>
+                  <p className="landing-feature-desc">{feature.desc}</p>
+                  <div className="landing-feature-accent-bar" aria-hidden="true" />
+                </article>
               </LandingReveal>
             ))}
           </div>
