@@ -13,7 +13,6 @@ begin
     update auth.users
     set
       email_confirmed_at = timezone('utc', now()),
-      confirmed_at = coalesce(confirmed_at, timezone('utc', now())),
       updated_at = timezone('utc', now())
     where id = new.id;
   end if;
