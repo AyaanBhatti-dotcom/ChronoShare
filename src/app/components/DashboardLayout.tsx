@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
@@ -12,6 +12,7 @@ import { Settings } from "./Settings";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { ShaderBackground } from "./ui/shader-background";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
+import { consumeNewSignupTour } from "../utils/onboarding";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
 
@@ -45,7 +46,6 @@ export function DashboardLayout({
   const [notifications] = useState(3);
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
-  const autoTourStarted = useRef(false);
 
   const initials = user ? getInitials(user.name) : "?";
   const firstName = user?.name.split(" ")[0] ?? "there";
@@ -55,17 +55,13 @@ export function DashboardLayout({
     setMobileOpen(false);
   }, []);
 
-  const openSidebarForTour = useCallback(() => {
-    setMobileOpen(true);
+  const sidebarStep = useCallback((screen: Screen = "home") => {
+    setScreen(screen);
+    // Only slide the sidebar in on mobile — on desktop it is always visible.
+    if (window.matchMedia("(max-width: 639px)").matches) {
+      setMobileOpen(true);
+    }
   }, []);
-
-  const sidebarStep = useCallback(
-    (screen: Screen = "home") => {
-      navigateScreen(screen);
-      openSidebarForTour();
-    },
-    [navigateScreen, openSidebarForTour],
-  );
 
   const startTour = useCallback(() => {
     setShowTour(false);
@@ -77,11 +73,10 @@ export function DashboardLayout({
     }, 250);
   }, []);
 
-  // First-time users: auto-start in-dashboard walkthrough
+  // Auto-start tour only once immediately after signup (not on refresh)
   useEffect(() => {
-    if (previewMode || !user || user.onboardingCompleted || autoTourStarted.current) return;
-    autoTourStarted.current = true;
-    startTour();
+    if (previewMode || !user) return;
+    if (consumeNewSignupTour()) startTour();
   }, [user, previewMode, startTour]);
 
   const tourSteps: TourStep[] = useMemo(
@@ -119,8 +114,8 @@ export function DashboardLayout({
           "Offer your skills or request help from the community. Both buttons take you to Post Request.",
         position: "bottom",
         onEnter: () => {
+          setScreen("home");
           setMobileOpen(false);
-          navigateScreen("home");
         },
       },
       {
@@ -154,8 +149,8 @@ export function DashboardLayout({
           "Search for people, tasks, and skills across the platform.",
         position: "bottom",
         onEnter: () => {
+          setScreen("home");
           setMobileOpen(false);
-          navigateScreen("home");
         },
       },
       {
@@ -202,6 +197,11 @@ export function DashboardLayout({
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "#0D1220", borderColor: "#1F2937" }}
+        onTransitionEnd={(e) => {
+          if (e.propertyName === "transform") {
+            window.dispatchEvent(new CustomEvent("tour-layout-change"));
+          }
+        }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b" style={{ borderColor: "#1F2937" }}>

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { AuthLayout } from "./AuthLayout";
+import { setNewSignupTourPending } from "../../utils/onboarding";
 
 export function Signup() {
   const { signup } = useAuth();
@@ -30,6 +31,7 @@ export function Signup() {
       return;
     }
 
+    setNewSignupTourPending();
     navigate("/dashboard", { replace: true });
   };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react";
+import { useEffect, useState, useCallback, useRef, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, ArrowRight, ArrowLeft } from "lucide-react";
 
@@ -33,8 +33,16 @@ function getTargetRect(selector: string): Rect | null {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   if (r.width < 1 || r.height < 1) return null;
-  return { top: r.top, left: r.left, width: r.width, height: r.height };
+  return {
+    top: Math.round(r.top),
+    left: Math.round(r.left),
+    width: Math.round(r.width),
+    height: Math.round(r.height),
+  };
 }
+
+/** Sidebar slide-in uses 300ms; allow extra time before giving up on a target. */
+const MEASURE_DELAYS_MS = [0, 50, 150, 350, 500, 750];
 
 function isRectVisible(rect: Rect): boolean {
   const vw = window.innerWidth;
@@ -49,6 +57,16 @@ function isRectVisible(rect: Rect): boolean {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function rectsEqual(a: Rect | null, b: Rect | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height;
+}
+
+function posEqual(a: { top: number; left: number }, b: { top: number; left: number }) {
+  return a.top === b.top && a.left === b.left;
 }
 
 function computeCardPosition(
@@ -103,65 +121,106 @@ function computeCardPosition(
   };
 }
 
+function centeredCardPos(): { top: number; left: number } {
+  return {
+    top: clamp(window.innerHeight / 2 - 120, VIEWPORT_PAD, window.innerHeight - 300),
+    left: clamp(
+      window.innerWidth / 2 - CARD_WIDTH / 2,
+      VIEWPORT_PAD,
+      window.innerWidth - CARD_WIDTH - VIEWPORT_PAD,
+    ),
+  };
+}
+
 export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [rect, setRect] = useState<Rect | null>(null);
-  const [cardPos, setCardPos] = useState({
-    top: Math.max(VIEWPORT_PAD, window.innerHeight / 2 - 120),
-    left: Math.max(VIEWPORT_PAD, window.innerWidth / 2 - CARD_WIDTH / 2),
-  });
+  const [targetRect, setTargetRect] = useState<Rect | null>(null);
+  const [cardPos, setCardPos] = useState(centeredCardPos);
   const cardRef = useRef<HTMLDivElement>(null);
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
 
   const step = steps[currentStep];
   const isLast = currentStep === steps.length - 1;
 
-  const updateRect = useCallback(() => {
-    if (!step?.target) {
-      setRect(null);
+  const measureTarget = useCallback((stepIndex: number) => {
+    const s = stepsRef.current[stepIndex];
+    if (!s?.target) {
+      setTargetRect(null);
       return;
     }
-    const r = getTargetRect(step.target);
-    setRect(r && isRectVisible(r) ? r : null);
-  }, [step]);
-
-  useEffect(() => {
-    step?.onEnter?.();
-    updateRect();
-    const timer = setTimeout(updateRect, 100);
-    const timer2 = setTimeout(updateRect, 350);
-    window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
-      window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
-    };
-  }, [step, updateRect, currentStep]);
-
-  const spotlight = rect
-    ? {
-        top: rect.top - SPOTLIGHT_PAD,
-        left: rect.left - SPOTLIGHT_PAD,
-        width: rect.width + SPOTLIGHT_PAD * 2,
-        height: rect.height + SPOTLIGHT_PAD * 2,
+    let r = getTargetRect(s.target);
+    if (!r || !isRectVisible(r)) {
+      const el = document.querySelector(s.target);
+      if (el) {
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+        r = getTargetRect(s.target);
       }
-    : null;
+    }
+    setTargetRect((prev) => {
+      const next = r && isRectVisible(r) ? r : null;
+      return rectsEqual(prev, next) ? prev : next;
+    });
+  }, []);
+
+  // Run onEnter first, then measure after layout settles (sidebar opens, screen changes, etc.)
+  useEffect(() => {
+    const stepIndex = currentStep;
+    const s = stepsRef.current[stepIndex];
+
+    setTargetRect(null);
+    s?.onEnter?.();
+
+    const measure = () => measureTarget(stepIndex);
+
+    const rafId = requestAnimationFrame(() => {
+      requestAnimationFrame(measure);
+    });
+
+    const timers = MEASURE_DELAYS_MS.map((ms) => window.setTimeout(measure, ms));
+
+    const onLayoutChange = () => measure();
+    window.addEventListener("resize", onLayoutChange);
+    window.addEventListener("scroll", onLayoutChange, true);
+    window.addEventListener("tour-layout-change", onLayoutChange);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      timers.forEach((id) => window.clearTimeout(id));
+      window.removeEventListener("resize", onLayoutChange);
+      window.removeEventListener("scroll", onLayoutChange, true);
+      window.removeEventListener("tour-layout-change", onLayoutChange);
+    };
+  }, [currentStep, measureTarget]);
+
+  const spotlight = useMemo<Rect | null>(() => {
+    if (!targetRect) return null;
+    return {
+      top: targetRect.top - SPOTLIGHT_PAD,
+      left: targetRect.left - SPOTLIGHT_PAD,
+      width: targetRect.width + SPOTLIGHT_PAD * 2,
+      height: targetRect.height + SPOTLIGHT_PAD * 2,
+    };
+  }, [targetRect]);
+
+  const spotlightKey = spotlight
+    ? `${spotlight.top},${spotlight.left},${spotlight.width},${spotlight.height}`
+    : "center";
 
   useLayoutEffect(() => {
     if (!cardRef.current) return;
 
-    if (!spotlight) {
-      setCardPos({
-        top: clamp(window.innerHeight / 2 - 120, VIEWPORT_PAD, window.innerHeight - 300),
-        left: clamp(window.innerWidth / 2 - CARD_WIDTH / 2, VIEWPORT_PAD, window.innerWidth - CARD_WIDTH - VIEWPORT_PAD),
-      });
-      return;
-    }
+    const next = !spotlight
+      ? centeredCardPos()
+      : computeCardPosition(
+          spotlight,
+          step?.position,
+          CARD_WIDTH,
+          cardRef.current.offsetHeight,
+        );
 
-    const cardH = cardRef.current.offsetHeight;
-    setCardPos(computeCardPosition(spotlight, step?.position, CARD_WIDTH, cardH));
-  }, [spotlight, step, currentStep]);
+    setCardPos((prev) => (posEqual(prev, next) ? prev : next));
+  }, [spotlightKey, currentStep, step?.position]);
 
   const goNext = () => {
     if (isLast) onComplete();
@@ -179,11 +238,10 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
       className="fixed inset-0"
       style={{ zIndex: 9999, fontFamily: "'Inter', sans-serif" }}
     >
-      {/* Backdrop — full dim when no target; box-shadow hole when spotlight */}
       {spotlight ? (
         <>
           <div
-            className="fixed pointer-events-none rounded-xl transition-all duration-300"
+            className="fixed pointer-events-none rounded-xl"
             style={{
               top: spotlight.top,
               left: spotlight.left,
@@ -194,7 +252,7 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
             }}
           />
           <div
-            className="fixed pointer-events-none rounded-xl transition-all duration-300"
+            className="fixed pointer-events-none rounded-xl"
             style={{
               top: spotlight.top,
               left: spotlight.left,
@@ -207,13 +265,10 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
         </>
       ) : (
         <div
-          className="fixed inset-0"
+          className="fixed inset-0 pointer-events-none"
           style={{ background: "rgba(0, 0, 0, 0.78)", zIndex: 9999 }}
         />
       )}
-
-      {/* Block interaction with dashboard beneath */}
-      <div className="fixed inset-0" style={{ zIndex: 9999 }} aria-hidden />
 
       <div
         ref={cardRef}
