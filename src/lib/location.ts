@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import type { PostWithAuthor } from "../types/database";
-import { getStateName } from "./us-states";
+import { getStateName, getStateCode } from "./us-states";
 
 export interface UserLocation {
   city: string | null;
@@ -249,4 +249,90 @@ export function filterAndSortNearbyPosts(
 
 export function milesToMeters(miles: number): number {
   return miles * 1609.34;
+}
+
+export interface LocationSuggestion {
+  city: string;
+  state: string;
+  stateName: string;
+  label: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** US city/state suggestions from OpenStreetMap (for autocomplete). */
+export async function searchLocationSuggestions(
+  query: string,
+  limit = 6,
+): Promise<LocationSuggestion[]> {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  try {
+    const params = new URLSearchParams({
+      q: trimmed,
+      countrycodes: "us",
+      format: "json",
+      addressdetails: "1",
+      limit: String(limit),
+    });
+
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+      headers: { Accept: "application/json", "User-Agent": "ChronoShare/1.0" },
+    });
+
+    if (!res.ok) return [];
+
+    const results = (await res.json()) as Array<{
+      lat: string;
+      lon: string;
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        hamlet?: string;
+        suburb?: string;
+        county?: string;
+        state?: string;
+      };
+    }>;
+
+    const seen = new Set<string>();
+    const suggestions: LocationSuggestion[] = [];
+
+    for (const hit of results) {
+      const addr = hit.address;
+      if (!addr?.state) continue;
+
+      const stateCode = getStateCode(addr.state);
+      if (!stateCode) continue;
+
+      const city =
+        addr.city ??
+        addr.town ??
+        addr.village ??
+        addr.hamlet ??
+        addr.suburb ??
+        addr.county;
+      if (!city) continue;
+
+      const key = `${city.toLowerCase()}|${stateCode}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const stateName = getStateName(stateCode) ?? addr.state;
+      suggestions.push({
+        city,
+        state: stateCode,
+        stateName,
+        label: `${city}, ${stateCode}`,
+        latitude: parseFloat(hit.lat),
+        longitude: parseFloat(hit.lon),
+      });
+    }
+
+    return suggestions;
+  } catch {
+    return [];
+  }
 }

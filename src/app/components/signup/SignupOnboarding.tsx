@@ -34,8 +34,6 @@ import {
   preloadRockyouSet,
 } from "../../../lib/password-leak-check";
 
-const DRAFT_KEY = "chronoshare-signup-draft";
-
 const STEPS = [
   { id: "welcome", label: "Welcome" },
   { id: "identity", label: "You" },
@@ -46,36 +44,8 @@ const STEPS = [
   { id: "done", label: "Ready" },
 ] as const;
 
-interface SignupDraft {
-  step: number;
-  name: string;
-  username: string;
-  email: string;
-  emailVerified?: boolean;
-}
-
-function computeInitialStep(draft: SignupDraft | null, hasSession: boolean): number {
-  if (hasSession) {
-    return Math.max(4, draft?.step ?? 4);
-  }
-  return draft?.step ?? 0;
-}
-
-function loadDraft(): SignupDraft | null {
-  try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as SignupDraft) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveDraft(draft: SignupDraft) {
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-}
-
-function clearDraft() {
-  sessionStorage.removeItem(DRAFT_KEY);
+function clearSignupDraft() {
+  sessionStorage.removeItem("chronoshare-signup-draft");
 }
 
 const inputClass =
@@ -133,14 +103,13 @@ export function SignupOnboarding() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const draft = loadDraft();
-  const hasSession = !!user;
-  const initialStep = computeInitialStep(draft, hasSession);
+  const resumingSetup = !!user && !user.profileSetupCompleted;
+  const initialStep = resumingSetup ? 4 : 0;
 
   const [step, setStep] = useState(initialStep);
-  const [name, setName] = useState(draft?.name ?? "");
-  const [username, setUsername] = useState(draft?.username ?? "");
-  const [email, setEmail] = useState(draft?.email ?? user?.email ?? "");
+  const [name, setName] = useState(resumingSetup ? user!.name : "");
+  const [username, setUsername] = useState(user?.username ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [usernameOk, setUsernameOk] = useState<boolean | null>(null);
@@ -148,9 +117,7 @@ export function SignupOnboarding() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [emailVerified, setEmailVerified] = useState(
-    draft?.emailVerified ?? hasSession,
-  );
+  const [emailVerified, setEmailVerified] = useState(!!user);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [linkResent, setLinkResent] = useState(false);
@@ -164,6 +131,13 @@ export function SignupOnboarding() {
 
   const firstName = name.trim().split(" ")[0] || "friend";
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+
+  useEffect(() => {
+    clearSignupDraft();
+    return () => {
+      clearSignupDraft();
+    };
+  }, []);
 
   useEffect(() => {
     if (step !== 2) return;
@@ -194,10 +168,6 @@ export function SignupOnboarding() {
       window.clearTimeout(timer);
     };
   }, [password, step]);
-
-  useEffect(() => {
-    saveDraft({ step, name, username, email, emailVerified });
-  }, [step, name, username, email, emailVerified]);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -345,7 +315,7 @@ export function SignupOnboarding() {
       return;
     }
 
-    clearDraft();
+    clearSignupDraft();
     setNewSignupTourPending();
 
     confetti({

@@ -57,7 +57,7 @@ export function NearbyMap({ userLocation, posts, radiusMiles, onSelectPost }: Ne
   return (
     <div className="relative rounded-2xl overflow-hidden border" style={{ borderColor: "#1F2937" }}>
       <div
-        className="absolute top-3 left-3 z-[1000] px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm"
+        className="absolute top-3 right-3 z-[400] px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm pointer-events-none"
         style={{ background: "rgba(17,24,39,0.85)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
       >
         {formatLocationLabel(userLocation)}
@@ -66,7 +66,7 @@ export function NearbyMap({ userLocation, posts, radiusMiles, onSelectPost }: Ne
         center={center}
         zoom={10}
         scrollWheelZoom={false}
-        className="h-[340px] w-full z-0"
+        className="h-[340px] w-full z-0 [&_.leaflet-top.leaflet-left]:z-[500]"
         style={{ background: "#0B1220" }}
       >
         <TileLayer

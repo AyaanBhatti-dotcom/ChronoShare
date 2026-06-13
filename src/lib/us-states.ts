@@ -56,3 +56,11 @@ export const US_STATES = [
 export function getStateName(code: string): string | null {
   return US_STATES.find((s) => s.code === code)?.name ?? null;
 }
+
+export function getStateCode(nameOrCode: string): string | null {
+  const normalized = nameOrCode.trim().toLowerCase();
+  const hit = US_STATES.find(
+    (s) => s.code.toLowerCase() === normalized || s.name.toLowerCase() === normalized,
+  );
+  return hit?.code ?? null;
+}
