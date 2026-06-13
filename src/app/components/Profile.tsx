@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ShieldCheck,
   ArrowUpRight,
@@ -69,9 +69,9 @@ const WINDOW_WIDTHS: Record<ProfileWindowId, number> = {
 };
 
 const DEFAULT_POSITIONS: Record<ProfileWindowId, { x: number; y: number }> = {
-  profile: { x: 16, y: 8 },
-  ledger: { x: 52, y: 44 },
-  pending: { x: 88, y: 72 },
+  profile: { x: 72, y: 20 },
+  ledger: { x: 112, y: 56 },
+  pending: { x: 152, y: 92 },
 };
 
 const START_TIPS = [
@@ -109,6 +109,7 @@ export const Profile = () => {
   const [activeWindow, setActiveWindow] = useState<ProfileWindowId | null>(null);
   const [windowStack, setWindowStack] = useState<ProfileWindowId[]>([]);
   const [windowPositions, setWindowPositions] = useState(DEFAULT_POSITIONS);
+  const desktopLayerRef = useRef<HTMLDivElement>(null);
 
   const showEgg = useCallback((title: string, body: string) => {
     setEggToast({ title, body });
@@ -413,7 +414,7 @@ export const Profile = () => {
         </div>
       </aside>
 
-      <div className="profile-windows">
+      <div className="profile-windows" ref={desktopLayerRef}>
         {openWindows.size === 0 && (
           <p className="profile-desktop-hint">
             Click a desktop icon to open a window — just like Windows 7.
@@ -426,6 +427,7 @@ export const Profile = () => {
             y={windowPositions.profile.y}
             width={WINDOW_WIDTHS.profile}
             zIndex={getWindowZ("profile")}
+            boundsRef={desktopLayerRef}
             onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, profile: { x, y } }))}
             onFocus={() => focusWindow("profile")}
           >
@@ -498,6 +500,7 @@ export const Profile = () => {
             y={windowPositions.pending.y}
             width={WINDOW_WIDTHS.pending}
             zIndex={getWindowZ("pending")}
+            boundsRef={desktopLayerRef}
             onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, pending: { x, y } }))}
             onFocus={() => focusWindow("pending")}
           >
@@ -578,6 +581,7 @@ export const Profile = () => {
             y={windowPositions.ledger.y}
             width={WINDOW_WIDTHS.ledger}
             zIndex={getWindowZ("ledger")}
+            boundsRef={desktopLayerRef}
             onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, ledger: { x, y } }))}
             onFocus={() => focusWindow("ledger")}
           >
