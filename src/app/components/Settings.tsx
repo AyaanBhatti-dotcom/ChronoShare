@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock } from "lucide-react";
+import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
   <button
@@ -46,8 +47,9 @@ const SettingRow = ({ label, desc, children }: { label: string; desc?: string; c
   </div>
 );
 
-export const Settings = () => {
-  const [email, setEmail] = useState("alex.johnson@chronoshare.io");
+export const Settings = ({ onLogout }: { onLogout?: () => void }) => {
+  const { user } = useAuth();
+  const [email, setEmail] = useState(user?.email ?? "");
   const [toggles, setToggles] = useState({
     publicProfile: true,
     showRating: true,
@@ -159,7 +161,17 @@ export const Settings = () => {
       >
         <p className="text-sm font-semibold text-red-400 mb-1">Danger Zone</p>
         <p className="text-xs text-[#9CA3AF] mb-4">These actions are permanent and cannot be undone.</p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium border transition-all duration-200 hover:bg-red-500/10"
+              style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444" }}
+            >
+              <LogOut size={12} />
+              Sign out
+            </button>
+          )}
           <button
             className="px-4 py-2 rounded-full text-xs font-medium border transition-all duration-200 hover:bg-red-500/10"
             style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444" }}

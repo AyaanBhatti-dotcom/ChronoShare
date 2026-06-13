@@ -1,0 +1,18 @@
+# ChronoShare Supabase project config
+# Push to remote: npx supabase link --project-ref vthefxwlwecyjsrznchr && npx supabase config push
+
+project_id = "vthefxwlwecyjsrznchr"
+
+[auth]
+site_url = "https://chrono-share.vercel.app"
+additional_redirect_urls = [
+  "https://chrono-share.vercel.app/reset-password",
+  "https://chrono-share.vercel.app/**",
+  "https://*.vercel.app/**",
+  "http://localhost:5173/reset-password",
+  "http://localhost:5173/**",
+]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false

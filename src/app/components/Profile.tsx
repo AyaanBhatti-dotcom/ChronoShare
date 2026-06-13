@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ShieldCheck, Star, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { useAuth, getInitials } from "../context/AuthContext";
 
 const history = [
   { id: 1, type: "given", name: "Sofia Larsson", task: "React component refactoring", hours: 2.0, date: "Jun 10, 2026" },
@@ -11,6 +12,7 @@ const history = [
 ];
 
 export const Profile = () => {
+  const { user } = useAuth();
   const [tab, setTab] = useState<"all" | "given" | "received">("all");
 
   const filtered = history.filter((h) => tab === "all" || h.type === tab);
@@ -26,11 +28,11 @@ export const Profile = () => {
           className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0"
           style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
         >
-          AJ
+          {user ? getInitials(user.name) : "?"}
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-semibold text-white">Alex Johnson</h2>
+            <h2 className="text-lg font-semibold text-white">{user?.name ?? "User"}</h2>
             <span
               className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
               style={{ background: "rgba(16,185,129,0.1)", color: "#10B981", border: "1px solid rgba(16,185,129,0.25)" }}

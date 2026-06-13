@@ -115,7 +115,6 @@ export const HomeDashboard = ({ onNavigate }: { onNavigate: (s: string) => void 
         boxShadow: "0 0 40px rgba(16,185,129,0.15), inset 0 1px 0 rgba(16,185,129,0.1)",
       }}
     >
-      {/* Glow blob */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)" }}
