@@ -16,6 +16,12 @@ import { consumeNewSignupTour } from "../utils/onboarding";
 import { fetchActivePostCount } from "../../lib/posts";
 
 type Screen = "home" | "board" | "post" | "profile" | "settings";
+type BoardMode = "all" | "needs" | "offers";
+
+type NavigateOptions = {
+  postType?: "needs" | "offers";
+  boardMode?: BoardMode;
+};
 
 const navItems: { id: Screen; label: string; icon: React.ReactNode }[] = [
   { id: "home", label: "Home", icon: <Home size={18} /> },
@@ -47,14 +53,20 @@ export function DashboardLayout({
   const [notifications] = useState(0);
   const [jobCount, setJobCount] = useState(0);
   const [postType, setPostType] = useState<"needs" | "offers">("needs");
+  const [boardMode, setBoardMode] = useState<BoardMode>("all");
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
 
   const initials = user ? getInitials(user.name) : "?";
   const firstName = user?.name.split(" ")[0] ?? "there";
 
-  const navigateScreen = useCallback((s: string, options?: { postType?: "needs" | "offers" }) => {
+  const navigateScreen = useCallback((s: string, options?: NavigateOptions) => {
     if (options?.postType) setPostType(options.postType);
+    if (options?.boardMode) {
+      setBoardMode(options.boardMode);
+    } else if (s === "board") {
+      setBoardMode("all");
+    }
     setScreen(s as Screen);
     setMobileOpen(false);
   }, []);
@@ -340,9 +352,14 @@ export function DashboardLayout({
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
+        <main
+          className="flex-1 overflow-y-auto px-5 py-6 sm:px-8"
+          style={{ background: "#0B0F19" }}
+        >
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
-          {screen === "board" && <JobBoard onNavigate={navigateScreen} />}
+          {screen === "board" && (
+            <JobBoard initialMode={boardMode} onNavigate={navigateScreen} />
+          )}
           {screen === "post" && (
             <PostRequest initialPostType={postType} onNavigate={navigateScreen} />
           )}

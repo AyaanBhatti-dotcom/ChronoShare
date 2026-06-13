@@ -23,13 +23,16 @@ const categoryIcon = (cat: string) => {
   return map[cat] || <Monitor size={14} />;
 };
 
+type BoardMode = "all" | "needs" | "offers";
+
 interface JobBoardProps {
-  onNavigate?: (screen: string) => void;
+  onNavigate?: (screen: string, options?: { postType?: "needs" | "offers"; boardMode?: BoardMode }) => void;
+  initialMode?: BoardMode;
 }
 
-export const JobBoard = ({ onNavigate }: JobBoardProps) => {
+export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => {
   const { user, refreshUser, isPreview } = useAuth();
-  const [mode, setMode] = useState<"needs" | "offers">("needs");
+  const [mode, setMode] = useState<BoardMode>(initialMode);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [jobs, setJobs] = useState<PostWithAuthor[]>([]);
@@ -52,13 +55,16 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
   }, []);
 
   useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
     loadPosts();
   }, [loadPosts]);
 
   const filtered = jobs.filter((j) => {
-    if (user && j.user_id === user.userId) return false;
     const authorName = j.profiles?.full_name ?? "User";
-    const matchMode = j.post_type === mode;
+    const matchMode = mode === "all" || j.post_type === mode;
     const matchCat = category === "All" || j.category === category;
     const matchSearch =
       !search ||
@@ -69,7 +75,7 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
   });
 
   const handleAccept = async () => {
-    if (!selectedJob || isPreview) return;
+    if (!selectedJob || isPreview || (user && selectedJob.user_id === user.userId)) return;
 
     setAccepting(true);
     setAcceptError(null);
@@ -90,9 +96,11 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
     }
   };
 
-  const hourImpact = selectedJob && user
+  const hourImpact = selectedJob && user && selectedJob.user_id !== user.userId
     ? getHourImpact(selectedJob.post_type, true, selectedJob.hours_cost)
     : null;
+
+  const isOwnSelected = user && selectedJob?.user_id === user.userId;
 
   return (
     <div className="space-y-5">
@@ -102,7 +110,7 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
           className="flex rounded-full p-1 w-fit"
           style={{ background: "#111827", border: "1px solid #1F2937" }}
         >
-          {(["needs", "offers"] as const).map((m) => (
+          {(["all", "needs", "offers"] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -112,7 +120,7 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
                 color: mode === m ? "#000" : "#9CA3AF",
               }}
             >
-              {m === "needs" ? "Needs Help" : "Offering Skills"}
+              {m === "all" ? "All Listings" : m === "needs" ? "Needs Help" : "Offering Skills"}
             </button>
           ))}
         </div>
@@ -159,7 +167,9 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
           <p className="text-[#9CA3AF] text-sm mb-4">
             {jobs.length === 0
               ? "No active listings yet. Be the first to post!"
-              : "No listings match your filters."}
+              : mode !== "all"
+                ? `No ${mode === "needs" ? "help requests" : "skill offers"} match your filters. Try "All Listings".`
+                : "No listings match your filters."}
           </p>
           {onNavigate && (
             <button
@@ -176,6 +186,7 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filtered.map((job) => {
             const name = job.profiles?.full_name ?? "User";
+            const isOwn = user?.userId === job.user_id;
             const impact = getHourImpact(job.post_type, true, job.hours_cost);
             return (
               <button
@@ -187,7 +198,10 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
                   setAcceptSuccess(false);
                 }}
                 className="rounded-2xl p-5 border flex flex-col gap-4 hover:border-emerald-500/40 transition-all duration-200 group text-left"
-                style={{ background: "#111827", borderColor: "#1F2937" }}
+                style={{
+                  background: "#111827",
+                  borderColor: isOwn ? "rgba(16,185,129,0.35)" : "#1F2937",
+                }}
               >
                 <div className="flex items-start gap-3">
                   <div
@@ -197,7 +211,17 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
                     {getInitials(name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[#9CA3AF] mb-0.5">{name}</p>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-xs text-[#9CA3AF]">{name}</p>
+                      {isOwn && (
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}
+                        >
+                          Your listing
+                        </span>
+                      )}
+                    </div>
                     <h3 className="text-sm font-semibold text-white leading-snug">{job.title}</h3>
                   </div>
                 </div>
@@ -221,15 +245,24 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
                       {job.hours_cost}h
                     </span>
                   </div>
-                  <span
-                    className="px-4 py-1.5 rounded-full text-xs font-semibold"
-                    style={{
-                      background: impact.direction === "earn" ? "rgba(16,185,129,0.15)" : "rgba(6,182,212,0.15)",
-                      color: impact.direction === "earn" ? "#10B981" : "#06B6D4",
-                    }}
-                  >
-                    {impact.direction === "earn" ? "Earn" : "Spend"} {impact.amount}h
-                  </span>
+                  {isOwn ? (
+                    <span
+                      className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                      style={{ background: "#1F2937", color: "#9CA3AF" }}
+                    >
+                      Live on board
+                    </span>
+                  ) : (
+                    <span
+                      className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                      style={{
+                        background: impact.direction === "earn" ? "rgba(16,185,129,0.15)" : "rgba(6,182,212,0.15)",
+                        color: impact.direction === "earn" ? "#10B981" : "#06B6D4",
+                      }}
+                    >
+                      {impact.direction === "earn" ? "Earn" : "Spend"} {impact.amount}h
+                    </span>
+                  )}
                 </div>
               </button>
             );
@@ -329,15 +362,39 @@ export const JobBoard = ({ onNavigate }: JobBoardProps) => {
                   <p className="text-sm text-red-400">{acceptError}</p>
                 )}
 
-                <button
-                  type="button"
-                  onClick={handleAccept}
-                  disabled={accepting || isPreview}
-                  className="w-full py-3.5 rounded-full text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-60"
-                  style={{ background: "#10B981", color: "#000" }}
-                >
-                  {accepting ? "Joining..." : isPreview ? "Preview mode" : "Join this exchange"}
-                </button>
+                {isOwnSelected ? (
+                  <div
+                    className="rounded-xl p-4 text-center"
+                    style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}
+                  >
+                    <p className="text-sm text-emerald-400 font-medium">This is your listing</p>
+                    <p className="text-xs text-[#9CA3AF] mt-1">
+                      Others can find and join it here. Manage it under My Listings.
+                    </p>
+                    {onNavigate && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedJob(null);
+                          onNavigate("post");
+                        }}
+                        className="mt-3 text-xs text-emerald-400 hover:text-emerald-300"
+                      >
+                        Go to My Listings
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAccept}
+                    disabled={accepting || isPreview}
+                    className="w-full py-3.5 rounded-full text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-60"
+                    style={{ background: "#10B981", color: "#000" }}
+                  >
+                    {accepting ? "Joining..." : isPreview ? "Preview mode" : "Join this exchange"}
+                  </button>
+                )}
               </>
             )}
           </div>

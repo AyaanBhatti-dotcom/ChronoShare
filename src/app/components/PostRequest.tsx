@@ -27,7 +27,7 @@ const quickTemplates = [
 
 interface PostRequestProps {
   initialPostType?: "needs" | "offers";
-  onNavigate?: (screen: string) => void;
+  onNavigate?: (screen: string, options?: { postType?: "needs" | "offers"; boardMode?: "all" | "needs" | "offers" }) => void;
 }
 
 export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostRequestProps) => {
@@ -44,6 +44,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [lastPostedType, setLastPostedType] = useState<"needs" | "offers">("needs");
 
   useEffect(() => {
     setPostType(initialPostType);
@@ -95,6 +96,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         postType,
         hoursCost: hours,
       });
+      setLastPostedType(postType);
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -146,11 +148,11 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         <p className="text-sm text-[#9CA3AF]">Your listing is now live on the Job Board.</p>
         {onNavigate && (
           <button
-            onClick={() => onNavigate("board")}
+            onClick={() => onNavigate("board", { boardMode: lastPostedType })}
             className="mt-2 px-6 py-2.5 rounded-full text-sm font-semibold"
             style={{ background: "#10B981", color: "#000" }}
           >
-            View Job Board
+            View on Job Board
           </button>
         )}
       </div>
