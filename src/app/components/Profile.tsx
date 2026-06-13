@@ -8,8 +8,10 @@ import {
   fetchMyExchanges,
   getExchangePartner,
   getExchangeHourType,
-  completeExchange,
+  confirmExchange,
   cancelExchange,
+  hasUserConfirmed,
+  isPartnerConfirmed,
 } from "../../lib/exchanges";
 import type { ExchangeWithProfiles } from "../../types/database";
 import { dashColors } from "./onboarding/aeroTheme";
@@ -48,7 +50,7 @@ export const Profile = () => {
   }, [loadExchanges]);
 
   const history = exchanges
-    .filter((ex) => ex.status !== "cancelled")
+    .filter((ex) => ex.status === "completed")
     .map((ex) => {
       const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
       const hourType = user ? getExchangeHourType(ex, user.userId) : "free";
@@ -75,15 +77,16 @@ export const Profile = () => {
     .filter((h) => h.hourType === "spent")
     .reduce((sum, h) => sum + h.hours, 0);
 
-  const handleComplete = async (exchangeId: string) => {
+  const handleConfirm = async (exchangeId: string) => {
     if (isPreview) return;
     setActionId(exchangeId);
     setError(null);
     try {
-      await completeExchange(exchangeId);
+      await confirmExchange(exchangeId);
+      await refreshUser();
       await loadExchanges();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not complete exchange");
+      setError(err instanceof Error ? err.message : "Could not confirm exchange");
     }
     setActionId(null);
   };
@@ -102,7 +105,7 @@ export const Profile = () => {
     setActionId(null);
   };
 
-  const inProgress = exchanges.filter((ex) => ex.status === "in_progress");
+  const pending = exchanges.filter((ex) => ex.status === "pending");
 
   return (
     <div className="space-y-6">
@@ -142,19 +145,24 @@ export const Profile = () => {
         ))}
       </div>
 
-      {inProgress.length > 0 && (
+      {pending.length > 0 && (
         <div className="dash-card rounded-2xl overflow-hidden">
           <div className="px-6 py-4 border-b dash-divider">
             <h3 className="text-sm font-semibold dash-heading flex items-center gap-2">
               <Loader2 size={14} className="dash-accent animate-spin" />
-              Active Exchanges
+              Awaiting Confirmation
             </h3>
+            <p className="text-xs dash-subtext mt-1">
+              Both people must confirm before hours are transferred.
+            </p>
           </div>
           <div className="divide-y dash-divider">
-            {inProgress.map((ex) => {
+            {pending.map((ex) => {
               const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
+              const userConfirmed = user ? hasUserConfirmed(ex, user.userId) : false;
+              const partnerConfirmed = user ? isPartnerConfirmed(ex, user.userId) : false;
               return (
-                <div key={ex.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-6 py-4">
+                <div key={ex.id} className="flex flex-col gap-3 px-6 py-4">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium dash-heading">{ex.title}</p>
                     <p className="text-xs dash-subtext">
@@ -164,16 +172,29 @@ export const Profile = () => {
                         : ""}
                     </p>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className={`dash-badge px-2 py-0.5 rounded-full ${userConfirmed ? "dash-badge-earn" : "dash-badge-neutral"}`}>
+                      You {userConfirmed ? "confirmed" : "pending"}
+                    </span>
+                    <span className={`dash-badge px-2 py-0.5 rounded-full ${partnerConfirmed ? "dash-badge-earn" : "dash-badge-neutral"}`}>
+                      {partner.name.split(" ")[0]} {partnerConfirmed ? "confirmed" : "pending"}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleComplete(ex.id)}
-                      disabled={actionId === ex.id || isPreview}
-                      className="dash-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60"
-                    >
-                      <CheckCircle2 size={13} />
-                      Complete
-                    </button>
+                    {!userConfirmed && (
+                      <button
+                        type="button"
+                        onClick={() => handleConfirm(ex.id)}
+                        disabled={actionId === ex.id || isPreview}
+                        className="dash-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60"
+                      >
+                        <CheckCircle2 size={13} />
+                        Confirm exchange
+                      </button>
+                    )}
+                    {userConfirmed && !partnerConfirmed && (
+                      <p className="text-xs dash-subtext">Waiting for {partner.name.split(" ")[0]} to confirm…</p>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleCancel(ex.id)}

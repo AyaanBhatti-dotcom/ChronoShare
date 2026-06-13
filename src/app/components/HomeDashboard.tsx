@@ -6,9 +6,10 @@ import {
   ArrowDownRight,
   ChevronRight,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
-import { fetchRecentExchanges, getExchangePartner } from "../../lib/exchanges";
+import { fetchRecentExchanges, getExchangePartner, fetchPendingExchanges, hasUserConfirmed } from "../../lib/exchanges";
 import { fetchActivePosts } from "../../lib/posts";
 import {
   getUserLocation,
@@ -47,6 +48,8 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const [sort, setSort] = useState<NearbySort>("nearest");
   const [scope, setScope] = useState<ListingScope>(() => getStoredListingScope("home"));
   const [exchanges, setExchanges] = useState<ExchangeWithProfiles[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [needsYourConfirm, setNeedsYourConfirm] = useState(0);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
@@ -106,6 +109,14 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
     fetchRecentExchanges(user.userId, 3)
       .then(setExchanges)
       .catch(console.warn);
+    fetchPendingExchanges(user.userId)
+      .then((pending) => {
+        setPendingCount(pending.length);
+        setNeedsYourConfirm(
+          pending.filter((ex) => !hasUserConfirmed(ex, user.userId)).length,
+        );
+      })
+      .catch(console.warn);
   }, [user]);
 
   const nearbyPosts = useMemo(() => {
@@ -117,6 +128,26 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
 
   return (
     <div className="space-y-6">
+      {pendingCount > 0 && (
+        <button
+          type="button"
+          onClick={() => onNavigate("profile")}
+          className="dash-card w-full rounded-2xl p-4 flex items-start gap-3 text-left hover:border-[rgba(45,212,191,0.55)] transition-colors"
+        >
+          <AlertCircle size={18} className="dash-accent flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold dash-heading">
+              {needsYourConfirm > 0
+                ? `${needsYourConfirm} exchange${needsYourConfirm === 1 ? "" : "s"} need your confirmation`
+                : `${pendingCount} exchange${pendingCount === 1 ? "" : "s"} awaiting partner confirmation`}
+            </p>
+            <p className="text-xs dash-subtext mt-0.5">
+              Both people must confirm before hours transfer. Open Profile to confirm or cancel.
+            </p>
+          </div>
+        </button>
+      )}
+
       {/* Location header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

@@ -382,7 +382,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                 <CheckCircle2 size={40} className="dash-accent-grass" />
                 <h3 className="text-lg font-semibold dash-heading">You&apos;re matched!</h3>
                 <p className="text-sm dash-subtext">
-                  Check your profile to manage this exchange.
+                  Head to your Profile — both of you must confirm before hours transfer.
                 </p>
               </div>
             ) : (

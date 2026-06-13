@@ -140,11 +140,14 @@ export interface Database {
           category: string;
           post_type: "needs" | "offers";
           hours: number;
-          status: "in_progress" | "completed" | "cancelled";
+          status: "pending" | "completed" | "cancelled";
           created_at: string;
           updated_at: string;
           completed_at: string | null;
           exchange_format: "in_person" | "remote" | null;
+          poster_confirmed_at: string | null;
+          acceptor_confirmed_at: string | null;
+          hours_settled: boolean;
         };
         Insert: {
           id?: string;
@@ -155,11 +158,14 @@ export interface Database {
           category: string;
           post_type: "needs" | "offers";
           hours: number;
-          status?: "in_progress" | "completed" | "cancelled";
+          status?: "pending" | "completed" | "cancelled";
           created_at?: string;
           updated_at?: string;
           completed_at?: string | null;
           exchange_format?: "in_person" | "remote" | null;
+          poster_confirmed_at?: string | null;
+          acceptor_confirmed_at?: string | null;
+          hours_settled?: boolean;
         };
         Update: {
           id?: string;
@@ -170,11 +176,14 @@ export interface Database {
           category?: string;
           post_type?: "needs" | "offers";
           hours?: number;
-          status?: "in_progress" | "completed" | "cancelled";
+          status?: "pending" | "completed" | "cancelled";
           created_at?: string;
           updated_at?: string;
           completed_at?: string | null;
           exchange_format?: "in_person" | "remote" | null;
+          poster_confirmed_at?: string | null;
+          acceptor_confirmed_at?: string | null;
+          hours_settled?: boolean;
         };
       };
     };
@@ -230,6 +239,10 @@ export interface Database {
       accept_post: {
         Args: { p_post_id: string; p_exchange_format?: string | null };
         Returns: string;
+      };
+      confirm_exchange: {
+        Args: { p_exchange_id: string };
+        Returns: void;
       };
       complete_exchange: {
         Args: { p_exchange_id: string };

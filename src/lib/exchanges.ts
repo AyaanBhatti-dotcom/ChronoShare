@@ -3,6 +3,14 @@ import type { ExchangeWithProfiles } from "../types/database";
 
 import type { ExchangeFormatResolved } from "./exchange-format";
 
+const EXCHANGE_SELECT = `
+  id, post_id, poster_id, acceptor_id, title, category, post_type, hours, status,
+  created_at, completed_at, exchange_format,
+  poster_confirmed_at, acceptor_confirmed_at, hours_settled,
+  poster:profiles!exchanges_poster_id_fkey(full_name),
+  acceptor:profiles!exchanges_acceptor_id_fkey(full_name)
+`;
+
 export async function acceptPost(
   postId: string,
   exchangeFormat?: ExchangeFormatResolved,
@@ -16,9 +24,14 @@ export async function acceptPost(
   return data as string;
 }
 
-export async function completeExchange(exchangeId: string): Promise<void> {
-  const { error } = await supabase.rpc("complete_exchange", { p_exchange_id: exchangeId });
+export async function confirmExchange(exchangeId: string): Promise<void> {
+  const { error } = await supabase.rpc("confirm_exchange", { p_exchange_id: exchangeId });
   if (error) throw new Error(error.message);
+}
+
+/** @deprecated Use confirmExchange — kept for compatibility */
+export async function completeExchange(exchangeId: string): Promise<void> {
+  return confirmExchange(exchangeId);
 }
 
 export async function cancelExchange(exchangeId: string): Promise<void> {
@@ -29,13 +42,20 @@ export async function cancelExchange(exchangeId: string): Promise<void> {
 export async function fetchMyExchanges(userId: string): Promise<ExchangeWithProfiles[]> {
   const { data, error } = await supabase
     .from("exchanges")
-    .select(`
-      id, post_id, poster_id, acceptor_id, title, category, post_type, hours, status,
-      created_at, completed_at, exchange_format,
-      poster:profiles!exchanges_poster_id_fkey(full_name),
-      acceptor:profiles!exchanges_acceptor_id_fkey(full_name)
-    `)
+    .select(EXCHANGE_SELECT)
     .or(`poster_id.eq.${userId},acceptor_id.eq.${userId}`)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ExchangeWithProfiles[];
+}
+
+export async function fetchPendingExchanges(userId: string): Promise<ExchangeWithProfiles[]> {
+  const { data, error } = await supabase
+    .from("exchanges")
+    .select(EXCHANGE_SELECT)
+    .or(`poster_id.eq.${userId},acceptor_id.eq.${userId}`)
+    .eq("status", "pending")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -45,14 +65,10 @@ export async function fetchMyExchanges(userId: string): Promise<ExchangeWithProf
 export async function fetchRecentExchanges(userId: string, limit = 5): Promise<ExchangeWithProfiles[]> {
   const { data, error } = await supabase
     .from("exchanges")
-    .select(`
-      id, post_id, poster_id, acceptor_id, title, category, post_type, hours, status,
-      created_at, completed_at, exchange_format,
-      poster:profiles!exchanges_poster_id_fkey(full_name),
-      acceptor:profiles!exchanges_acceptor_id_fkey(full_name)
-    `)
+    .select(EXCHANGE_SELECT)
     .or(`poster_id.eq.${userId},acceptor_id.eq.${userId}`)
-    .order("created_at", { ascending: false })
+    .eq("status", "completed")
+    .order("completed_at", { ascending: false })
     .limit(limit);
 
   if (error) throw new Error(error.message);
@@ -80,6 +96,22 @@ export function getExchangePartner(
       : (exchange.poster?.full_name ?? "Community member"),
     role: isPoster ? "helper" : "recipient",
   };
+}
+
+export function hasUserConfirmed(exchange: ExchangeWithProfiles, userId: string): boolean {
+  if (exchange.poster_id === userId) return exchange.poster_confirmed_at != null;
+  if (exchange.acceptor_id === userId) return exchange.acceptor_confirmed_at != null;
+  return false;
+}
+
+export function isPartnerConfirmed(exchange: ExchangeWithProfiles, userId: string): boolean {
+  if (exchange.poster_id === userId) return exchange.acceptor_confirmed_at != null;
+  if (exchange.acceptor_id === userId) return exchange.poster_confirmed_at != null;
+  return false;
+}
+
+export function bothConfirmed(exchange: ExchangeWithProfiles): boolean {
+  return exchange.poster_confirmed_at != null && exchange.acceptor_confirmed_at != null;
 }
 
 export type HourImpactDirection = "earn" | "spend" | "free";
