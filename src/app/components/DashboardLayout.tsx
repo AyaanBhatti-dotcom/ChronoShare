@@ -45,6 +45,7 @@ export function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifications] = useState(3);
   const [showTour, setShowTour] = useState(false);
+  const [tourKey, setTourKey] = useState(0);
 
   const initials = user ? getInitials(user.name) : "?";
 
@@ -53,12 +54,22 @@ export function DashboardLayout({
     setMobileOpen(false);
   }, []);
 
+  const startTour = useCallback(() => {
+    setShowTour(false);
+    setScreen("home");
+    setMobileOpen(false);
+    window.setTimeout(() => {
+      setTourKey((k) => k + 1);
+      setShowTour(true);
+    }, 150);
+  }, []);
+
   useEffect(() => {
     if (searchParams.get("tour") === "1") {
-      setShowTour(true);
       setSearchParams({}, { replace: true });
+      startTour();
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, startTour]);
 
   const tourSteps: TourStep[] = useMemo(
     () => [
@@ -120,10 +131,6 @@ export function DashboardLayout({
   );
 
   const handleTourComplete = () => setShowTour(false);
-  const handleStartTour = () => {
-    setScreen("home");
-    setShowTour(true);
-  };
 
   const handleLogout = async () => {
     if (previewMode) {
@@ -287,13 +294,16 @@ export function DashboardLayout({
           {screen === "board" && <JobBoard />}
           {screen === "post" && <PostRequest />}
           {screen === "profile" && <Profile />}
-          {screen === "settings" && <Settings onLogout={handleLogout} onStartTour={handleStartTour} />}
+          {screen === "settings" && (
+            <Settings onLogout={handleLogout} onStartTour={startTour} />
+          )}
         </main>
       </div>
       </div>
 
       {showTour && !previewMode && (
         <OnboardingTour
+          key={tourKey}
           steps={tourSteps}
           onComplete={handleTourComplete}
           onSkip={handleTourComplete}

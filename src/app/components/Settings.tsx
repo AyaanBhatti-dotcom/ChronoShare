@@ -173,6 +173,7 @@ export const Settings = ({
             desc="Replay the guided walkthrough of navigation and key features"
           >
             <button
+              type="button"
               onClick={onStartTour}
               className="px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:opacity-90"
               style={{ background: "#10B981", color: "#000" }}

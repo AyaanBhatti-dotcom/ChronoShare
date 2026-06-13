@@ -332,6 +332,7 @@ export function OnboardingFlow() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => handleFinish(true)}
               disabled={finishing}
               className="rounded-2xl py-3 px-4 text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shadow-sm"
@@ -344,6 +345,7 @@ export function OnboardingFlow() {
               {finishing ? "Loading..." : "Take the tour"}
             </button>
             <button
+              type="button"
               onClick={() => handleFinish(false)}
               disabled={finishing}
               className="rounded-2xl py-3 px-4 text-sm font-semibold transition-all hover:bg-white/60 active:scale-[0.98] disabled:opacity-60"
