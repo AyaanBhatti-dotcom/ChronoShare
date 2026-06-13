@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
   Clock, ChevronDown, Search
 } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { getInitials } from "../context/AuthContext";
+import type { PostWithAuthor } from "../../types/database";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -18,51 +21,49 @@ const categoryIcon = (cat: string) => {
   return map[cat] || <Monitor size={14} />;
 };
 
-const jobs = [
-  {
-    id: 1, avatar: "SL", name: "Sofia Larsson", title: "Need router setup & network config help",
-    category: "Tech", cost: 1.0, type: "needs",
-    desc: "My home office setup is a mess. Looking for someone to configure router, set up VLANs, and run cable.",
-  },
-  {
-    id: 2, avatar: "DW", name: "David Winslow", title: "Offering: Advanced Python / Data Science tutoring",
-    category: "Education", cost: 1.5, type: "offers",
-    desc: "5+ years in ML. Can help with pandas, sklearn, model training, visualization, and interview prep.",
-  },
-  {
-    id: 3, avatar: "PO", name: "Priya Okafor", title: "Drywall patching and interior painting",
-    category: "Labor", cost: 2.0, type: "needs",
-    desc: "Small bathroom patch + one accent wall repainted. All materials on hand, just need the skilled hands.",
-  },
-  {
-    id: 4, avatar: "LM", name: "Leo Marchand", title: "Offering: Drum lessons for beginners",
-    category: "Music", cost: 1.0, type: "offers",
-    desc: "I'm a session drummer with 10 years of experience. Happy to teach fundamentals, groove, and basic fills.",
-  },
-  {
-    id: 5, avatar: "NB", name: "Nadia Brennan", title: "Need meal prep coaching for busy week",
-    category: "Cooking", cost: 1.5, type: "needs",
-    desc: "Help me plan and batch-cook 5 days of healthy meals. Preference for Mediterranean-style food.",
-  },
-  {
-    id: 6, avatar: "RG", name: "Riku Goto", title: "Offering: Figma UI design review & polish",
-    category: "Design", cost: 1.0, type: "offers",
-    desc: "Senior product designer. Will review your screens, give structured feedback, and suggest improvements.",
-  },
-];
-
 export const JobBoard = () => {
   const [mode, setMode] = useState<"needs" | "offers">("needs");
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const [jobs, setJobs] = useState<PostWithAuthor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPosts() {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, title, description, category, post_type, hours_cost, profiles(full_name)")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (!mounted) return;
+
+      if (error) {
+        console.warn("Could not load posts:", error.message);
+        setJobs([]);
+      } else {
+        setJobs((data ?? []) as PostWithAuthor[]);
+      }
+      setLoading(false);
+    }
+
+    loadPosts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const filtered = jobs.filter((j) => {
-    const matchMode = j.type === mode;
+    const authorName = j.profiles?.full_name ?? "User";
+    const matchMode = j.post_type === mode;
     const matchCat = category === "All" || j.category === category;
     const matchSearch =
       !search ||
       j.title.toLowerCase().includes(search.toLowerCase()) ||
-      j.name.toLowerCase().includes(search.toLowerCase());
+      authorName.toLowerCase().includes(search.toLowerCase());
     return matchMode && matchCat && matchSearch;
   });
 
@@ -121,55 +122,64 @@ export const JobBoard = () => {
       </div>
 
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-[#9CA3AF] text-sm">No listings match your filters.</div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {filtered.map((job) => (
-            <div
-              key={job.id}
-              className="rounded-2xl p-5 border flex flex-col gap-4 hover:border-emerald-500/40 transition-all duration-200 group"
-              style={{ background: "#111827", borderColor: "#1F2937" }}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                >
-                  {job.avatar}
+          {filtered.map((job) => {
+            const name = job.profiles?.full_name ?? "User";
+            return (
+              <div
+                key={job.id}
+                className="rounded-2xl p-5 border flex flex-col gap-4 hover:border-emerald-500/40 transition-all duration-200 group"
+                style={{ background: "#111827", borderColor: "#1F2937" }}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                    style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+                  >
+                    {getInitials(name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-[#9CA3AF] mb-0.5">{name}</p>
+                    <h3 className="text-sm font-semibold text-white leading-snug">{job.title}</h3>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[#9CA3AF] mb-0.5">{job.name}</p>
-                  <h3 className="text-sm font-semibold text-white leading-snug">{job.title}</h3>
+                {job.description && (
+                  <p className="text-xs text-[#9CA3AF] leading-relaxed">{job.description}</p>
+                )}
+                <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+                      style={{ background: "#1F2937", borderColor: "#374151", color: "#9CA3AF" }}
+                    >
+                      {categoryIcon(job.category)}
+                      {job.category}
+                    </span>
+                    <span
+                      className="flex items-center gap-1 text-xs font-medium"
+                      style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}
+                    >
+                      <Clock size={11} />
+                      {job.hours_cost}h
+                    </span>
+                  </div>
+                  <button
+                    className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+                    style={{ background: "#10B981", color: "#000" }}
+                  >
+                    Accept
+                  </button>
                 </div>
               </div>
-              <p className="text-xs text-[#9CA3AF] leading-relaxed">{job.desc}</p>
-              <div className="flex items-center justify-between mt-auto">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
-                    style={{ background: "#1F2937", borderColor: "#374151", color: "#9CA3AF" }}
-                  >
-                    {categoryIcon(job.category)}
-                    {job.category}
-                  </span>
-                  <span
-                    className="flex items-center gap-1 text-xs font-medium"
-                    style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}
-                  >
-                    <Clock size={11} />
-                    {job.cost}h
-                  </span>
-                </div>
-                <button
-                  className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ background: "#10B981", color: "#000" }}
-                >
-                  Accept
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

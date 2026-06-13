@@ -7,6 +7,7 @@ import { ResetPassword } from "./components/auth/ResetPassword";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoute";
+import { AdminPage } from "./components/admin/AdminPage";
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

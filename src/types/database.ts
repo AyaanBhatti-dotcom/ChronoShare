@@ -35,11 +35,95 @@ export interface Database {
           updated_at?: string;
         };
       };
+      posts: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          category: string;
+          post_type: "needs" | "offers";
+          hours_cost: number;
+          status: "active" | "closed" | "archived";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          category: string;
+          post_type: "needs" | "offers";
+          hours_cost?: number;
+          status?: "active" | "closed" | "archived";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          category?: string;
+          post_type?: "needs" | "offers";
+          hours_cost?: number;
+          status?: "active" | "closed" | "archived";
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      admin_verify_key: {
+        Args: { p_key: string };
+        Returns: boolean;
+      };
+      admin_list_profiles: {
+        Args: { p_key: string };
+        Returns: AdminProfile[];
+      };
+      admin_list_posts: {
+        Args: { p_key: string };
+        Returns: AdminPost[];
+      };
+      admin_update_post_status: {
+        Args: { p_key: string; p_post_id: string; p_status: string };
+        Returns: void;
+      };
+    };
     Enums: Record<string, never>;
   };
 }
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Post = Database["public"]["Tables"]["posts"]["Row"];
+
+export interface AdminProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  hours_available: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminPost {
+  id: string;
+  user_id: string;
+  author_name: string;
+  author_email: string | null;
+  title: string;
+  description: string | null;
+  category: string;
+  post_type: "needs" | "offers";
+  hours_cost: number;
+  status: "active" | "closed" | "archived";
+  created_at: string;
+  updated_at: string;
+}
+
+export type PostWithAuthor = Post & {
+  profiles: Pick<Profile, "full_name"> | null;
+};
