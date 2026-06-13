@@ -1,0 +1,113 @@
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
+import L from "leaflet";
+import type { NearbyPost, UserLocation } from "../../lib/location";
+import { formatDistance, formatLocationLabel, milesToMeters } from "../../lib/location";
+import "leaflet/dist/leaflet.css";
+
+const userIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:14px;height:14px;border-radius:50%;background:#10B981;border:2px solid #fff;box-shadow:0 0 8px rgba(16,185,129,0.8)"></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
+const postIcon = L.divIcon({
+  className: "",
+  html: `<div style="width:10px;height:10px;border-radius:50%;background:#06B6D4;border:2px solid #fff;box-shadow:0 0 6px rgba(6,182,212,0.6)"></div>`,
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
+});
+
+function MapViewport({
+  center,
+  radiusMiles,
+}: {
+  center: [number, number];
+  radiusMiles: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.setView(center, map.getZoom());
+  }, [center, map]);
+
+  useEffect(() => {
+    const radiusMeters = milesToMeters(radiusMiles);
+    const bounds = L.latLng(center[0], center[1]).toBounds(radiusMeters * 2);
+    map.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 });
+  }, [center, radiusMiles, map]);
+
+  return null;
+}
+
+interface NearbyMapProps {
+  userLocation: UserLocation;
+  posts: NearbyPost[];
+  radiusMiles: number;
+  onSelectPost?: (post: NearbyPost) => void;
+}
+
+export function NearbyMap({ userLocation, posts, radiusMiles, onSelectPost }: NearbyMapProps) {
+  const center: [number, number] = [userLocation.latitude, userLocation.longitude];
+  const mapPosts = posts.filter(
+    (post) => post.latitude != null && post.longitude != null,
+  );
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden border" style={{ borderColor: "#1F2937" }}>
+      <div
+        className="absolute top-3 left-3 z-[1000] px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm"
+        style={{ background: "rgba(17,24,39,0.85)", color: "#10B981", border: "1px solid rgba(16,185,129,0.3)" }}
+      >
+        {formatLocationLabel(userLocation)}
+      </div>
+      <MapContainer
+        center={center}
+        zoom={10}
+        scrollWheelZoom={false}
+        className="h-[340px] w-full z-0"
+        style={{ background: "#0B1220" }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        />
+        <MapViewport center={center} radiusMiles={radiusMiles} />
+        <Marker position={center} icon={userIcon}>
+          <Popup>You are here</Popup>
+        </Marker>
+        <Circle
+          center={center}
+          radius={milesToMeters(radiusMiles)}
+          pathOptions={{
+            color: "#10B981",
+            fillColor: "#10B981",
+            fillOpacity: 0.08,
+            weight: 1.5,
+            dashArray: "6 4",
+          }}
+        />
+        {mapPosts.map((post) => (
+          <Marker
+            key={post.id}
+            position={[post.latitude!, post.longitude!]}
+            icon={postIcon}
+            eventHandlers={{
+              click: () => onSelectPost?.(post),
+            }}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-semibold">{post.title}</p>
+                <p className="text-xs opacity-70">
+                  {formatDistance(post.distanceMiles)} · {post.hours_cost}h
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
+  );
+}

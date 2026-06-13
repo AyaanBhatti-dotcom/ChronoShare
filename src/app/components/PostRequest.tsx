@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { createPost, fetchMyPosts, closePost, reopenPost } from "../../lib/posts";
+import { getUserLocation } from "../../lib/location";
 import type { Post } from "../../types/database";
 
 const categories = [
@@ -88,6 +89,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
     setError(null);
 
     try {
+      const location = await getUserLocation(user.userId);
       await createPost({
         userId: user.userId,
         title,
@@ -95,6 +97,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         category,
         postType,
         hoursCost: hours,
+        location,
       });
       setLastPostedType(postType);
       setSubmitted(true);

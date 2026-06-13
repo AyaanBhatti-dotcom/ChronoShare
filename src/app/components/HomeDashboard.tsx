@@ -1,92 +1,32 @@
-import { useEffect, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Clock, ArrowUpRight, ArrowDownRight, CheckCircle2, Loader2, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  MapPin,
+  Clock,
+  ArrowUpRight,
+  ArrowDownRight,
+  ChevronRight,
+  Sparkles,
+} from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { fetchRecentExchanges, getExchangePartner } from "../../lib/exchanges";
+import { fetchActivePosts } from "../../lib/posts";
+import {
+  getUserLocation,
+  enrichPostsWithDistance,
+  filterAndSortNearbyPosts,
+  formatDistance,
+  formatLocationLabel,
+  type NearbyPost,
+  type NearbySort,
+  type UserLocation,
+} from "../../lib/location";
+import { getHourImpact } from "../../lib/exchanges";
 import type { ExchangeWithProfiles } from "../../types/database";
+import { NearbyMap } from "./NearbyMap";
+import { LocationPicker } from "./LocationPicker";
+import { Slider } from "./ui/slider";
 
-const earnedData = [
-  { day: "W1", hours: 0 }, { day: "W2", hours: 0.5 }, { day: "W3", hours: 1.0 },
-  { day: "W4", hours: 0.5 }, { day: "W5", hours: 2.0 },
-];
-
-const spentData = [
-  { day: "W1", hours: 0.5 }, { day: "W2", hours: 0 }, { day: "W3", hours: 1.0 },
-  { day: "W4", hours: 1.5 }, { day: "W5", hours: 0.5 },
-];
-
-const StatusPill = ({ status }: { status: string }) => {
-  const isComplete = status === "completed";
-  const isCancelled = status === "cancelled";
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-        isComplete
-          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-          : isCancelled
-            ? "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-            : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-      }`}
-    >
-      {isComplete ? (
-        <CheckCircle2 size={11} />
-      ) : isCancelled ? null : (
-        <Loader2 size={11} className="animate-spin" />
-      )}
-      {status === "in_progress" ? "In Progress" : status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
-  );
-};
-
-const MiniChart = ({
-  data,
-  color,
-  label,
-  total,
-}: {
-  data: { day: string; hours: number }[];
-  color: string;
-  label: string;
-  total: string;
-}) => (
-  <div
-    className="rounded-2xl p-5 border"
-    style={{ background: "#111827", borderColor: "#1F2937" }}
-  >
-    <div className="flex items-start justify-between mb-3">
-      <div>
-        <p className="text-xs text-[#9CA3AF] mb-1">{label}</p>
-        <p className="text-2xl font-semibold text-white" style={{ fontFamily: "'DM Mono', monospace" }}>
-          {total}
-        </p>
-      </div>
-    </div>
-    <ResponsiveContainer width="100%" height={60}>
-      <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-        <defs>
-          <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey="hours"
-          stroke={color}
-          strokeWidth={2}
-          fill={`url(#grad-${label})`}
-          dot={false}
-        />
-        <Tooltip
-          contentStyle={{ background: "#1F2937", border: "none", borderRadius: 8, fontSize: 11 }}
-          itemStyle={{ color }}
-          labelStyle={{ color: "#9CA3AF" }}
-          formatter={(v: number) => [`${v}h`, ""]}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  </div>
-);
+const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
 interface HomeDashboardProps {
   onNavigate: (s: string, options?: { postType?: "needs" | "offers" }) => void;
@@ -94,150 +34,349 @@ interface HomeDashboardProps {
 
 export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const { user } = useAuth();
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [posts, setPosts] = useState<NearbyPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [radiusMiles, setRadiusMiles] = useState(25);
+  const [sort, setSort] = useState<NearbySort>("nearest");
   const [exchanges, setExchanges] = useState<ExchangeWithProfiles[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const loadLocation = useCallback(async () => {
+    if (!user) return;
+    setLocationLoading(true);
+    try {
+      const location = await getUserLocation(user.userId);
+      setUserLocation(location);
+    } catch (err) {
+      console.warn(err);
+    } finally {
+      setLocationLoading(false);
+    }
+  }, [user]);
+
+  const handleLocationSaved = (location: UserLocation) => {
+    setUserLocation(location);
+  };
+
+  const loadPosts = useCallback(async () => {
+    setPostsLoading(true);
+    try {
+      const active = await fetchActivePosts();
+      if (userLocation) {
+        setPosts(enrichPostsWithDistance(active, userLocation));
+      } else {
+        setPosts(
+          active.map((post) => ({
+            ...post,
+            distanceMiles: null,
+            matchType: "unknown" as const,
+          })),
+        );
+      }
+    } catch (err) {
+      console.warn("Could not load nearby listings:", err);
+      setPosts([]);
+    } finally {
+      setPostsLoading(false);
+    }
+  }, [userLocation]);
+
+  useEffect(() => {
+    loadLocation();
+  }, [loadLocation]);
+
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
 
   useEffect(() => {
     if (!user) return;
-    fetchRecentExchanges(user.userId, 4)
+    fetchRecentExchanges(user.userId, 3)
       .then(setExchanges)
-      .catch(console.warn)
-      .finally(() => setLoading(false));
+      .catch(console.warn);
   }, [user]);
 
-  const hoursEarned = exchanges.reduce((sum, ex) => {
-    const isEarn =
-      (ex.post_type === "needs" && ex.acceptor_id === user?.userId) ||
-      (ex.post_type === "offers" && ex.poster_id === user?.userId);
-    return isEarn && ex.status !== "cancelled" ? sum + ex.hours : sum;
-  }, 0);
+  const nearbyPosts = useMemo(() => {
+    if (!userLocation) {
+      return posts
+        .filter((post) => post.matchType !== "unknown")
+        .slice(0, 8);
+    }
+    return filterAndSortNearbyPosts(posts, radiusMiles, sort).slice(0, 8);
+  }, [posts, userLocation, radiusMiles, sort]);
 
-  const hoursSpent = exchanges.reduce((sum, ex) => {
-    const isSpend =
-      (ex.post_type === "needs" && ex.poster_id === user?.userId) ||
-      (ex.post_type === "offers" && ex.acceptor_id === user?.userId);
-    return isSpend && ex.status !== "cancelled" ? sum + ex.hours : sum;
-  }, 0);
+  const radiusIndex = RADIUS_OPTIONS.indexOf(radiusMiles);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <MiniChart
-          data={earnedData}
-          color="#10B981"
-          label="Hours Earned"
-          total={`${hoursEarned.toFixed(1)}h`}
-        />
-        <MiniChart
-          data={spentData}
-          color="#06B6D4"
-          label="Hours Spent"
-          total={`${hoursSpent.toFixed(1)}h`}
-        />
+      {/* Location header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin size={16} className="text-emerald-400" />
+            <h2 className="text-lg font-semibold text-white">Nearby Listings</h2>
+          </div>
+          <p className="text-sm text-[#9CA3AF]">
+            {locationLoading
+              ? "Loading your location..."
+              : userLocation
+                ? `Showing opportunities near ${formatLocationLabel(userLocation)}`
+                : "Set your location to see nearby listings on the map"}
+          </p>
+        </div>
+        {userLocation && (
+        <div
+          className="flex rounded-full p-1 w-fit"
+          style={{ background: "#111827", border: "1px solid #1F2937" }}
+        >
+          {(["nearest", "newest"] as const).map((option) => (
+            <button
+              key={option}
+              onClick={() => setSort(option)}
+              className="px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={{
+                background: sort === option ? "#10B981" : "transparent",
+                color: sort === option ? "#000" : "#9CA3AF",
+              }}
+            >
+              {option === "nearest" ? "Nearest" : "Newest"}
+            </button>
+          ))}
+        </div>
+        )}
       </div>
 
-      <div
-        className="relative rounded-2xl p-8 border overflow-hidden text-center"
-        style={{
-          background: "linear-gradient(135deg, #0f1e2e 0%, #111827 60%, #0f1e2e 100%)",
-          borderColor: "#10B981",
-          boxShadow: "0 0 40px rgba(16,185,129,0.15), inset 0 1px 0 rgba(16,185,129,0.1)",
-        }}
-      >
+      {!locationLoading && !userLocation && (
+        <LocationPicker onSaved={handleLocationSaved} />
+      )}
+
+      {/* Map */}
+      {locationLoading ? (
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)" }}
+          className="h-[340px] rounded-2xl border flex items-center justify-center"
+          style={{ background: "#111827", borderColor: "#1F2937" }}
+        >
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+        </div>
+      ) : userLocation ? (
+        <NearbyMap
+          userLocation={userLocation}
+          posts={nearbyPosts}
+          radiusMiles={radiusMiles}
+          onSelectPost={() => onNavigate("board")}
         />
-        <div className="relative z-10">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Clock size={16} className="text-emerald-400" />
-            <p className="text-sm text-[#9CA3AF] tracking-wide uppercase">Available Balance</p>
+      ) : null}
+
+      {/* Radius control */}
+      {userLocation && (
+        <div
+          className="rounded-2xl p-5 border space-y-4"
+          style={{ background: "#111827", borderColor: "#1F2937" }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-white">Search radius</p>
+            <span
+              className="text-sm font-semibold text-emerald-400"
+              style={{ fontFamily: "'DM Mono', monospace" }}
+            >
+              {radiusMiles} mi
+            </span>
           </div>
+          <Slider
+            min={0}
+            max={RADIUS_OPTIONS.length - 1}
+            step={1}
+            value={[radiusIndex >= 0 ? radiusIndex : 2]}
+            onValueChange={([value]) => setRadiusMiles(RADIUS_OPTIONS[value] ?? 25)}
+            className="[&_[data-slot=slider-track]]:bg-[#1F2937] [&_[data-slot=slider-range]]:bg-emerald-500 [&_[data-slot=slider-thumb]]:border-emerald-500"
+          />
+          <div className="flex justify-between text-[10px] text-[#6B7280] uppercase tracking-wide">
+            {RADIUS_OPTIONS.map((miles) => (
+              <span key={miles}>{miles}mi</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Nearby listing cards */}
+      {userLocation && (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Sparkles size={14} className="text-emerald-400" />
+            New in your area
+          </h3>
+          <button
+            onClick={() => onNavigate("board")}
+            className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            View all <ChevronRight size={14} />
+          </button>
+        </div>
+
+        {postsLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-7 h-7 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+          </div>
+        ) : nearbyPosts.length === 0 ? (
+          <div
+            className="rounded-2xl border p-8 text-center"
+            style={{ background: "#111827", borderColor: "#1F2937" }}
+          >
+            <p className="text-sm text-[#9CA3AF] mb-3">
+              No listings within {radiusMiles} miles yet.
+            </p>
+            <button
+              onClick={() => onNavigate("post")}
+              className="text-xs text-emerald-400 hover:text-emerald-300"
+            >
+              Be the first to post in your area
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {nearbyPosts.map((post) => {
+              const name = post.profiles?.full_name ?? "User";
+              const impact = getHourImpact(post.post_type, true, post.hours_cost);
+              const isOwn = user?.userId === post.user_id;
+              return (
+                <button
+                  key={post.id}
+                  type="button"
+                  onClick={() => onNavigate("board")}
+                  className="rounded-2xl p-4 border text-left transition-all hover:border-emerald-500/40"
+                  style={{
+                    background: "#111827",
+                    borderColor: isOwn ? "rgba(16,185,129,0.35)" : "#1F2937",
+                  }}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
+                      style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+                    >
+                      {getInitials(name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[#9CA3AF] mb-0.5">{name}</p>
+                      <h4 className="text-sm font-semibold text-white leading-snug line-clamp-2">
+                        {post.title}
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-[#9CA3AF]">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={11} className="text-emerald-400" />
+                        {post.matchType === "state"
+                          ? "Same state"
+                          : formatDistance(post.distanceMiles)}
+                      </span>
+                      <span className="flex items-center gap-1" style={{ fontFamily: "'DM Mono', monospace", color: "#10B981" }}>
+                        <Clock size={11} />
+                        {post.hours_cost}h
+                      </span>
+                    </div>
+                    {!isOwn && (
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                        style={{
+                          background: impact.direction === "earn" ? "rgba(16,185,129,0.15)" : "rgba(6,182,212,0.15)",
+                          color: impact.direction === "earn" ? "#10B981" : "#06B6D4",
+                        }}
+                      >
+                        {impact.direction === "earn" ? "Earn" : "Spend"} {impact.amount}h
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Compact balance + recent */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div
+          className="rounded-2xl p-6 border text-center"
+          style={{ background: "#111827", borderColor: "#1F2937" }}
+        >
+          <p className="text-xs text-[#9CA3AF] uppercase tracking-wide mb-2">Available Balance</p>
           <p
-            className="text-8xl font-semibold text-white mb-1"
-            style={{ fontFamily: "'DM Mono', monospace", letterSpacing: "-0.02em" }}
+            className="text-5xl font-semibold text-white mb-1"
+            style={{ fontFamily: "'DM Mono', monospace" }}
           >
             {user?.hoursAvailable.toFixed(1) ?? "0.0"}
           </p>
-          <p className="text-emerald-400 text-lg mb-8">Hours</p>
-          <div className="flex items-center justify-center gap-3" data-tour="quick-actions">
+          <p className="text-emerald-400 text-sm mb-4">Hours</p>
+          <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => onNavigate("post", { postType: "offers" })}
-              className="px-8 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+              className="px-5 py-2 rounded-full text-xs font-semibold"
               style={{ background: "#10B981", color: "#000" }}
             >
               Offer Time
             </button>
             <button
               onClick={() => onNavigate("post", { postType: "needs" })}
-              className="px-8 py-3 rounded-full text-sm font-semibold border transition-all duration-200 hover:bg-emerald-500/10 active:scale-[0.98]"
+              className="px-5 py-2 rounded-full text-xs font-semibold border"
               style={{ borderColor: "#10B981", color: "#10B981" }}
             >
               Request Time
             </button>
           </div>
         </div>
-      </div>
 
-      <div className="rounded-2xl border overflow-hidden" style={{ background: "#111827", borderColor: "#1F2937" }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#1F2937" }}>
-          <h3 className="text-sm font-semibold text-white">Recent Exchanges</h3>
-          <button
-            onClick={() => onNavigate("profile")}
-            className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-          >
-            View all <ChevronRight size={14} />
-          </button>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-          </div>
-        ) : exchanges.length === 0 ? (
-          <div className="px-6 py-8 text-center">
-            <p className="text-sm text-[#9CA3AF] mb-3">No exchanges yet.</p>
+        <div className="rounded-2xl border overflow-hidden" style={{ background: "#111827", borderColor: "#1F2937" }}>
+          <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: "#1F2937" }}>
+            <h3 className="text-sm font-semibold text-white">Recent Exchanges</h3>
             <button
-              onClick={() => onNavigate("board")}
-              className="text-xs text-emerald-400 hover:text-emerald-300"
+              onClick={() => onNavigate("profile")}
+              className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
             >
-              Browse the Job Board to get started
+              View all <ChevronRight size={14} />
             </button>
           </div>
-        ) : (
-          <div className="divide-y" style={{ borderColor: "#1F2937" }}>
-            {exchanges.map((ex) => {
-              const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
-              const isEarn =
-                (ex.post_type === "needs" && ex.acceptor_id === user?.userId) ||
-                (ex.post_type === "offers" && ex.poster_id === user?.userId);
-              return (
-                <div key={ex.id} className="flex items-center gap-4 px-6 py-3.5 hover:bg-white/[0.02] transition-colors">
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                  >
-                    {getInitials(partner.name)}
+          {exchanges.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-[#9CA3AF] text-center">No exchanges yet.</p>
+          ) : (
+            <div className="divide-y" style={{ borderColor: "#1F2937" }}>
+              {exchanges.map((ex) => {
+                const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
+                const isEarn =
+                  (ex.post_type === "needs" && ex.acceptor_id === user?.userId) ||
+                  (ex.post_type === "offers" && ex.poster_id === user?.userId);
+                return (
+                  <div key={ex.id} className="flex items-center gap-3 px-5 py-3">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold"
+                      style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+                    >
+                      {getInitials(partner.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-white truncate">{ex.title}</p>
+                      <p className="text-[10px] text-[#9CA3AF]">{partner.name}</p>
+                    </div>
+                    <span
+                      className="text-xs font-medium flex items-center gap-0.5"
+                      style={{
+                        fontFamily: "'DM Mono', monospace",
+                        color: isEarn ? "#10B981" : "#06B6D4",
+                      }}
+                    >
+                      {isEarn ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                      {ex.hours}h
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{partner.name}</p>
-                    <p className="text-xs text-[#9CA3AF] truncate">{ex.title}</p>
-                  </div>
-                  <span
-                    className="text-sm font-medium flex-shrink-0 flex items-center gap-0.5"
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      color: isEarn ? "#10B981" : "#06B6D4",
-                    }}
-                  >
-                    {isEarn ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                    {ex.hours}h
-                  </span>
-                  <StatusPill status={ex.status} />
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

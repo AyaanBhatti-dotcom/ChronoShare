@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass, RotateCcw, MapPin } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { getUserLocation, formatLocationLabel, type UserLocation } from "../../lib/location";
+import { LocationPicker } from "./LocationPicker";
 
 const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
   <button
@@ -56,6 +58,8 @@ export const Settings = ({
 }) => {
   const { user } = useAuth();
   const [email, setEmail] = useState(user?.email ?? "");
+  const [savedLocation, setSavedLocation] = useState<UserLocation | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
   const [toggles, setToggles] = useState({
     publicProfile: true,
@@ -70,6 +74,17 @@ export const Settings = ({
 
   const set = (key: keyof typeof toggles) => (v: boolean) =>
     setToggles((t) => ({ ...t, [key]: v }));
+
+  useEffect(() => {
+    if (!user) {
+      setLocationLoading(false);
+      return;
+    }
+    getUserLocation(user.userId)
+      .then(setSavedLocation)
+      .catch(console.warn)
+      .finally(() => setLocationLoading(false));
+  }, [user]);
 
   const handleRestartOnboarding = async () => {
     if (!onRestartOnboarding) return;
@@ -115,6 +130,34 @@ export const Settings = ({
             Save Changes
           </button>
         </div>
+      </div>
+
+      {/* Location */}
+      <div {...cardProps}>
+        <SectionHeader
+          icon={<MapPin size={16} />}
+          title="Your Location"
+          desc="Used for nearby listings and map on the home dashboard"
+        />
+        {locationLoading ? (
+          <div className="flex justify-center py-6">
+            <div className="w-6 h-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+          </div>
+        ) : (
+          <>
+            {savedLocation && (
+              <p className="text-xs text-[#9CA3AF] mb-4">
+                Current: <span className="text-emerald-400">{formatLocationLabel(savedLocation)}</span>
+              </p>
+            )}
+            <LocationPicker
+              initialLocation={savedLocation}
+              onSaved={setSavedLocation}
+              compact
+              showSuccessMessage
+            />
+          </>
+        )}
       </div>
 
       {/* Privacy */}

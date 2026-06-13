@@ -1,10 +1,14 @@
 import { supabase } from "./supabase";
 import type { Post, PostWithAuthor } from "../types/database";
+import type { UserLocation } from "./location";
+
+const POST_SELECT =
+  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, created_at, profiles(full_name)";
 
 export async function fetchActivePosts(): Promise<PostWithAuthor[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("id, user_id, title, description, category, post_type, hours_cost, status, created_at, profiles(full_name)")
+    .select(POST_SELECT)
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
@@ -40,6 +44,7 @@ export async function createPost(input: {
   category: string;
   postType: "needs" | "offers";
   hoursCost: number;
+  location?: UserLocation | null;
 }): Promise<void> {
   const { error } = await supabase.from("posts").insert({
     user_id: input.userId,
@@ -48,6 +53,12 @@ export async function createPost(input: {
     category: input.category,
     post_type: input.postType,
     hours_cost: input.hoursCost,
+    city: input.location?.city ?? null,
+    region: input.location?.region ?? null,
+    state: input.location?.state ?? null,
+    country: input.location?.country ?? null,
+    latitude: input.location?.latitude ?? null,
+    longitude: input.location?.longitude ?? null,
   });
 
   if (error) throw new Error(error.message);
