@@ -102,6 +102,14 @@ export function Login() {
         >
           {loading ? "Signing in..." : "Sign in"}
         </button>
+
+        <Link
+          to="/admin"
+          className="block w-full rounded-xl py-2.5 text-sm font-medium text-center transition-colors hover:text-white"
+          style={{ border: "1px solid #1F2937", color: "#9CA3AF" }}
+        >
+          Dev Admin
+        </Link>
       </form>
     </AuthLayout>
   );
