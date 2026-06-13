@@ -13,6 +13,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { getAuthenticatedHomePath } from "../utils/auth-routes";
 import { MountainVistaParallax } from "./ui/mountain-vista-bg";
+import { LandingReveal } from "./LandingReveal";
+import { aero } from "./onboarding/aeroTheme";
 
 const features = [
   {
@@ -40,7 +42,7 @@ const features = [
 const stats = [
   { value: "2,400+", label: "Active members" },
   { value: "18k", label: "Hours exchanged" },
-  { value: "4.9", label: "Avg. rating", icon: <Star size={14} className="text-amber-400 fill-amber-400" /> },
+  { value: "4.9", label: "Avg. rating", icon: <Star size={14} className="text-[#c47a12] fill-[#ffd166]" /> },
 ];
 
 export function LandingPage() {
@@ -68,10 +70,13 @@ export function LandingPage() {
   if (isLoading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "#0B0F19" }}
+        className="min-h-screen flex items-center justify-center landing-aero"
+        style={{ background: aero.gradientBg }}
       >
-        <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+        <div
+          className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: aero.aquaDeep, borderTopColor: "transparent" }}
+        />
       </div>
     );
   }
@@ -81,41 +86,34 @@ export function LandingPage() {
   }
 
   return (
-    <div
-      className="min-h-screen overflow-x-hidden"
-      style={{ background: "#0B0F19", fontFamily: "'Inter', sans-serif" }}
-    >
-      {/* Nav — fixed over full-screen hero */}
-      <header className={`landing-nav ${navScrolled ? "landing-nav-scrolled" : ""}`}>
+    <div className="landing-aero min-h-screen overflow-x-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <header
+        className={`landing-nav landing-nav-aero ${navScrolled ? "landing-nav-aero-scrolled" : ""}`}
+      >
         <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
+              style={{ background: aero.gradientPrimary }}
             >
-              <Clock size={18} style={{ color: "#000" }} />
+              <Clock size={18} style={{ color: aero.text }} />
             </div>
-            <span className="text-sm font-semibold text-white tracking-tight">ChronoShare</span>
+            <span className="text-sm font-semibold landing-heading tracking-tight">ChronoShare</span>
           </div>
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="text-sm font-medium text-white/85 hover:text-white transition-colors px-3 py-1.5"
+              className="text-sm font-medium landing-body hover:text-[var(--landing-text)] transition-colors px-3 py-1.5"
             >
               Log in
             </Link>
-            <Link
-              to="/signup"
-              className="text-sm font-semibold px-4 py-2 rounded-xl text-[#0B0F19] transition-all hover:brightness-110 hover:scale-[1.02]"
-              style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
-            >
+            <Link to="/signup" className="landing-btn-primary text-sm !py-2 !px-4">
               Get started
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Full-screen sticky hero */}
       <div className="landing-hero-sticky">
         <MountainVistaParallax
           className="hero-container-landing"
@@ -141,126 +139,109 @@ export function LandingPage() {
         </MountainVistaParallax>
       </div>
 
-      {/* Content slides up with rounded transition */}
-      <div id="landing-content" className="landing-content">
+      <div id="landing-content" className="landing-content landing-content-aero">
         <section className="relative max-w-6xl mx-auto px-5 pb-16 sm:pb-24">
           <div className="relative text-center max-w-3xl mx-auto">
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-6 border"
-              style={{ background: "rgba(16,185,129,0.08)", borderColor: "rgba(16,185,129,0.2)", color: "#10B981" }}
-            >
-              <Zap size={12} />
-              The time economy, reimagined
-            </div>
-            <p className="text-lg text-[#9CA3AF] mb-10 max-w-xl mx-auto leading-relaxed">
-              ChronoShare is a community platform where you trade time instead of money.
-              Offer what you know, get what you need.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                to="/signup"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 w-full sm:w-auto justify-center"
-                style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-              >
-                Create free account
-                <ArrowRight size={16} />
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-white border transition-colors hover:bg-white/[0.04] w-full sm:w-auto justify-center"
-                style={{ borderColor: "#1F2937" }}
-              >
-                Log in to your account
-              </Link>
-            </div>
+            <LandingReveal>
+              <div className="landing-badge mb-6">
+                <Zap size={12} />
+                The time economy, reimagined
+              </div>
+            </LandingReveal>
+
+            <LandingReveal delay={120}>
+              <p className="text-lg landing-body mb-10 max-w-xl mx-auto leading-relaxed">
+                ChronoShare is a community platform where you trade time instead of money.
+                Offer what you know, get what you need.
+              </p>
+            </LandingReveal>
+
+            <LandingReveal delay={240}>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link to="/signup" className="landing-btn-primary w-full sm:w-auto">
+                  Create free account
+                  <ArrowRight size={16} />
+                </Link>
+                <Link to="/login" className="landing-btn-secondary w-full sm:w-auto">
+                  Log in to your account
+                </Link>
+              </div>
+            </LandingReveal>
           </div>
 
           <div className="relative grid grid-cols-3 gap-4 max-w-lg mx-auto mt-16">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="text-center rounded-2xl py-4 px-3 border"
-                style={{ background: "#111827", borderColor: "#1F2937" }}
-              >
-                <p className="text-xl sm:text-2xl font-semibold text-white flex items-center justify-center gap-1">
-                  {stat.value}
-                  {stat.icon}
-                </p>
-                <p className="text-xs text-[#9CA3AF] mt-1">{stat.label}</p>
-              </div>
+            {stats.map((stat, index) => (
+              <LandingReveal key={stat.label} delay={320 + index * 100}>
+                <div className="landing-glass landing-glass-stat text-center">
+                  <p className="landing-stat-value flex items-center justify-center gap-1">
+                    {stat.value}
+                    {stat.icon}
+                  </p>
+                  <p className="landing-stat-label">{stat.label}</p>
+                </div>
+              </LandingReveal>
             ))}
           </div>
         </section>
 
         <section className="max-w-6xl mx-auto px-5 pb-24">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">How it works</h2>
-            <p className="text-[#9CA3AF] max-w-md mx-auto">
-              Join a growing community of people exchanging skills, one hour at a time.
-            </p>
-          </div>
+          <LandingReveal>
+            <div className="text-center mb-12">
+              <h2 className="text-2xl sm:text-3xl landing-heading mb-3">How it works</h2>
+              <p className="landing-body max-w-md mx-auto">
+                Join a growing community of people exchanging skills, one hour at a time.
+              </p>
+            </div>
+          </LandingReveal>
+
           <div className="grid sm:grid-cols-2 gap-4">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="rounded-2xl p-6 border transition-colors hover:border-emerald-500/20"
-                style={{ background: "#111827", borderColor: "#1F2937" }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-emerald-400"
-                  style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}
-                >
-                  {feature.icon}
+            {features.map((feature, index) => (
+              <LandingReveal key={feature.title} delay={120 + index * 90}>
+                <div className="landing-glass landing-glass-card h-full">
+                  <div className="landing-icon-well mb-4">{feature.icon}</div>
+                  <h3 className="text-base font-semibold landing-heading mb-2">{feature.title}</h3>
+                  <p className="text-sm landing-body leading-relaxed">{feature.desc}</p>
                 </div>
-                <h3 className="text-base font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-[#9CA3AF] leading-relaxed">{feature.desc}</p>
-              </div>
+              </LandingReveal>
             ))}
           </div>
         </section>
 
         <section className="max-w-6xl mx-auto px-5 pb-20">
-          <div
-            className="rounded-3xl p-10 sm:p-14 text-center border relative overflow-hidden"
-            style={{ background: "#0D1220", borderColor: "#1F2937" }}
-          >
-            <div
-              className="absolute inset-0 opacity-30 pointer-events-none"
-              style={{ background: "radial-gradient(ellipse at top, rgba(16,185,129,0.15), transparent 60%)" }}
-            />
-            <div className="relative">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+          <LandingReveal delay={80}>
+            <div className="landing-glass landing-glass-panel text-center">
+              <h2 className="text-2xl sm:text-3xl landing-heading mb-3">
                 Ready to start trading time?
               </h2>
-              <p className="text-[#9CA3AF] mb-8 max-w-md mx-auto">
+              <p className="landing-body mb-8 max-w-md mx-auto">
                 Sign up in seconds and access your personal dashboard, job board, and hour ledger.
               </p>
-              <Link
-                to="/signup"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-              >
+              <Link to="/signup" className="landing-btn-primary">
                 Get started free
                 <ArrowRight size={16} />
               </Link>
             </div>
-          </div>
+          </LandingReveal>
         </section>
 
-        <footer className="border-t py-8" style={{ borderColor: "#1F2937" }}>
+        <footer className="landing-footer-aero py-8">
           <div className="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
+                style={{ background: aero.gradientPrimary }}
               >
-                <Clock size={14} style={{ color: "#000" }} />
+                <Clock size={14} style={{ color: aero.text }} />
               </div>
-              <span className="text-xs text-[#9CA3AF]">© 2026 ChronoShare</span>
+              <span className="text-xs landing-stat-label !mt-0">© 2026 ChronoShare</span>
             </div>
-            <div className="flex gap-4 text-xs text-[#9CA3AF]">
-              <Link to="/login" className="hover:text-white transition-colors">Log in</Link>
-              <Link to="/signup" className="hover:text-white transition-colors">Sign up</Link>
+            <div className="flex gap-4 text-xs">
+              <Link to="/login" className="landing-footer-link">
+                Log in
+              </Link>
+              <Link to="/signup" className="landing-footer-link">
+                Sign up
+              </Link>
             </div>
           </div>
         </footer>
