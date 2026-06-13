@@ -1,3 +1,14 @@
+-- Ensure updated_at trigger function exists (may be missing if profiles migration was applied separately)
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 -- Community posts (job board listings)
 create table if not exists public.posts (
   id uuid primary key default gen_random_uuid(),
