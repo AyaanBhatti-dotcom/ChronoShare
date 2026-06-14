@@ -51,7 +51,7 @@ export function ContactEmailButton({
     <div
       className={
         className ??
-        "rounded-xl border dash-divider bg-white/5 px-4 py-3 space-y-1.5"
+        "rounded-xl border dash-divider bg-[rgba(10,92,84,0.06)] px-4 py-3 space-y-1.5"
       }
     >
       <div className="flex items-center gap-1.5 text-xs font-medium dash-heading">
