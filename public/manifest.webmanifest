@@ -1,0 +1,23 @@
+{
+  "name": "ChronoShare",
+  "short_name": "ChronoShare",
+  "description": "Trade time, not money — a community platform for exchanging skills and hours.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "369x369",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "369x369",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
