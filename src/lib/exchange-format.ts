@@ -1,5 +1,6 @@
 import { MapPin, Monitor, Shuffle } from "lucide-react";
 import i18n from "../i18n";
+import { formatMeetingPreference, type MeetingPreference } from "./meeting-preference";
 
 export type ExchangeFormatPreference = "in_person" | "remote" | "flexible";
 export type ExchangeFormatResolved = "in_person" | "remote";
@@ -42,4 +43,22 @@ export function isFlexibleFormat(
   format: ExchangeFormatPreference | ExchangeFormatResolved | null | undefined,
 ): format is "flexible" {
   return format === "flexible";
+}
+
+/** Single line for listing modals — avoids repeating "Either works" for format + meeting pref. */
+export function formatListingFormatLine(
+  exchangeFormat: ExchangeFormatPreference | ExchangeFormatResolved | null | undefined,
+  meetingPreference: MeetingPreference | null | undefined,
+): string {
+  const formatLabel = formatExchangeFormat(exchangeFormat);
+  if (!meetingPreference || meetingPreference === "flexible") {
+    return formatLabel;
+  }
+  if (
+    (exchangeFormat === "remote" && meetingPreference === "remote_only") ||
+    (exchangeFormat === "in_person" && meetingPreference === "public_venue")
+  ) {
+    return formatLabel;
+  }
+  return `${formatLabel} · ${formatMeetingPreference(meetingPreference)}`;
 }

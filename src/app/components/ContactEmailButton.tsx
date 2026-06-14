@@ -4,9 +4,8 @@ import { fetchMemberContactEmail } from "../../lib/contact";
 
 interface ContactEmailButtonProps {
   memberId: string;
+  exchangeId: string;
   username?: string | null;
-  postId?: string;
-  exchangeId?: string;
   className?: string;
 }
 
@@ -17,9 +16,8 @@ function contactLabel(username?: string | null): string {
 
 export function ContactEmailButton({
   memberId,
-  username,
-  postId,
   exchangeId,
+  username,
   className,
 }: ContactEmailButtonProps) {
   const [email, setEmail] = useState<string | null>(null);
@@ -31,7 +29,7 @@ export function ContactEmailButton({
     setLoading(true);
     setEmail(null);
 
-    fetchMemberContactEmail({ memberId, postId, exchangeId })
+    fetchMemberContactEmail({ memberId, exchangeId })
       .then((address) => {
         if (!cancelled) setEmail(address);
       })
@@ -45,7 +43,7 @@ export function ContactEmailButton({
     return () => {
       cancelled = true;
     };
-  }, [memberId, postId, exchangeId]);
+  }, [memberId, exchangeId]);
 
   if (loading || !email) return null;
 
@@ -53,17 +51,14 @@ export function ContactEmailButton({
     <div
       className={
         className ??
-        "rounded-xl border dash-divider px-4 py-3 space-y-2"
+        "rounded-xl border dash-divider bg-white/5 px-4 py-3 space-y-1.5"
       }
     >
       <div className="flex items-center gap-1.5 text-xs font-medium dash-heading">
         <Mail size={14} className="dash-accent flex-shrink-0" />
         {contactLabel(username)}
       </div>
-      <p
-        className="text-sm dash-accent break-all select-all"
-        style={{ fontFamily: "'DM Mono', monospace" }}
-      >
+      <p className="text-sm dash-heading break-all select-all leading-snug">
         {email}
       </p>
     </div>

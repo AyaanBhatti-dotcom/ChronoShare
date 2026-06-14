@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { deletePost, fetchActivePosts } from "../../lib/posts";
-import { acceptPost, fetchUserJoinedPostIds, getHourImpact, formatHourImpactLabel } from "../../lib/exchanges";
+import { acceptPost, fetchExchangesForPosts, fetchUserJoinedPostIds, getHourImpact, formatHourImpactLabel } from "../../lib/exchanges";
 import {
   enrichPostsWithDistance,
   filterAndSortListings,
@@ -21,11 +21,11 @@ import { getStoredListingScope, storeListingScope, type ListingScope } from "../
 import { impactBadgeStyle, impactPanelStyle } from "./onboarding/aeroTheme";
 import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import {
-  formatExchangeFormat,
+  formatListingFormatLine,
   isFlexibleFormat,
   type ExchangeFormatResolved,
 } from "../../lib/exchange-format";
-import { formatMeetingPreference } from "../../lib/meeting-preference";
+import { getMemberDisplayName } from "../../lib/profile";
 import { fetchBlockedUserIds } from "../../lib/trust-safety";
 import { SafetyTipBanner } from "./safety/SafetyTipBanner";
 import { ListingScopeToggle } from "./ListingScopeToggle";
@@ -82,6 +82,7 @@ export const JobBoard = ({
   const [deleting, setDeleting] = useState(false);
   const [joinFormat, setJoinFormat] = useState<ExchangeFormatResolved | null>(null);
   const [joinedPostIds, setJoinedPostIds] = useState<Set<string>>(() => new Set());
+  const [matchedExchangeId, setMatchedExchangeId] = useState<string | null>(null);
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(() => new Set());
   const acceptInFlightRef = useRef(false);
 
@@ -221,7 +222,27 @@ export const JobBoard = ({
   useEffect(() => {
     setJoinFormat(null);
     setAcceptError(null);
+    setMatchedExchangeId(null);
   }, [selectedJob?.id]);
+
+  useEffect(() => {
+    if (!selectedJob || !user || !joinedPostIds.has(selectedJob.id)) {
+      return;
+    }
+
+    let cancelled = false;
+    fetchExchangesForPosts([selectedJob.id])
+      .then((map) => {
+        if (!cancelled) setMatchedExchangeId(map.get(selectedJob.id)?.id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setMatchedExchangeId(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedJob, user, joinedPostIds]);
 
   const handleAccept = async () => {
     if (!selectedJob || isPreview || (user && selectedJob.user_id === user.userId)) return;
@@ -242,12 +263,13 @@ export const JobBoard = ({
     setAcceptError(null);
 
     try {
-      await acceptPost(
+      const exchangeId = await acceptPost(
         selectedJob.id,
         needsFormatChoice ? joinFormat ?? undefined : undefined,
       );
       await refreshUser();
       setJoinedPostIds((prev) => new Set(prev).add(selectedJob.id));
+      setMatchedExchangeId(exchangeId);
       setAcceptSuccess(true);
       setJobs((prev) => prev.filter((j) => j.id !== selectedJob.id));
       await loadJoinedPostIds();
@@ -539,18 +561,28 @@ export const JobBoard = ({
             </button>
 
             {acceptSuccess ? (
-              <div className="flex flex-col items-center py-8 gap-3 text-center">
+              <div className="flex flex-col items-center py-4 gap-4 text-center">
                 <CheckCircle2 size={40} className="dash-accent-grass" />
-                <h3 className="text-lg font-semibold dash-heading">You&apos;re matched!</h3>
-                <p className="text-sm dash-subtext">
-                  Head to your Profile — both of you must confirm before hours transfer.
-                </p>
+                <div>
+                  <h3 className="text-lg font-semibold dash-heading">You&apos;re matched!</h3>
+                  <p className="text-sm dash-subtext mt-1">
+                    Head to your Profile — both of you must confirm before hours transfer.
+                  </p>
+                </div>
+                {matchedExchangeId && selectedJob && user && (
+                  <ContactEmailButton
+                    memberId={selectedJob.user_id}
+                    exchangeId={matchedExchangeId}
+                    username={selectedJob.profiles?.username}
+                    className="w-full rounded-xl border dash-divider bg-white/5 px-4 py-3 space-y-1.5 text-left"
+                  />
+                )}
               </div>
             ) : (
               <>
                 <div>
                   <p className="text-xs dash-subtext mb-1">
-                    {selectedJob.profiles?.full_name ?? "Community member"}
+                    {getMemberDisplayName(selectedJob.profiles)}
                   </p>
                   <h3 className="text-lg font-semibold dash-heading">{selectedJob.title}</h3>
                 </div>
@@ -586,11 +618,11 @@ export const JobBoard = ({
                 <p className="text-xs dash-subtext">
                   Exchange format:{" "}
                   <span className="dash-heading font-medium">
-                    {formatExchangeFormat(selectedJob.exchange_format)}
+                    {formatListingFormatLine(
+                      selectedJob.exchange_format,
+                      selectedJob.meeting_preference,
+                    )}
                   </span>
-                  {selectedJob.meeting_preference && (
-                    <span> · {formatMeetingPreference(selectedJob.meeting_preference)}</span>
-                  )}
                 </p>
 
                 {!isOwnSelected &&
@@ -598,14 +630,6 @@ export const JobBoard = ({
                     joinFormat === "in_person" ||
                     selectedJob.meeting_preference === "public_venue") && (
                   <SafetyTipBanner variant="compact" />
-                )}
-
-                {!isOwnSelected && user && !isPreview && (
-                  <ContactEmailButton
-                    memberId={selectedJob.user_id}
-                    username={selectedJob.profiles?.username}
-                    postId={selectedJob.id}
-                  />
                 )}
 
                 {!isOwnSelected && isFlexibleFormat(selectedJob.exchange_format) && (
@@ -677,6 +701,13 @@ export const JobBoard = ({
                         Head to Profile to confirm the exchange. This listing is no longer open to others.
                       </p>
                     </div>
+                    {matchedExchangeId && user && !isPreview && (
+                      <ContactEmailButton
+                        memberId={selectedJob.user_id}
+                        exchangeId={matchedExchangeId}
+                        username={selectedJob.profiles?.username}
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => {
