@@ -355,7 +355,7 @@ export function DashboardLayout({
           {screen === "post" && (
             <PostRequest initialPostType={postType} onNavigate={navigateScreen} />
           )}
-          {screen === "profile" && <Profile />}
+          {screen === "profile" && <Profile onNavigate={navigateScreen} />}
           {screen === "settings" && (
             <Settings
               onLogout={handleLogout}

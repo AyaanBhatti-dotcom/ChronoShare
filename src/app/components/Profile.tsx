@@ -20,6 +20,10 @@ import {
   Award,
   Zap,
   UserCircle,
+  LayoutGrid,
+  ClipboardList,
+  History,
+  PlusCircle,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
 import {
@@ -47,6 +51,8 @@ import {
   isProfileDesktopHintPending,
   markProfileDesktopHintSeen,
 } from "../utils/onboarding";
+import type { BoardTab } from "./JobBoard";
+import type { LucideIcon } from "lucide-react";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -56,14 +62,24 @@ function formatDate(iso: string) {
   });
 }
 
-const DESKTOP_ICONS = [
-  { id: "profile", label: "My\nProfile", Icon: HardDrive, window: "profile" as const },
-  { id: "ledger", label: "Exchange\nLedger", Icon: FolderOpen, window: "ledger" as const },
-  { id: "listings", label: "My\nListings", Icon: Briefcase, window: "listings" as const },
-  { id: "computer", label: "My\nComputer", Icon: Monitor, window: null },
+type DesktopIconDef = {
+  id: string;
+  label: string;
+  Icon: LucideIcon;
+  window: ProfileWindowId | null;
+  desktopOnly?: boolean;
+  mobileOnly?: boolean;
+};
+
+const DESKTOP_ICONS: DesktopIconDef[] = [
+  { id: "profile", label: "My\nProfile", Icon: HardDrive, window: "profile" },
+  { id: "ledger", label: "Exchange\nLedger", Icon: FolderOpen, window: "ledger" },
+  { id: "listings", label: "My\nListings", Icon: Briefcase, window: "listings" },
+  { id: "computer", label: "My\nComputer", Icon: Monitor, window: null, desktopOnly: true },
+  { id: "quick-menu", label: "Quick\nMenu", Icon: LayoutGrid, window: null, mobileOnly: true },
   { id: "recycle", label: "Recycle\nBin", Icon: Trash2, window: null },
   { id: "help", label: "Chrono\nHelp", Icon: HelpCircle, window: null },
-] as const;
+];
 
 type ProfileWindowId = "profile" | "ledger" | "pending" | "listings";
 
@@ -109,7 +125,16 @@ const TIME_FACTS = [
 
 type EggToast = { title: string; body: string } | null;
 
-export const Profile = () => {
+type ProfileNavigateOptions = {
+  boardTab?: BoardTab;
+  postType?: "needs" | "offers";
+};
+
+interface ProfileProps {
+  onNavigate?: (screen: string, options?: ProfileNavigateOptions) => void;
+}
+
+export const Profile = ({ onNavigate }: ProfileProps) => {
   const { user, refreshUser, isPreview } = useAuth();
   const isMobile = useIsMobile();
   const [tab, setTab] = useState<"all" | "given" | "received">("all");
@@ -133,6 +158,7 @@ export const Profile = () => {
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [viewingMemberLabel, setViewingMemberLabel] = useState<string | undefined>();
   const [showDesktopHint, setShowDesktopHint] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const getWindowState = useCallback(
     (id: ProfileWindowId): ProfileWindowState => windowStates[id] ?? defaultWindowState(id),
@@ -371,7 +397,7 @@ export const Profile = () => {
     [windowStack],
   );
 
-  const handleDesktopIcon = (icon: (typeof DESKTOP_ICONS)[number]) => {
+  const handleDesktopIcon = (icon: DesktopIconDef) => {
     if (icon.window) {
       if (openWindows.has(icon.window)) {
         const state = getWindowState(icon.window);
@@ -383,6 +409,7 @@ export const Profile = () => {
       return;
     }
     if (icon.id === "computer") setShowSystemInfo(true);
+    if (icon.id === "quick-menu") setShowMobileMenu(true);
     if (icon.id === "recycle") {
       showEgg(
         "Recycle Bin",
@@ -446,6 +473,19 @@ export const Profile = () => {
   const givenCount = history.filter((h) => h.type === "given").length;
   const receivedCount = history.filter((h) => h.type === "received").length;
 
+  const visibleDesktopIcons = useMemo(
+    () => DESKTOP_ICONS.filter((icon) => (isMobile ? !icon.desktopOnly : !icon.mobileOnly)),
+    [isMobile],
+  );
+
+  const navigateFromProfile = useCallback(
+    (screen: string, options?: ProfileNavigateOptions) => {
+      setShowMobileMenu(false);
+      onNavigate?.(screen, options);
+    },
+    [onNavigate],
+  );
+
   return (
     <div className="profile-desktop">
       <div className="profile-desktop-backdrop">
@@ -459,7 +499,7 @@ export const Profile = () => {
       </div>
 
       <div className="profile-desktop-icons">
-        {DESKTOP_ICONS.map((icon) => {
+        {visibleDesktopIcons.map((icon) => {
           const isOpen = icon.window ? openWindows.has(icon.window) : false;
           return (
             <button
@@ -1027,7 +1067,7 @@ export const Profile = () => {
         </div>
       </div>
 
-      {showSystemInfo && (
+      {showSystemInfo && !isMobile && (
         <div className="profile-system-modal" role="dialog" aria-modal="true">
           <ProfileAeroWallpaper className="profile-system-modal-scene" />
           <div className="profile-system-modal-dim" aria-hidden="true" />
@@ -1047,6 +1087,69 @@ export const Profile = () => {
               </button>
             </div>
           </ProfileWin7Window>
+        </div>
+      )}
+
+      {showMobileMenu && isMobile && (
+        <div className="profile-mobile-menu" role="dialog" aria-modal="true" aria-label="Quick menu">
+          <button
+            type="button"
+            className="profile-mobile-menu-backdrop"
+            onClick={() => setShowMobileMenu(false)}
+            aria-label="Close quick menu"
+          />
+          <div className="profile-mobile-menu-sheet">
+            <p className="profile-mobile-menu-title">Quick Menu</p>
+            <p className="profile-mobile-menu-sub">Jump to the main things you need on mobile.</p>
+            <div className="profile-mobile-menu-actions">
+              <button
+                type="button"
+                className="profile-mobile-menu-action"
+                onClick={() => navigateFromProfile("board")}
+              >
+                <span className="profile-mobile-menu-action-icon">
+                  <ClipboardList size={20} />
+                </span>
+                <span className="profile-mobile-menu-action-text">
+                  <strong>Job Board</strong>
+                  <small>Browse open listings</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="profile-mobile-menu-action"
+                onClick={() => navigateFromProfile("board", { boardTab: "past" })}
+              >
+                <span className="profile-mobile-menu-action-icon">
+                  <History size={20} />
+                </span>
+                <span className="profile-mobile-menu-action-text">
+                  <strong>Past Jobs</strong>
+                  <small>View completed exchanges</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="profile-mobile-menu-action"
+                onClick={() => navigateFromProfile("post", { postType: "needs" })}
+              >
+                <span className="profile-mobile-menu-action-icon">
+                  <PlusCircle size={20} />
+                </span>
+                <span className="profile-mobile-menu-action-text">
+                  <strong>Post Request</strong>
+                  <small>Ask for or offer help</small>
+                </span>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="profile-mobile-menu-close dash-btn-outline w-full py-2.5 rounded-full text-sm font-medium"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 
