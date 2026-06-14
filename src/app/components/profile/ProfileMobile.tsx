@@ -207,7 +207,7 @@ export function ProfileMobile({
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">{error}</p>
       )}
 
-      <section className="profile-mobile-panel dash-card rounded-2xl overflow-hidden">
+      <section className="profile-mobile-panel dash-card rounded-2xl">
         {section === "overview" && (
           <div className="p-4 space-y-4">
             <div className="profile-mobile-overview-card">

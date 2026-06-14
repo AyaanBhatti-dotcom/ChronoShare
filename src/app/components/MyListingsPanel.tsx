@@ -410,8 +410,11 @@ export function MyListingsPanel({
   );
 
   if (isProfile) {
+    const scrollLocked = scrollClassName !== "max-h-none";
     return (
-      <div className={`divide-y dash-divider overflow-y-auto ${scrollClassName ?? "max-h-80"}`}>
+      <div
+        className={`divide-y dash-divider ${scrollLocked ? `overflow-y-auto ${scrollClassName ?? "max-h-80"}` : ""}`}
+      >
         {listContent}
       </div>
     );

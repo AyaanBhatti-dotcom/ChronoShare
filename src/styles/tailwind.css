@@ -4067,7 +4067,7 @@ html {
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    padding-bottom: 0.5rem;
+    padding-bottom: 1.5rem;
   }
 
   .profile-mobile-hero {
@@ -4171,7 +4171,8 @@ html {
   }
 
   .profile-mobile-panel {
-    min-height: 12rem;
+    min-height: 0;
+    overflow: visible;
   }
 
   .profile-mobile-overview-card {
@@ -4262,7 +4263,12 @@ html {
       padding-left: 1rem;
       padding-right: 1rem;
       padding-top: 1.25rem;
-      padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .profile-mobile {
+      padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
     }
 
     .dash-mobile-header {
