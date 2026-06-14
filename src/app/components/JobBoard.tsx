@@ -26,6 +26,7 @@ import {
   type ExchangeFormatResolved,
 } from "../../lib/exchange-format";
 import { ListingScopeToggle } from "./ListingScopeToggle";
+import { PastJobsPanel } from "./PastJobsPanel";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -42,14 +43,17 @@ const categoryIcon = (cat: string) => {
 };
 
 type BoardMode = "all" | "needs" | "offers";
+export type BoardTab = "open" | "past";
 
 interface JobBoardProps {
-  onNavigate?: (screen: string, options?: { postType?: "needs" | "offers"; boardMode?: BoardMode }) => void;
+  onNavigate?: (screen: string, options?: { postType?: "needs" | "offers"; boardMode?: BoardMode; boardTab?: BoardTab }) => void;
   initialMode?: BoardMode;
+  initialTab?: BoardTab;
 }
 
-export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => {
+export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" }: JobBoardProps) => {
   const { user, refreshUser, isPreview } = useAuth();
+  const [boardTab, setBoardTab] = useState<BoardTab>(initialTab);
   const [mode, setMode] = useState<BoardMode>(initialMode);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -122,8 +126,14 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   }, [initialMode]);
 
   useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
+    setBoardTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (boardTab === "open") {
+      loadPosts();
+    }
+  }, [loadPosts, boardTab]);
 
   const scopedJobs = useMemo(() => {
     const effectiveScope = scope === "nearby" && !userLocation ? "worldwide" : scope;
@@ -216,6 +226,75 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
 
   return (
     <div className="space-y-5">
+      <div className="dash-pill-group flex rounded-full p-1 w-fit">
+        {(["open", "past"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setBoardTab(tab)}
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              boardTab === tab ? "dash-pill-active" : "dash-pill-inactive"
+            }`}
+          >
+            {tab === "open" ? "Open Listings" : "Past Jobs"}
+          </button>
+        ))}
+      </div>
+
+      {boardTab === "past" ? (
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs dash-subtext">
+              Jobs you&apos;ve completed — confirmed exchanges with the community.
+            </p>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="dash-search flex items-center gap-2 px-3 py-2 rounded-xl flex-1 sm:w-48">
+                <Search size={14} className="dash-subtext" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search past jobs..."
+                  className="bg-transparent text-sm dash-heading placeholder:text-[var(--dash-text-faint)] outline-none w-full"
+                />
+              </div>
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="dash-input appearance-none pl-3 pr-8 py-2 rounded-xl text-sm outline-none cursor-pointer"
+                >
+                  {categories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 dash-subtext pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="dash-pill-scroll w-full sm:w-auto">
+              <div className="dash-pill-group flex rounded-full p-1 w-fit min-w-max">
+                {(["all", "needs", "offers"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                      mode === m ? "dash-pill-active" : "dash-pill-inactive"
+                    }`}
+                  >
+                    {m === "all" ? "All Jobs" : m === "needs" ? "Help Given" : "Skills Shared"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <PastJobsPanel mode={mode} category={category} search={search} />
+        </>
+      ) : (
+        <>
       {/* Scope + sort */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
@@ -562,6 +641,8 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
             )}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

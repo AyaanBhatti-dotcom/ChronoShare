@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { HomeDashboard } from "./HomeDashboard";
 import { LogoBrand } from "./Logo";
-import { JobBoard } from "./JobBoard";
+import { JobBoard, type BoardTab } from "./JobBoard";
 import { PostRequest } from "./PostRequest";
 import { Profile } from "./Profile";
 import { Settings } from "./Settings";
@@ -22,6 +22,7 @@ type BoardMode = "all" | "needs" | "offers";
 type NavigateOptions = {
   postType?: "needs" | "offers";
   boardMode?: BoardMode;
+  boardTab?: BoardTab;
 };
 
 const navItems: { id: Screen; label: string; shortLabel: string; icon: React.ReactNode }[] = [
@@ -55,6 +56,7 @@ export function DashboardLayout({
   const [jobCount, setJobCount] = useState(0);
   const [postType, setPostType] = useState<"needs" | "offers">("needs");
   const [boardMode, setBoardMode] = useState<BoardMode>("all");
+  const [boardTab, setBoardTab] = useState<BoardTab>("open");
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
 
@@ -71,6 +73,11 @@ export function DashboardLayout({
       setBoardMode(options.boardMode);
     } else if (s === "board") {
       setBoardMode("all");
+    }
+    if (options?.boardTab) {
+      setBoardTab(options.boardTab);
+    } else if (s === "board") {
+      setBoardTab("open");
     }
     setScreen(s as Screen);
     setMobileOpen(false);
@@ -343,7 +350,7 @@ export function DashboardLayout({
         <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8 dash-mobile-main">
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
           {screen === "board" && (
-            <JobBoard initialMode={boardMode} onNavigate={navigateScreen} />
+            <JobBoard initialMode={boardMode} initialTab={boardTab} onNavigate={navigateScreen} />
           )}
           {screen === "post" && (
             <PostRequest initialPostType={postType} onNavigate={navigateScreen} />

@@ -31,11 +31,12 @@ import { NearbyMap } from "./NearbyMap";
 import { LocationPicker } from "./LocationPicker";
 import { ListingScopeToggle } from "./ListingScopeToggle";
 import { Slider } from "./ui/slider";
+import type { BoardTab } from "./JobBoard";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
 interface HomeDashboardProps {
-  onNavigate: (s: string, options?: { postType?: "needs" | "offers" }) => void;
+  onNavigate: (s: string, options?: { postType?: "needs" | "offers"; boardTab?: BoardTab }) => void;
 }
 
 export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
@@ -369,12 +370,20 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
         <div className="dash-card rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b dash-divider">
             <h3 className="text-sm font-semibold dash-heading">Recent Exchanges</h3>
-            <button
-              onClick={() => onNavigate("profile")}
-              className="flex items-center gap-1 text-xs dash-link"
-            >
-              View all <ChevronRight size={14} />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onNavigate("board", { boardTab: "past" })}
+                className="text-xs dash-subtext hover:dash-heading transition-colors"
+              >
+                Past jobs
+              </button>
+              <button
+                onClick={() => onNavigate("profile")}
+                className="flex items-center gap-1 text-xs dash-link"
+              >
+                View all <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
           {exchanges.length === 0 ? (
             <p className="px-5 py-6 text-sm dash-subtext text-center">No exchanges yet.</p>

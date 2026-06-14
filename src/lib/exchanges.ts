@@ -86,13 +86,17 @@ export async function fetchMatchedPostIds(): Promise<string[]> {
 }
 
 export async function fetchRecentExchanges(userId: string, limit = 5): Promise<ExchangeWithProfiles[]> {
+  const data = await fetchCompletedExchanges(userId);
+  return data.slice(0, limit);
+}
+
+export async function fetchCompletedExchanges(userId: string): Promise<ExchangeWithProfiles[]> {
   const { data, error } = await supabase
     .from("exchanges")
     .select(EXCHANGE_SELECT)
     .or(`poster_id.eq.${userId},acceptor_id.eq.${userId}`)
     .eq("status", "completed")
-    .order("completed_at", { ascending: false })
-    .limit(limit);
+    .order("completed_at", { ascending: false });
 
   if (error) throw new Error(error.message);
   return (data ?? []) as ExchangeWithProfiles[];
