@@ -1,6 +1,7 @@
 import {
   cloneElement,
   isValidElement,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -15,22 +16,26 @@ interface ProfileFloatingWindowProps {
   y: number;
   width: number;
   zIndex: number;
+  maximized?: boolean;
   boundsRef?: RefObject<HTMLElement | null>;
   onPositionChange: (x: number, y: number) => void;
   onFocus: () => void;
   children: ReactNode;
 }
 
-function clampToDesktop(
+export function clampWindowToBounds(
   x: number,
   y: number,
-  width: number,
-  bounds: DOMRect,
+  windowWidth: number,
+  windowHeight: number,
+  boundsWidth: number,
+  boundsHeight: number,
 ) {
-  const minVisible = 56;
+  const maxX = Math.max(0, boundsWidth - windowWidth);
+  const maxY = Math.max(0, boundsHeight - windowHeight);
   return {
-    x: Math.max(-width + minVisible, Math.min(x, bounds.width - minVisible)),
-    y: Math.max(0, Math.min(y, bounds.height - 28)),
+    x: Math.min(Math.max(0, x), maxX),
+    y: Math.min(Math.max(0, y), maxY),
   };
 }
 
@@ -39,11 +44,13 @@ export function ProfileFloatingWindow({
   y,
   width,
   zIndex,
+  maximized = false,
   boundsRef,
   onPositionChange,
   onFocus,
   children,
 }: ProfileFloatingWindowProps) {
+  const floatRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     startX: number;
     startY: number;
@@ -54,7 +61,61 @@ export function ProfileFloatingWindow({
   } | null>(null);
   const [dragging, setDragging] = useState(false);
 
+  const clampPosition = useCallback(
+    (nextX: number, nextY: number) => {
+      if (maximized) return { x: 0, y: 0 };
+      const layer = boundsRef?.current;
+      const windowHeight = floatRef.current?.offsetHeight ?? 0;
+      if (!layer || windowHeight <= 0) return { x: nextX, y: nextY };
+      return clampWindowToBounds(
+        nextX,
+        nextY,
+        width,
+        windowHeight,
+        layer.clientWidth,
+        layer.clientHeight,
+      );
+    },
+    [boundsRef, maximized, width],
+  );
+
+  const applyClampedPosition = useCallback(
+    (nextX: number, nextY: number) => {
+      const clamped = clampPosition(nextX, nextY);
+      onPositionChange(clamped.x, clamped.y);
+    },
+    [clampPosition, onPositionChange],
+  );
+
+  useEffect(() => {
+    if (maximized) return;
+    const el = floatRef.current;
+    const layer = boundsRef?.current;
+    if (!el || !layer) return;
+
+    const syncPosition = () => {
+      const clamped = clampWindowToBounds(
+        x,
+        y,
+        width,
+        el.offsetHeight,
+        layer.clientWidth,
+        layer.clientHeight,
+      );
+      if (clamped.x !== x || clamped.y !== y) {
+        onPositionChange(clamped.x, clamped.y);
+      }
+    };
+
+    syncPosition();
+    const ro = new ResizeObserver(syncPosition);
+    ro.observe(el);
+    ro.observe(layer);
+    return () => ro.disconnect();
+  }, [x, y, width, maximized, boundsRef, onPositionChange]);
+
   const handleTitlePointerDown = (e: PointerEvent) => {
+    if (maximized) return;
     e.preventDefault();
     e.stopPropagation();
     onFocus();
@@ -72,21 +133,13 @@ export function ProfileFloatingWindow({
   };
 
   useEffect(() => {
-    if (!dragging) return;
+    if (!dragging || maximized) return;
 
     const onMove = (e: globalThis.PointerEvent) => {
       if (!dragRef.current || e.pointerId !== dragRef.current.pointerId) return;
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
-      let nextX = dragRef.current.origX + dx;
-      let nextY = dragRef.current.origY + dy;
-
-      const bounds = boundsRef?.current?.getBoundingClientRect();
-      if (bounds) {
-        ({ x: nextX, y: nextY } = clampToDesktop(nextX, nextY, width, bounds));
-      }
-
-      onPositionChange(nextX, nextY);
+      applyClampedPosition(dragRef.current.origX + dx, dragRef.current.origY + dy);
     };
 
     const endDrag = (e: globalThis.PointerEvent) => {
@@ -108,7 +161,7 @@ export function ProfileFloatingWindow({
       window.removeEventListener("pointerup", endDrag);
       window.removeEventListener("pointercancel", endDrag);
     };
-  }, [dragging, boundsRef, onPositionChange, width]);
+  }, [dragging, maximized, applyClampedPosition]);
 
   const child = isValidElement(children)
     ? cloneElement(children as ReactElement<{ onTitlePointerDown?: (e: PointerEvent) => void }>, {
@@ -118,8 +171,13 @@ export function ProfileFloatingWindow({
 
   return (
     <div
-      className={`profile-window-float ${dragging ? "profile-window-dragging" : ""}`}
-      style={{ left: x, top: y, width, zIndex }}
+      ref={floatRef}
+      className={`profile-window-float ${maximized ? "profile-window-maximized" : ""} ${dragging ? "profile-window-dragging" : ""}`}
+      style={
+        maximized
+          ? { left: 0, top: 0, width: "100%", height: "100%", zIndex }
+          : { left: x, top: y, width, zIndex }
+      }
     >
       {child}
     </div>

@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
-  Minus, Plus, CheckCircle2, Clock, XCircle, RotateCcw, Trash2,
+  Minus, Plus, CheckCircle2,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { createPost, fetchMyPosts, closePost, reopenPost, deletePost } from "../../lib/posts";
+import { createPost } from "../../lib/posts";
 import { aero } from "./onboarding/aeroTheme";
 import { getUserLocation } from "../../lib/location";
 import type { ExchangeFormatPreference } from "../../lib/exchange-format";
 import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
-import type { Post } from "../../types/database";
+import { MyListingsPanel } from "./MyListingsPanel";
 
 const categories = [
   { id: "Tech", label: "Tech", icon: <Monitor size={20} /> },
@@ -46,30 +46,11 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [myPosts, setMyPosts] = useState<Post[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(false);
-  const [actionId, setActionId] = useState<string | null>(null);
   const [lastPostedType, setLastPostedType] = useState<"needs" | "offers">("needs");
 
   useEffect(() => {
     setPostType(initialPostType);
   }, [initialPostType]);
-
-  const loadMyPosts = useCallback(async () => {
-    if (!user) return;
-    setLoadingPosts(true);
-    try {
-      const data = await fetchMyPosts(user.userId);
-      setMyPosts(data);
-    } catch (err) {
-      console.warn("Could not load listings:", err);
-    }
-    setLoadingPosts(false);
-  }, [user]);
-
-  useEffect(() => {
-    if (tab === "listings") loadMyPosts();
-  }, [tab, loadMyPosts]);
 
   const applyTemplate = (template: (typeof quickTemplates)[0]) => {
     setTitle(template.title);
@@ -131,42 +112,6 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleCloseListing = async (postId: string) => {
-    setActionId(postId);
-    try {
-      await closePost(postId);
-      await loadMyPosts();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not close listing");
-    }
-    setActionId(null);
-  };
-
-  const handleReopenListing = async (postId: string) => {
-    setActionId(postId);
-    try {
-      await reopenPost(postId);
-      await loadMyPosts();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not reopen listing");
-    }
-    setActionId(null);
-  };
-
-  const handleDeleteListing = async (postId: string) => {
-    if (!window.confirm("Delete this listing? This can't be undone.")) return;
-
-    setActionId(postId);
-    setError(null);
-    try {
-      await deletePost(postId);
-      await loadMyPosts();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete listing");
-    }
-    setActionId(null);
   };
 
   if (submitted) {
@@ -365,94 +310,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
           </form>
         </div>
       ) : (
-        <div className="space-y-3">
-          {error && <p className="text-sm text-red-400">{error}</p>}
-          {loadingPosts ? (
-            <div className="flex justify-center py-12">
-              <div className="w-8 h-8 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
-            </div>
-          ) : myPosts.length === 0 ? (
-            <div className="dash-card text-center py-12 rounded-2xl">
-              <p className="text-sm dash-subtext mb-3">You haven&apos;t posted any listings yet.</p>
-              <button
-                type="button"
-                onClick={() => setTab("create")}
-                className="dash-btn-primary px-5 py-2 rounded-full text-sm font-semibold"
-              >
-                Create your first listing
-              </button>
-            </div>
-          ) : (
-            myPosts.map((post) => (
-              <div
-                key={post.id}
-                className="dash-card rounded-2xl p-4 flex items-center gap-4"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${
-                        post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
-                      }`}
-                    >
-                      {post.status}
-                    </span>
-                  </div>
-                  <p className="text-xs dash-subtext">
-                    {post.post_type === "needs" ? "Need help" : "Offering"} · {post.category} ·{" "}
-                    <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {post.status === "active" ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleCloseListing(post.id)}
-                        disabled={actionId === post.id}
-                        className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
-                      >
-                        <XCircle size={13} />
-                        Close
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteListing(post.id)}
-                        disabled={actionId === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-                      >
-                        <Trash2 size={13} />
-                        Delete
-                      </button>
-                    </>
-                  ) : post.status === "closed" ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleReopenListing(post.id)}
-                        disabled={actionId === post.id}
-                        className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
-                      >
-                        <RotateCcw size={13} />
-                        Reopen
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteListing(post.id)}
-                        disabled={actionId === post.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-                      >
-                        <Trash2 size={13} />
-                        Delete
-                      </button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <MyListingsPanel onCreateClick={() => setTab("create")} />
       )}
     </div>
   );

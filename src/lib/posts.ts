@@ -67,6 +67,30 @@ export async function createPost(input: {
   if (error) throw new Error(error.message);
 }
 
+export async function updatePost(
+  postId: string,
+  input: {
+    title?: string;
+    description?: string | null;
+    category?: string;
+    postType?: "needs" | "offers";
+    hoursCost?: number;
+    exchangeFormat?: ExchangeFormatPreference;
+  },
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (input.title !== undefined) updates.title = input.title.trim();
+  if (input.description !== undefined) updates.description = input.description?.trim() || null;
+  if (input.category !== undefined) updates.category = input.category;
+  if (input.postType !== undefined) updates.post_type = input.postType;
+  if (input.hoursCost !== undefined) updates.hours_cost = input.hoursCost;
+  if (input.exchangeFormat !== undefined) updates.exchange_format = input.exchangeFormat;
+
+  const { error } = await supabase.from("posts").update(updates).eq("id", postId);
+
+  if (error) throw new Error(error.message);
+}
+
 export async function closePost(postId: string): Promise<void> {
   const { error } = await supabase
     .from("posts")

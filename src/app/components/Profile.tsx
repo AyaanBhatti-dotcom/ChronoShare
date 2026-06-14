@@ -30,12 +30,13 @@ import {
   hasUserConfirmed,
   isPartnerConfirmed,
 } from "../../lib/exchanges";
-import { fetchMyPosts } from "../../lib/posts";
 import type { ExchangeWithProfiles } from "../../types/database";
 import { dashColors } from "./onboarding/aeroTheme";
 import { formatExchangeFormat } from "../../lib/exchange-format";
 import { ProfileFloatingWindow } from "./profile/ProfileFloatingWindow";
 import { ProfileWin7Window } from "./profile/ProfileWin7Window";
+import { MyListingsPanel } from "./MyListingsPanel";
+import { fetchMyPosts } from "../../lib/posts";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -48,31 +49,39 @@ function formatDate(iso: string) {
 const DESKTOP_ICONS = [
   { id: "profile", label: "My\nProfile", Icon: HardDrive, window: "profile" as const },
   { id: "ledger", label: "Exchange\nLedger", Icon: FolderOpen, window: "ledger" as const },
-  { id: "listings", label: "My\nListings", Icon: Briefcase, window: "profile" as const },
+  { id: "listings", label: "My\nListings", Icon: Briefcase, window: "listings" as const },
   { id: "computer", label: "My\nComputer", Icon: Monitor, window: null },
   { id: "recycle", label: "Recycle\nBin", Icon: Trash2, window: null },
   { id: "help", label: "Chrono\nHelp", Icon: HelpCircle, window: null },
 ] as const;
 
-type ProfileWindowId = "profile" | "ledger" | "pending";
+type ProfileWindowId = "profile" | "ledger" | "pending" | "listings";
+
+type WindowFrame = { x: number; y: number; width: number };
+
+type ProfileWindowState = {
+  maximized: boolean;
+  minimized: boolean;
+  restored: WindowFrame;
+};
 
 const WINDOW_LABELS: Record<ProfileWindowId, string> = {
   profile: "My Profile",
   ledger: "Exchange Ledger",
   pending: "Awaiting Confirmation",
+  listings: "My Listings",
 };
 
-const WINDOW_WIDTHS: Record<ProfileWindowId, number> = {
-  profile: 520,
-  ledger: 460,
-  pending: 420,
+const RESTORED_FRAMES: Record<ProfileWindowId, WindowFrame> = {
+  profile: { x: 72, y: 20, width: 520 },
+  ledger: { x: 112, y: 56, width: 480 },
+  pending: { x: 152, y: 92, width: 440 },
+  listings: { x: 92, y: 38, width: 500 },
 };
 
-const DEFAULT_POSITIONS: Record<ProfileWindowId, { x: number; y: number }> = {
-  profile: { x: 72, y: 20 },
-  ledger: { x: 112, y: 56 },
-  pending: { x: 152, y: 92 },
-};
+function defaultWindowState(id: ProfileWindowId): ProfileWindowState {
+  return { maximized: true, minimized: false, restored: RESTORED_FRAMES[id] };
+}
 
 const START_TIPS = [
   "Trade an hour of guitar for an hour of gardening — everyone's time counts equally.",
@@ -108,8 +117,20 @@ export const Profile = () => {
   const [openWindows, setOpenWindows] = useState<Set<ProfileWindowId>>(() => new Set());
   const [activeWindow, setActiveWindow] = useState<ProfileWindowId | null>(null);
   const [windowStack, setWindowStack] = useState<ProfileWindowId[]>([]);
-  const [windowPositions, setWindowPositions] = useState(DEFAULT_POSITIONS);
+  const [windowStates, setWindowStates] = useState<Partial<Record<ProfileWindowId, ProfileWindowState>>>({});
   const desktopLayerRef = useRef<HTMLDivElement>(null);
+
+  const getWindowState = useCallback(
+    (id: ProfileWindowId): ProfileWindowState => windowStates[id] ?? defaultWindowState(id),
+    [windowStates],
+  );
+
+  const patchWindowState = useCallback((id: ProfileWindowId, patch: Partial<ProfileWindowState>) => {
+    setWindowStates((prev) => ({
+      ...prev,
+      [id]: { ...(prev[id] ?? defaultWindowState(id)), ...patch },
+    }));
+  }, []);
 
   const showEgg = useCallback((title: string, body: string) => {
     setEggToast({ title, body });
@@ -131,6 +152,10 @@ export const Profile = () => {
   useEffect(() => {
     loadExchanges();
   }, [loadExchanges]);
+
+  const handleListingStatsChange = useCallback((stats: { active: number; total: number }) => {
+    setListingStats(stats);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -229,6 +254,10 @@ export const Profile = () => {
   const openWindow = useCallback(
     (id: ProfileWindowId) => {
       setOpenWindows((prev) => new Set(prev).add(id));
+      setWindowStates((prev) => ({
+        ...prev,
+        [id]: defaultWindowState(id),
+      }));
       focusWindow(id);
     },
     [focusWindow],
@@ -240,6 +269,11 @@ export const Profile = () => {
       next.delete(id);
       return next;
     });
+    setWindowStates((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     setWindowStack((prev) => {
       const next = prev.filter((w) => w !== id);
       setActiveWindow((current) => (current === id ? (next[next.length - 1] ?? null) : current));
@@ -247,19 +281,56 @@ export const Profile = () => {
     });
   }, []);
 
+  const minimizeWindow = useCallback((id: ProfileWindowId) => {
+    setWindowStates((prev) => {
+      const next = {
+        ...prev,
+        [id]: { ...(prev[id] ?? defaultWindowState(id)), minimized: true },
+      };
+      setActiveWindow((current) => {
+        if (current !== id) return current;
+        const visible = windowStack.filter((w) => w !== id && !next[w]?.minimized);
+        return visible[visible.length - 1] ?? null;
+      });
+      return next;
+    });
+  }, [windowStack]);
+
+  const restoreWindow = useCallback(
+    (id: ProfileWindowId) => {
+      patchWindowState(id, { minimized: false });
+      focusWindow(id);
+    },
+    [patchWindowState, focusWindow],
+  );
+
+  const toggleMaximize = useCallback(
+    (id: ProfileWindowId) => {
+      const state = getWindowState(id);
+      patchWindowState(id, { maximized: !state.maximized });
+      focusWindow(id);
+    },
+    [getWindowState, patchWindowState, focusWindow],
+  );
+
   const toggleWindow = useCallback(
     (id: ProfileWindowId) => {
       if (!openWindows.has(id)) {
         openWindow(id);
         return;
       }
+      const state = getWindowState(id);
+      if (state.minimized) {
+        restoreWindow(id);
+        return;
+      }
       if (activeWindow === id) {
-        closeWindow(id);
+        minimizeWindow(id);
       } else {
         focusWindow(id);
       }
     },
-    [openWindows, activeWindow, openWindow, closeWindow, focusWindow],
+    [openWindows, activeWindow, getWindowState, openWindow, restoreWindow, minimizeWindow, focusWindow],
   );
 
   const getWindowZ = useCallback(
@@ -273,15 +344,11 @@ export const Profile = () => {
   const handleDesktopIcon = (icon: (typeof DESKTOP_ICONS)[number]) => {
     if (icon.window) {
       if (openWindows.has(icon.window)) {
-        focusWindow(icon.window);
+        const state = getWindowState(icon.window);
+        if (state.minimized) restoreWindow(icon.window);
+        else focusWindow(icon.window);
       } else {
         openWindow(icon.window);
-      }
-      if (icon.id === "listings") {
-        showEgg(
-          "My Listings",
-          `${listingStats.active} active · ${listingStats.total} total — manage them from Post Request.`,
-        );
       }
       return;
     }
@@ -332,6 +399,12 @@ export const Profile = () => {
 
   const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const dateStr = now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  const profileState = getWindowState("profile");
+  const ledgerState = getWindowState("ledger");
+  const pendingState = getWindowState("pending");
+  const listingsState = getWindowState("listings");
+  const givenCount = history.filter((h) => h.type === "given").length;
+  const receivedCount = history.filter((h) => h.type === "received").length;
 
   return (
     <div className="profile-desktop">
@@ -363,7 +436,15 @@ export const Profile = () => {
           <button
             type="button"
             className={`profile-desktop-icon profile-desktop-icon-alert ${openWindows.has("pending") ? "profile-desktop-icon-open" : ""}`}
-            onClick={() => (openWindows.has("pending") ? focusWindow("pending") : openWindow("pending"))}
+            onClick={() => {
+              if (openWindows.has("pending")) {
+                const state = getWindowState("pending");
+                if (state.minimized) restoreWindow("pending");
+                else focusWindow("pending");
+              } else {
+                openWindow("pending");
+              }
+            }}
           >
             <span className="profile-desktop-icon-img">
               <Loader2 size={22} strokeWidth={1.75} className="animate-spin" />
@@ -421,14 +502,17 @@ export const Profile = () => {
           </p>
         )}
 
-        {openWindows.has("profile") && (
+        {openWindows.has("profile") && !profileState.minimized && (
           <ProfileFloatingWindow
-            x={windowPositions.profile.x}
-            y={windowPositions.profile.y}
-            width={WINDOW_WIDTHS.profile}
+            x={profileState.restored.x}
+            y={profileState.restored.y}
+            width={profileState.restored.width}
+            maximized={profileState.maximized}
             zIndex={getWindowZ("profile")}
             boundsRef={desktopLayerRef}
-            onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, profile: { x, y } }))}
+            onPositionChange={(x, y) =>
+              patchWindowState("profile", { restored: { ...profileState.restored, x, y } })
+            }
             onFocus={() => focusWindow("profile")}
           >
             <ProfileWin7Window
@@ -437,71 +521,128 @@ export const Profile = () => {
               icon={<HardDrive size={14} strokeWidth={2.5} />}
               className="profile-window-user"
               active={activeWindow === "profile"}
+              maximized={profileState.maximized}
               onClose={() => closeWindow("profile")}
+              onMinimize={() => minimizeWindow("profile")}
+              onMaximize={() => toggleMaximize("profile")}
               onFocus={() => focusWindow("profile")}
             >
-            <div className="flex flex-col sm:flex-row items-start gap-5 p-5">
-              <button
-                type="button"
-                className={`dash-avatar w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 profile-avatar-btn ${avatarBounces ? "profile-avatar-bounce" : ""}`}
-                onDoubleClick={handleAvatarDoubleClick}
-              >
-                {user ? getInitials(user.name) : "?"}
-              </button>
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h2 className="text-lg font-bold dash-heading">{user?.name ?? "User"}</h2>
-                  <button
-                    type="button"
-                    onClick={handleBadgeClick}
-                    className="dash-badge-earn flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  >
-                    <ShieldCheck size={11} />
-                    Verified Identity
-                  </button>
-                </div>
-                <p className="text-sm dash-subtext">{user?.email}</p>
-                {user?.username && (
-                  <p className="text-xs dash-subtext mt-1">@{user.username}</p>
-                )}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <span className="profile-chip">
-                    <Clock size={12} /> {user?.hoursAvailable.toFixed(1)} hrs free
-                  </span>
-                  <span className="profile-chip">
-                    <Briefcase size={12} /> {listingStats.active} live listings
-                  </span>
+            <div className={profileState.maximized ? "profile-window-layout-max" : ""}>
+              <div className="flex flex-col sm:flex-row items-start gap-5 p-5">
+                <button
+                  type="button"
+                  className={`dash-avatar ${profileState.maximized ? "w-24 h-24 text-3xl" : "w-16 h-16 text-xl"} rounded-full flex items-center justify-center font-bold flex-shrink-0 profile-avatar-btn ${avatarBounces ? "profile-avatar-bounce" : ""}`}
+                  onDoubleClick={handleAvatarDoubleClick}
+                >
+                  {user ? getInitials(user.name) : "?"}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h2 className={`font-bold dash-heading ${profileState.maximized ? "text-2xl" : "text-lg"}`}>{user?.name ?? "User"}</h2>
+                    <button
+                      type="button"
+                      onClick={handleBadgeClick}
+                      className="dash-badge-earn flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    >
+                      <ShieldCheck size={11} />
+                      Verified Identity
+                    </button>
+                  </div>
+                  <p className="text-sm dash-subtext">{user?.email}</p>
+                  {user?.username && (
+                    <p className="text-xs dash-subtext mt-1">@{user.username}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <span className="profile-chip">
+                      <Clock size={12} /> {user?.hoursAvailable.toFixed(1)} hrs available
+                    </span>
+                    <span className="profile-chip">
+                      <Briefcase size={12} /> {listingStats.active} live · {listingStats.total} total listings
+                    </span>
+                    <span className="profile-chip">
+                      <Star size={12} /> {achievements.filter((a) => a.unlocked).length}/{achievements.length} achievements
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div id="profile-stats" className="profile-stats-grid px-5 pb-5">
-              {[
-                { label: "Total Exchanges", value: String(history.length), color: dashColors.earn },
-                { label: "Hours Earned", value: `+${hoursEarned.toFixed(1)}h`, color: dashColors.earn },
-                { label: "Hours Spent", value: `-${hoursSpent.toFixed(1)}h`, color: dashColors.sun },
-                { label: "Net Flow", value: `${netHours >= 0 ? "+" : ""}${netHours.toFixed(1)}h`, color: dashColors.spend },
-              ].map((stat) => (
-                <div key={stat.label} className="profile-stat-gadget">
-                  <p className="profile-stat-value" style={{ fontFamily: "'DM Mono', monospace", color: stat.color }}>
-                    {stat.value}
-                  </p>
-                  <p className="profile-stat-label">{stat.label}</p>
+              <div id="profile-stats" className={`profile-stats-grid px-5 ${profileState.maximized ? "pb-4" : "pb-5"}`}>
+                {[
+                  { label: "Total Exchanges", value: String(history.length), color: dashColors.earn },
+                  { label: "Hours Earned", value: `+${hoursEarned.toFixed(1)}h`, color: dashColors.earn },
+                  { label: "Hours Spent", value: `-${hoursSpent.toFixed(1)}h`, color: dashColors.sun },
+                  { label: "Net Flow", value: `${netHours >= 0 ? "+" : ""}${netHours.toFixed(1)}h`, color: dashColors.spend },
+                ].map((stat) => (
+                  <div key={stat.label} className="profile-stat-gadget">
+                    <p className="profile-stat-value" style={{ fontFamily: "'DM Mono', monospace", color: stat.color }}>
+                      {stat.value}
+                    </p>
+                    <p className="profile-stat-label">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {profileState.maximized && (
+                <div className="profile-window-panels px-5 pb-5">
+                  <section className="profile-panel">
+                    <h3 className="profile-panel-title">Exchange breakdown</h3>
+                    <ul className="profile-detail-list">
+                      <li><span>Completed trades</span><strong>{history.length}</strong></li>
+                      <li><span>Hours given (earned)</span><strong style={{ color: dashColors.earn }}>+{hoursEarned.toFixed(1)}h</strong></li>
+                      <li><span>Hours received (spent)</span><strong style={{ color: dashColors.spend }}>-{hoursSpent.toFixed(1)}h</strong></li>
+                      <li><span>Pending confirmation</span><strong>{pending.length}</strong></li>
+                      <li><span>Given vs received</span><strong>{givenCount} / {receivedCount}</strong></li>
+                    </ul>
+                  </section>
+                  <section className="profile-panel">
+                    <h3 className="profile-panel-title">Achievements</h3>
+                    <ul className="profile-achievement-grid">
+                      {achievements.map((a) => (
+                        <li key={a.label} className={a.unlocked ? "profile-achievement-card unlocked" : "profile-achievement-card locked"}>
+                          {a.icon}
+                          <span>{a.label}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section className="profile-panel profile-panel-wide">
+                    <h3 className="profile-panel-title">Account overview</h3>
+                    <div className="profile-overview-grid">
+                      <div className="profile-overview-item">
+                        <p className="profile-overview-label">Hour balance</p>
+                        <p className="profile-overview-value" style={{ color: dashColors.hours }}>{user?.hoursAvailable.toFixed(1)} hrs</p>
+                        <p className="profile-overview-sub">Ready to trade or request help</p>
+                      </div>
+                      <div className="profile-overview-item">
+                        <p className="profile-overview-label">Listings</p>
+                        <p className="profile-overview-value">{listingStats.active} active</p>
+                        <p className="profile-overview-sub">{listingStats.total} total posted on the board</p>
+                      </div>
+                      <div className="profile-overview-item">
+                        <p className="profile-overview-label">Community weather</p>
+                        <p className="profile-overview-value">{solarpunkWeather.icon} {solarpunkWeather.temp}</p>
+                        <p className="profile-overview-sub">{solarpunkWeather.label}</p>
+                      </div>
+                    </div>
+                  </section>
                 </div>
-              ))}
+              )}
             </div>
           </ProfileWin7Window>
           </ProfileFloatingWindow>
         )}
 
-        {openWindows.has("pending") && pending.length > 0 && (
+        {openWindows.has("pending") && pending.length > 0 && !pendingState.minimized && (
           <ProfileFloatingWindow
-            x={windowPositions.pending.x}
-            y={windowPositions.pending.y}
-            width={WINDOW_WIDTHS.pending}
+            x={pendingState.restored.x}
+            y={pendingState.restored.y}
+            width={pendingState.restored.width}
+            maximized={pendingState.maximized}
             zIndex={getWindowZ("pending")}
             boundsRef={desktopLayerRef}
-            onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, pending: { x, y } }))}
+            onPositionChange={(x, y) =>
+              patchWindowState("pending", { restored: { ...pendingState.restored, x, y } })
+            }
             onFocus={() => focusWindow("pending")}
           >
           <ProfileWin7Window
@@ -510,26 +651,60 @@ export const Profile = () => {
             icon={<Loader2 size={14} className="animate-spin" />}
             className="profile-window-pending"
             active={activeWindow === "pending"}
+            maximized={pendingState.maximized}
             onClose={() => closeWindow("pending")}
+            onMinimize={() => minimizeWindow("pending")}
+            onMaximize={() => toggleMaximize("pending")}
             onFocus={() => focusWindow("pending")}
           >
-            <p className="px-5 pt-4 text-xs dash-subtext">
-              Both people must confirm before hours are transferred.
-            </p>
-            <div className="divide-y dash-divider mt-2">
+            <div className={pendingState.maximized ? "profile-window-layout-max" : ""}>
+              <p className="px-5 pt-4 text-xs dash-subtext">
+                Both people must confirm before hours are transferred. Review each exchange below.
+              </p>
+              {pendingState.maximized && (
+                <div className="profile-ledger-summary px-5 py-3">
+                  <div className="profile-ledger-summary-item">
+                    <span>Pending</span>
+                    <strong>{pending.length}</strong>
+                  </div>
+                  <div className="profile-ledger-summary-item">
+                    <span>Awaiting you</span>
+                    <strong>{pending.filter((ex) => user && !hasUserConfirmed(ex, user.userId)).length}</strong>
+                  </div>
+                  <div className="profile-ledger-summary-item">
+                    <span>Awaiting partner</span>
+                    <strong>{pending.filter((ex) => user && hasUserConfirmed(ex, user.userId)).length}</strong>
+                  </div>
+                </div>
+              )}
+              <div className={`divide-y dash-divider mt-2 ${pendingState.maximized ? "profile-pending-grid" : ""}`}>
               {pending.map((ex) => {
                 const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
                 const userConfirmed = user ? hasUserConfirmed(ex, user.userId) : false;
                 const partnerConfirmed = user ? isPartnerConfirmed(ex, user.userId) : false;
                 return (
-                  <div key={ex.id} className="flex flex-col gap-3 px-5 py-4">
+                  <div key={ex.id} className={`flex flex-col gap-3 px-5 py-4 ${pendingState.maximized ? "profile-pending-card" : ""}`}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium dash-heading">{ex.title}</p>
                       <p className="text-xs dash-subtext">
                         with {partner.name} · {ex.hours}h
                         {ex.exchange_format ? ` · ${formatExchangeFormat(ex.exchange_format)}` : ""}
                       </p>
+                      {pendingState.maximized && (
+                        <p className="text-[11px] dash-subtext mt-1">
+                          Posted {formatDate(ex.created_at)} · Role: {partner.role}
+                        </p>
+                      )}
                     </div>
+                    {pendingState.maximized && (
+                      <div className="profile-confirm-steps">
+                        <span className={userConfirmed ? "done" : "pending"}>You confirm</span>
+                        <span className="profile-confirm-arrow">→</span>
+                        <span className={partnerConfirmed ? "done" : "pending"}>{partner.name.split(" ")[0]} confirms</span>
+                        <span className="profile-confirm-arrow">→</span>
+                        <span className={userConfirmed && partnerConfirmed ? "done" : "pending"}>Hours transfer</span>
+                      </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-2 text-[11px]">
                       <span className={`dash-badge px-2 py-0.5 rounded-full ${userConfirmed ? "dash-badge-earn" : "dash-badge-neutral"}`}>
                         You {userConfirmed ? "confirmed" : "pending"}
@@ -566,6 +741,7 @@ export const Profile = () => {
                   </div>
                 );
               })}
+              </div>
             </div>
           </ProfileWin7Window>
           </ProfileFloatingWindow>
@@ -575,14 +751,17 @@ export const Profile = () => {
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">{error}</p>
         )}
 
-        {openWindows.has("ledger") && (
+        {openWindows.has("ledger") && !ledgerState.minimized && (
           <ProfileFloatingWindow
-            x={windowPositions.ledger.x}
-            y={windowPositions.ledger.y}
-            width={WINDOW_WIDTHS.ledger}
+            x={ledgerState.restored.x}
+            y={ledgerState.restored.y}
+            width={ledgerState.restored.width}
+            maximized={ledgerState.maximized}
             zIndex={getWindowZ("ledger")}
             boundsRef={desktopLayerRef}
-            onPositionChange={(x, y) => setWindowPositions((p) => ({ ...p, ledger: { x, y } }))}
+            onPositionChange={(x, y) =>
+              patchWindowState("ledger", { restored: { ...ledgerState.restored, x, y } })
+            }
             onFocus={() => focusWindow("ledger")}
           >
           <ProfileWin7Window
@@ -592,9 +771,13 @@ export const Profile = () => {
             className="profile-window-ledger"
             id="profile-ledger"
             active={activeWindow === "ledger"}
+            maximized={ledgerState.maximized}
             onClose={() => closeWindow("ledger")}
+            onMinimize={() => minimizeWindow("ledger")}
+            onMaximize={() => toggleMaximize("ledger")}
             onFocus={() => focusWindow("ledger")}
           >
+          <div className={ledgerState.maximized ? "profile-window-layout-max" : ""}>
           <div className="flex items-center justify-between px-5 py-3 border-b dash-divider">
             <p className="text-xs dash-subtext">{filtered.length} completed exchange{filtered.length === 1 ? "" : "s"}</p>
             <div className="dash-pill-group flex rounded-full p-0.5">
@@ -611,6 +794,28 @@ export const Profile = () => {
               ))}
             </div>
           </div>
+          {ledgerState.maximized && (
+            <div className="profile-ledger-summary px-5 py-3">
+              <div className="profile-ledger-summary-item">
+                <span>Total trades</span>
+                <strong>{history.length}</strong>
+              </div>
+              <div className="profile-ledger-summary-item">
+                <span>Hours earned</span>
+                <strong style={{ color: dashColors.earn }}>+{hoursEarned.toFixed(1)}h</strong>
+              </div>
+              <div className="profile-ledger-summary-item">
+                <span>Hours spent</span>
+                <strong style={{ color: dashColors.spend }}>-{hoursSpent.toFixed(1)}h</strong>
+              </div>
+              <div className="profile-ledger-summary-item">
+                <span>Net flow</span>
+                <strong style={{ color: netHours >= 0 ? dashColors.earn : dashColors.spend }}>
+                  {netHours >= 0 ? "+" : ""}{netHours.toFixed(1)}h
+                </strong>
+              </div>
+            </div>
+          )}
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="w-6 h-6 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
@@ -620,11 +825,20 @@ export const Profile = () => {
               No exchanges yet. Browse the Job Board to join one!
             </div>
           ) : (
-            <div className="divide-y dash-divider max-h-80 overflow-y-auto">
+            <div className={`divide-y dash-divider overflow-y-auto ${ledgerState.maximized ? "profile-ledger-scroll" : "max-h-80"}`}>
+              {ledgerState.maximized && (
+                <div className="profile-ledger-header">
+                  <span>Type</span>
+                  <span>Task</span>
+                  <span>Partner</span>
+                  <span>Date</span>
+                  <span>Hours</span>
+                </div>
+              )}
               {filtered.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/30 transition-colors">
+                <div key={item.id} className={`${ledgerState.maximized ? "profile-ledger-row" : "flex items-center gap-4 px-5 py-3.5 hover:bg-white/30 transition-colors"}`}>
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    className={`${ledgerState.maximized ? "profile-ledger-type" : "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"} ${
                       item.type === "given"
                         ? "dash-badge-earn"
                         : item.type === "received"
@@ -639,19 +853,30 @@ export const Profile = () => {
                     ) : (
                       <CheckCircle2 size={14} className="dash-subtext" />
                     )}
+                    {ledgerState.maximized && (
+                      <span className="capitalize">{item.type}</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium dash-heading truncate">{item.task}</p>
-                    <p className="text-xs dash-subtext">
-                      {item.type === "given"
-                        ? "Earned with"
-                        : item.type === "received"
-                          ? "Paid to"
-                          : "Joined"}{" "}
-                      {item.name} · {item.date}
-                      {item.raw.exchange_format ? ` · ${formatExchangeFormat(item.raw.exchange_format)}` : ""}
-                    </p>
+                    {!ledgerState.maximized && (
+                      <p className="text-xs dash-subtext">
+                        {item.type === "given"
+                          ? "Earned with"
+                          : item.type === "received"
+                            ? "Paid to"
+                            : "Joined"}{" "}
+                        {item.name} · {item.date}
+                        {item.raw.exchange_format ? ` · ${formatExchangeFormat(item.raw.exchange_format)}` : ""}
+                      </p>
+                    )}
                   </div>
+                  {ledgerState.maximized && (
+                    <>
+                      <p className="text-xs dash-subtext truncate">{item.name}</p>
+                      <p className="text-xs dash-subtext">{item.date}</p>
+                    </>
+                  )}
                   <span
                     className="text-sm font-medium flex-shrink-0"
                     style={{
@@ -671,7 +896,47 @@ export const Profile = () => {
               ))}
             </div>
           )}
+          </div>
           </ProfileWin7Window>
+          </ProfileFloatingWindow>
+        )}
+
+        {openWindows.has("listings") && !listingsState.minimized && (
+          <ProfileFloatingWindow
+            x={listingsState.restored.x}
+            y={listingsState.restored.y}
+            width={listingsState.restored.width}
+            maximized={listingsState.maximized}
+            zIndex={getWindowZ("listings")}
+            boundsRef={desktopLayerRef}
+            onPositionChange={(x, y) =>
+              patchWindowState("listings", { restored: { ...listingsState.restored, x, y } })
+            }
+            onFocus={() => focusWindow("listings")}
+          >
+            <ProfileWin7Window
+              title="My Listings"
+              subtitle={`${listingStats.active} active · ${listingStats.total} total`}
+              icon={<Briefcase size={14} strokeWidth={2.5} />}
+              className="profile-window-listings"
+              active={activeWindow === "listings"}
+              maximized={listingsState.maximized}
+              onClose={() => closeWindow("listings")}
+              onMinimize={() => minimizeWindow("listings")}
+              onMaximize={() => toggleMaximize("listings")}
+              onFocus={() => focusWindow("listings")}
+            >
+              <div className={listingsState.maximized ? "profile-window-layout-max" : ""}>
+                <p className="px-5 pt-4 text-xs dash-subtext">
+                  View, edit, close, or delete your job board listings.
+                </p>
+                <MyListingsPanel
+                  variant="profile"
+                  scrollClassName={listingsState.maximized ? "profile-ledger-scroll" : "max-h-80"}
+                  onStatsChange={handleListingStatsChange}
+                />
+              </div>
+            </ProfileWin7Window>
           </ProfileFloatingWindow>
         )}
       </div>
@@ -682,15 +947,16 @@ export const Profile = () => {
           <span>ChronoStart</span>
         </button>
         <div className="profile-taskbar-apps">
-          {(["profile", "ledger", "pending"] as const).map((windowId) => {
+          {(["profile", "ledger", "listings", "pending"] as const).map((windowId) => {
             if (windowId === "pending" && pending.length === 0) return null;
             if (!openWindows.has(windowId)) return null;
             const isActive = activeWindow === windowId;
+            const isMinimized = getWindowState(windowId).minimized;
             return (
               <button
                 key={windowId}
                 type="button"
-                className={`profile-taskbar-app ${isActive ? "profile-taskbar-app-active" : ""}`}
+                className={`profile-taskbar-app ${isActive && !isMinimized ? "profile-taskbar-app-active" : ""} ${isMinimized ? "profile-taskbar-app-minimized" : ""}`}
                 onClick={() => toggleWindow(windowId)}
               >
                 {WINDOW_LABELS[windowId]}

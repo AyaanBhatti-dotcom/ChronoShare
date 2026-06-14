@@ -8,7 +8,10 @@ interface ProfileWin7WindowProps {
   icon?: ReactNode;
   id?: string;
   active?: boolean;
+  maximized?: boolean;
   onClose?: () => void;
+  onMinimize?: () => void;
+  onMaximize?: () => void;
   onFocus?: () => void;
   onTitlePointerDown?: (e: PointerEvent) => void;
 }
@@ -21,7 +24,10 @@ export function ProfileWin7Window({
   icon,
   id,
   active = true,
+  maximized = false,
   onClose,
+  onMinimize,
+  onMaximize,
   onFocus,
   onTitlePointerDown,
 }: ProfileWin7WindowProps) {
@@ -31,14 +37,20 @@ export function ProfileWin7Window({
   };
 
   const handleTitlePointerDown = (e: PointerEvent) => {
+    if (maximized) return;
     if ((e.target as HTMLElement).closest("button")) return;
     onTitlePointerDown?.(e);
+  };
+
+  const handleTitleDoubleClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    onMaximize?.();
   };
 
   return (
     <div
       id={id}
-      className={`profile-win7-window profile-window-slot ${active ? "profile-window-active" : ""} ${className}`}
+      className={`profile-win7-window profile-window-slot ${active ? "profile-window-active" : ""} ${maximized ? "profile-win7-window-maximized" : ""} ${className}`}
       onMouseDown={(e) => {
         e.stopPropagation();
         onFocus?.();
@@ -48,6 +60,7 @@ export function ProfileWin7Window({
         className="profile-win7-titlebar"
         onMouseDown={handleChromeClick}
         onPointerDown={handleTitlePointerDown}
+        onDoubleClick={handleTitleDoubleClick}
       >
         <div className="profile-win7-title">
           {icon}
@@ -59,13 +72,13 @@ export function ProfileWin7Window({
             type="button"
             className="profile-win7-btn profile-win7-btn-min"
             aria-label="Minimize"
-            onClick={onClose}
+            onClick={onMinimize ?? onClose}
           />
           <button
             type="button"
-            className="profile-win7-btn profile-win7-btn-max"
-            aria-label="Maximize"
-            onClick={onFocus}
+            className={`profile-win7-btn ${maximized ? "profile-win7-btn-restore" : "profile-win7-btn-max"}`}
+            aria-label={maximized ? "Restore down" : "Maximize"}
+            onClick={onMaximize}
           />
           <button
             type="button"
@@ -75,7 +88,7 @@ export function ProfileWin7Window({
           />
         </div>
       </div>
-      <div className="profile-win7-body">{children}</div>
+      <div className={`profile-win7-body ${maximized ? "profile-win7-body-maximized" : ""}`}>{children}</div>
     </div>
   );
 }
