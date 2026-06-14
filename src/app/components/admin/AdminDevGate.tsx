@@ -92,11 +92,6 @@ export function AdminDevGate({ onAccessGranted }: AdminDevGateProps) {
             {!loading && <ArrowRight size={16} />}
           </button>
         </form>
-
-        <p className="text-xs text-[#4B5563] text-center mt-6">
-          Default key: <span style={{ fontFamily: "'DM Mono', monospace" }}>chrono-dev-admin</span>
-          {" "}(change in Supabase)
-        </p>
       </div>
     </div>
   );
