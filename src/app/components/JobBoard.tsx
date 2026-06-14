@@ -30,6 +30,7 @@ import { fetchBlockedUserIds } from "../../lib/trust-safety";
 import { SafetyTipBanner } from "./safety/SafetyTipBanner";
 import { ListingScopeToggle } from "./ListingScopeToggle";
 import { PastJobsPanel } from "./PastJobsPanel";
+import { ContactEmailButton } from "./ContactEmailButton";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -597,6 +598,16 @@ export const JobBoard = ({
                     joinFormat === "in_person" ||
                     selectedJob.meeting_preference === "public_venue") && (
                   <SafetyTipBanner variant="compact" />
+                )}
+
+                {!isOwnSelected && user && !isPreview && (
+                  <ContactEmailButton
+                    memberId={selectedJob.user_id}
+                    memberName={selectedJob.profiles?.full_name ?? "Community member"}
+                    postId={selectedJob.id}
+                    listingTitle={selectedJob.title}
+                    postType={selectedJob.post_type}
+                  />
                 )}
 
                 {!isOwnSelected && isFlexibleFormat(selectedJob.exchange_format) && (

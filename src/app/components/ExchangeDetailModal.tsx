@@ -22,6 +22,7 @@ import { SafetyTipBanner } from "./safety/SafetyTipBanner";
 import { ReportMemberDialog } from "./safety/ReportMemberDialog";
 import { ExchangeReviewDialog } from "./safety/ExchangeReviewDialog";
 import { hasExchangeReview } from "../../lib/trust-safety";
+import { ContactEmailButton } from "./ContactEmailButton";
 
 function categoryIcon(cat: string) {
   const map: Record<string, React.ReactNode> = {
@@ -164,16 +165,26 @@ export function ExchangeDetailModal({
               <p className="text-xs dash-subtext">{partnerLabel}</p>
             </div>
           </div>
-          {onViewPartner && (
-            <button
-              type="button"
-              onClick={() => onViewPartner(exchange)}
-              className="dash-btn-outline w-full py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5"
-            >
-              <User size={13} />
-              View {partnerLabel}&apos;s profile
-            </button>
-          )}
+          <div className="flex flex-col gap-2">
+            {!isPreview && (
+              <ContactEmailButton
+                memberId={partnerId}
+                memberName={partner.name}
+                exchangeId={exchange.id}
+                listingTitle={exchange.title}
+              />
+            )}
+            {onViewPartner && (
+              <button
+                type="button"
+                onClick={() => onViewPartner(exchange)}
+                className="dash-btn-outline w-full py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5"
+              >
+                <User size={13} />
+                View {partnerLabel}&apos;s profile
+              </button>
+            )}
+          </div>
         </div>
 
         <div

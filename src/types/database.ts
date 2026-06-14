@@ -334,6 +334,14 @@ export interface Database {
         Args: { p_exchange_id: string };
         Returns: boolean;
       };
+      get_member_contact_email: {
+        Args: {
+          p_member_id: string;
+          p_post_id?: string | null;
+          p_exchange_id?: string | null;
+        };
+        Returns: string | null;
+      };
       admin_list_exchange_reports: {
         Args: { p_key: string };
         Returns: ExchangeReport[];
