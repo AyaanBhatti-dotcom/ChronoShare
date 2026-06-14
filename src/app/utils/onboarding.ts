@@ -1,5 +1,22 @@
 const ONBOARDING_DONE_KEY = "chronoshare-onboarding-done";
 const NEW_SIGNUP_TOUR_KEY = "chronoshare-new-signup-tour";
+const PROFILE_DESKTOP_HINT_KEY = "chronoshare-profile-desktop-hint";
+
+function profileDesktopHintStorageKey(userId: string): string {
+  return `${PROFILE_DESKTOP_HINT_KEY}-${userId}`;
+}
+
+export function isProfileDesktopHintPending(userId: string): boolean {
+  return localStorage.getItem(profileDesktopHintStorageKey(userId)) !== "seen";
+}
+
+export function markProfileDesktopHintSeen(userId: string): void {
+  localStorage.setItem(profileDesktopHintStorageKey(userId), "seen");
+}
+
+export function clearProfileDesktopHint(userId: string): void {
+  localStorage.removeItem(profileDesktopHintStorageKey(userId));
+}
 
 export function markOnboardingDoneLocal(userId: string): void {
   localStorage.setItem(ONBOARDING_DONE_KEY, userId);

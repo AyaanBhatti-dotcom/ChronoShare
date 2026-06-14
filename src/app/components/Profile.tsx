@@ -43,6 +43,10 @@ import { useIsMobile } from "./ui/use-mobile";
 import { MyListingsPanel } from "./MyListingsPanel";
 import { MemberProfileModal } from "./MemberProfileModal";
 import { fetchMyPosts } from "../../lib/posts";
+import {
+  isProfileDesktopHintPending,
+  markProfileDesktopHintSeen,
+} from "../utils/onboarding";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -128,6 +132,7 @@ export const Profile = () => {
   const desktopLayerRef = useRef<HTMLDivElement>(null);
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [viewingMemberLabel, setViewingMemberLabel] = useState<string | undefined>();
+  const [showDesktopHint, setShowDesktopHint] = useState(false);
 
   const getWindowState = useCallback(
     (id: ProfileWindowId): ProfileWindowState => windowStates[id] ?? defaultWindowState(id),
@@ -182,6 +187,21 @@ export const Profile = () => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!user || isPreview || user.onboardingCompleted) {
+      setShowDesktopHint(false);
+      return;
+    }
+    if (openWindows.size > 0) {
+      setShowDesktopHint(false);
+      return;
+    }
+    if (isProfileDesktopHintPending(user.userId)) {
+      setShowDesktopHint(true);
+      markProfileDesktopHintSeen(user.userId);
+    }
+  }, [user, isPreview, openWindows.size, user?.onboardingCompleted, user?.userId]);
 
   const history = exchanges
     .filter((ex) => ex.status === "completed")
@@ -519,7 +539,7 @@ export const Profile = () => {
       </aside>
 
       <div className="profile-windows" ref={desktopLayerRef}>
-        {openWindows.size === 0 && (
+        {showDesktopHint && (
           <p className="profile-desktop-hint">
             Click a desktop icon to open a window — just like Windows 7.
           </p>

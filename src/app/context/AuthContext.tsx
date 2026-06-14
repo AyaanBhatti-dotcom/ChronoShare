@@ -15,6 +15,7 @@ import {
   markOnboardingDoneLocal,
   isOnboardingDoneLocal,
   clearOnboardingDoneLocal,
+  clearProfileDesktopHint,
 } from "../utils/onboarding";
 
 export interface Session {
@@ -397,6 +398,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!data) return "Could not reset onboarding. Please try again.";
 
     clearOnboardingDoneLocal();
+    clearProfileDesktopHint(user.userId);
     setUser((prev) => (prev ? { ...prev, onboardingCompleted: false } : null));
     return null;
   }, [user]);
