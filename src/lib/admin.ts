@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { AdminPost, AdminProfile } from "../types/database";
+import type { AdminPost, AdminProfile, LanguageRequest } from "../types/database";
 
 const ADMIN_KEY_STORAGE = "chronoshare_admin_key";
 
@@ -102,6 +102,26 @@ export async function deleteAdminPost(key: string, postId: string): Promise<void
   const { error } = await supabase.rpc("admin_delete_post", {
     p_key: key,
     p_post_id: postId,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function fetchAdminLanguageRequests(key: string): Promise<LanguageRequest[]> {
+  const { data, error } = await supabase.rpc("admin_list_language_requests", { p_key: key });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as LanguageRequest[];
+}
+
+export async function updateAdminLanguageRequest(
+  key: string,
+  requestId: string,
+  updates: { status?: LanguageRequest["status"]; adminRead?: boolean },
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_update_language_request", {
+    p_key: key,
+    p_request_id: requestId,
+    p_status: updates.status ?? null,
+    p_admin_read: updates.adminRead ?? null,
   });
   if (error) throw new Error(error.message);
 }

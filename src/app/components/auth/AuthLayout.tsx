@@ -1,5 +1,7 @@
 import { Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import { Logo } from "../Logo";
+import { LanguageSwitcher } from "../LanguageSwitcher";
 
 interface AuthLayoutProps {
   title: string;
@@ -9,6 +11,8 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="auth-aero-page min-h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
       <div className="auth-aero-scene" aria-hidden="true">
@@ -30,9 +34,12 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
           <div className="auth-glass-strip auth-aero-brand flex flex-col items-center mb-8 text-center">
             <Logo size="md" className="mb-3 auth-aero-logo rounded-xl" />
             <Link to="/" className="text-lg font-extrabold auth-aero-brand-name tracking-tight hover:opacity-90">
-              ChronoShare
+              {t("common.appName")}
             </Link>
-            <p className="text-sm auth-aero-brand-tag mt-1">Trade time, not money</p>
+            <p className="text-sm auth-aero-brand-tag mt-1">{t("common.tagline")}</p>
+            <div className="mt-4">
+              <LanguageSwitcher variant="compact" />
+            </div>
           </div>
 
           <div className="auth-glass-card">

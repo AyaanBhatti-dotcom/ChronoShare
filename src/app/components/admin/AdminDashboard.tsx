@@ -10,17 +10,23 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Globe,
+  Bell,
+  Check,
+  X,
 } from "lucide-react";
 import {
   deleteAdminPost,
   deleteAdminUser,
   fetchAdminPosts,
   fetchAdminProfiles,
+  fetchAdminLanguageRequests,
+  updateAdminLanguageRequest,
   updateAdminPost,
   updateAdminPostStatus,
   updateAdminProfile,
 } from "../../../lib/admin";
-import type { AdminPost, AdminProfile } from "../../../types/database";
+import type { AdminPost, AdminProfile, LanguageRequest } from "../../../types/database";
 import { AdminUserPreview } from "./AdminUserPreview";
 import { Logo } from "../Logo";
 import {
@@ -31,7 +37,7 @@ import {
   AdminTextarea,
 } from "./AdminModal";
 
-type Tab = "users" | "posts" | "preview";
+type Tab = "users" | "posts" | "requests" | "preview";
 
 const POST_CATEGORIES = ["Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -63,6 +69,7 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
   const [tab, setTab] = useState<Tab>("users");
   const [users, setUsers] = useState<AdminProfile[]>([]);
   const [posts, setPosts] = useState<AdminPost[]>([]);
+  const [languageRequests, setLanguageRequests] = useState<LanguageRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -75,12 +82,14 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     setError(null);
 
     try {
-      const [profilesData, postsData] = await Promise.all([
+      const [profilesData, postsData, requestsData] = await Promise.all([
         fetchAdminProfiles(adminKey),
         fetchAdminPosts(adminKey),
+        fetchAdminLanguageRequests(adminKey),
       ]);
       setUsers(profilesData);
       setPosts(postsData);
+      setLanguageRequests(requestsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin data.");
     } finally {
@@ -201,6 +210,36 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     }
   };
 
+  const unreadLanguageRequests = languageRequests.filter(
+    (r) => !r.admin_read && r.status === "pending",
+  ).length;
+
+  const handleLanguageRequestUpdate = async (
+    request: LanguageRequest,
+    updates: { status?: LanguageRequest["status"]; adminRead?: boolean },
+  ) => {
+    setActionLoading(true);
+    setError(null);
+    try {
+      await updateAdminLanguageRequest(adminKey, request.id, updates);
+      setLanguageRequests((prev) =>
+        prev.map((r) =>
+          r.id === request.id
+            ? {
+                ...r,
+                status: updates.status ?? r.status,
+                admin_read: updates.adminRead ?? r.admin_read,
+              }
+            : r,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update language request.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ background: "#0B0F19" }}>
       <header
@@ -216,6 +255,25 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {unreadLanguageRequests > 0 && (
+              <button
+                type="button"
+                onClick={() => setTab("requests")}
+                className="relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-amber-300 hover:text-amber-200 transition-colors"
+                style={{ border: "1px solid rgba(251,191,36,0.35)", background: "rgba(251,191,36,0.08)" }}
+              >
+                <Bell size={14} />
+                <span className="hidden sm:inline">
+                  {unreadLanguageRequests} language request{unreadLanguageRequests === 1 ? "" : "s"}
+                </span>
+                <span
+                  className="absolute -top-1 -right-1 min-w-[1.1rem] h-[1.1rem] rounded-full flex items-center justify-center text-[10px] font-bold text-black"
+                  style={{ background: "#FBBF24" }}
+                >
+                  {unreadLanguageRequests}
+                </span>
+              </button>
+            )}
             {tab !== "preview" && (
               <button
                 onClick={loadData}
@@ -241,12 +299,17 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
 
       <main className={`mx-auto px-4 py-6 sm:px-6 ${tab === "preview" ? "max-w-none" : "max-w-6xl"}`}>
         {tab !== "preview" && (
-          <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 mb-6 sm:grid-cols-4">
             <StatCard label="Total Users" value={users.length} />
             <StatCard label="Total Posts" value={posts.length} />
             <StatCard
               label="Active Posts"
               value={posts.filter((p) => p.status === "active").length}
+            />
+            <StatCard
+              label="Language Requests"
+              value={unreadLanguageRequests}
+              highlight={unreadLanguageRequests > 0}
               className="col-span-2 sm:col-span-1"
             />
           </div>
@@ -259,12 +322,18 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
           {([
             { id: "users" as const, label: "Users", icon: Users },
             { id: "posts" as const, label: "Posts & Jobs", icon: Briefcase },
+            {
+              id: "requests" as const,
+              label: "Language Requests",
+              icon: Globe,
+              badge: unreadLanguageRequests,
+            },
             { id: "preview" as const, label: "User Preview", icon: Eye },
-          ]).map(({ id, label, icon: Icon }) => (
+          ]).map(({ id, label, icon: Icon, badge }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
+              className="relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
               style={{
                 background: tab === id ? "#10B981" : "transparent",
                 color: tab === id ? "#000" : "#9CA3AF",
@@ -272,6 +341,17 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
             >
               <Icon size={14} />
               {label}
+              {badge ? (
+                <span
+                  className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full flex items-center justify-center text-[10px] font-bold"
+                  style={{
+                    background: tab === id ? "#000" : "#FBBF24",
+                    color: tab === id ? "#FBBF24" : "#000",
+                  }}
+                >
+                  {badge}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -305,6 +385,18 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
             }}
             onEditUser={setEditingUser}
             onDeleteUser={handleDeleteUser}
+          />
+        ) : tab === "requests" ? (
+          <LanguageRequestsTable
+            requests={languageRequests}
+            disabled={actionLoading}
+            onMarkRead={(request) => handleLanguageRequestUpdate(request, { adminRead: true })}
+            onMarkAdded={(request) =>
+              handleLanguageRequestUpdate(request, { status: "added", adminRead: true })
+            }
+            onDismiss={(request) =>
+              handleLanguageRequestUpdate(request, { status: "dismissed", adminRead: true })
+            }
           />
         ) : (
           <PostsTable
@@ -471,20 +563,148 @@ function StatCard({
   label,
   value,
   className = "",
+  highlight = false,
 }: {
   label: string;
   value: number;
   className?: string;
+  highlight?: boolean;
 }) {
   return (
     <div
       className={`rounded-2xl p-4 border ${className}`}
-      style={{ background: "#111827", borderColor: "#1F2937" }}
+      style={{
+        background: highlight ? "rgba(251,191,36,0.08)" : "#111827",
+        borderColor: highlight ? "rgba(251,191,36,0.35)" : "#1F2937",
+      }}
     >
       <p className="text-xs text-[#9CA3AF] mb-1">{label}</p>
-      <p className="text-2xl font-semibold text-white" style={{ fontFamily: "'DM Mono', monospace" }}>
+      <p
+        className="text-2xl font-semibold"
+        style={{
+          fontFamily: "'DM Mono', monospace",
+          color: highlight ? "#FBBF24" : "#fff",
+        }}
+      >
         {value}
       </p>
+    </div>
+  );
+}
+
+function LanguageRequestsTable({
+  requests,
+  disabled,
+  onMarkRead,
+  onMarkAdded,
+  onDismiss,
+}: {
+  requests: LanguageRequest[];
+  disabled: boolean;
+  onMarkRead: (request: LanguageRequest) => void;
+  onMarkAdded: (request: LanguageRequest) => void;
+  onDismiss: (request: LanguageRequest) => void;
+}) {
+  if (requests.length === 0) {
+    return <EmptyState message="No language requests yet." />;
+  }
+
+  return (
+    <div className="space-y-3">
+      {requests.map((request) => {
+        const isUnread = !request.admin_read && request.status === "pending";
+        return (
+          <div
+            key={request.id}
+            className="rounded-2xl p-5 border"
+            style={{
+              background: isUnread ? "rgba(251,191,36,0.06)" : "#111827",
+              borderColor: isUnread ? "rgba(251,191,36,0.3)" : "#1F2937",
+            }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <Globe size={16} className="text-emerald-400" />
+                  <h3 className="text-base font-semibold text-white">{request.language_name}</h3>
+                  {isUnread && (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                      style={{ background: "#FBBF24", color: "#000" }}
+                    >
+                      New
+                    </span>
+                  )}
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs font-medium capitalize"
+                    style={{
+                      background: "rgba(16,185,129,0.12)",
+                      color:
+                        request.status === "added"
+                          ? "#10B981"
+                          : request.status === "dismissed"
+                            ? "#9CA3AF"
+                            : request.status === "reviewed"
+                              ? "#60A5FA"
+                              : "#FBBF24",
+                    }}
+                  >
+                    {request.status}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#9CA3AF] mb-2">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={12} />
+                    {formatDate(request.created_at)}
+                  </span>
+                  {(request.requester_name || request.requester_email) && (
+                    <span className="flex items-center gap-1">
+                      <Mail size={12} />
+                      {request.requester_name ?? "Anonymous"}
+                      {request.requester_email ? ` · ${request.requester_email}` : ""}
+                    </span>
+                  )}
+                </div>
+
+                {request.reason && (
+                  <p className="text-sm text-[#D1D5DB] leading-relaxed">{request.reason}</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                {isUnread && (
+                  <ActionButton
+                    onClick={() => onMarkRead(request)}
+                    disabled={disabled}
+                    variant="edit"
+                    icon={<Check size={12} />}
+                    label="Mark read"
+                  />
+                )}
+                {request.status === "pending" && (
+                  <>
+                    <ActionButton
+                      onClick={() => onMarkAdded(request)}
+                      disabled={disabled}
+                      variant="preview"
+                      icon={<Check size={12} />}
+                      label="Mark added"
+                    />
+                    <ActionButton
+                      onClick={() => onDismiss(request)}
+                      disabled={disabled}
+                      variant="delete"
+                      icon={<X size={12} />}
+                      label="Dismiss"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

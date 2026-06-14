@@ -236,6 +236,23 @@ export interface Database {
         Args: { p_key: string; p_post_id: string };
         Returns: void;
       };
+      submit_language_request: {
+        Args: { p_language_name: string; p_reason?: string | null };
+        Returns: string;
+      };
+      admin_list_language_requests: {
+        Args: { p_key: string };
+        Returns: LanguageRequest[];
+      };
+      admin_update_language_request: {
+        Args: {
+          p_key: string;
+          p_request_id: string;
+          p_status?: string | null;
+          p_admin_read?: boolean | null;
+        };
+        Returns: void;
+      };
       accept_post: {
         Args: { p_post_id: string; p_exchange_format?: string | null };
         Returns: string;
@@ -282,6 +299,18 @@ export interface AdminPost {
   status: "active" | "closed" | "archived";
   created_at: string;
   updated_at: string;
+}
+
+export interface LanguageRequest {
+  id: string;
+  user_id: string | null;
+  language_name: string;
+  reason: string | null;
+  requester_name: string | null;
+  requester_email: string | null;
+  status: "pending" | "reviewed" | "added" | "dismissed";
+  admin_read: boolean;
+  created_at: string;
 }
 
 export type PostWithAuthor = Post & {

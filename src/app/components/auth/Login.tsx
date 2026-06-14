@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { getAuthenticatedHomePath } from "../../utils/auth-routes";
 import { AuthLayout } from "./AuthLayout";
 
 export function Login() {
+  const { t } = useTranslation();
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -37,13 +39,13 @@ export function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Sign in to access your dashboard"
+      title={t("auth.welcomeBack")}
+      subtitle={t("auth.signInSubtitle")}
       footer={
         <>
-          Don&apos;t have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link to="/signup" className="auth-link">
-            Sign up
+            {t("nav.signUp")}
           </Link>
         </>
       }
@@ -53,7 +55,7 @@ export function Login() {
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="auth-label">
-            Email
+            {t("auth.email")}
           </label>
           <input
             id="email"
@@ -62,7 +64,7 @@ export function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t("auth.emailPlaceholder")}
             className="auth-input"
           />
         </div>
@@ -70,10 +72,10 @@ export function Login() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label htmlFor="password" className="auth-label">
-              Password
+              {t("auth.password")}
             </label>
             <Link to="/forgot-password" className="text-xs auth-link">
-              Forgot password?
+              {t("auth.forgotPassword")}
             </Link>
           </div>
           <input
@@ -89,11 +91,11 @@ export function Login() {
         </div>
 
         <button type="submit" disabled={loading} className="auth-btn-primary">
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? t("auth.signingIn") : t("auth.signIn")}
         </button>
 
         <Link to="/admin" className="auth-btn-secondary">
-          Dev Admin
+          {t("auth.devAdmin")}
         </Link>
       </form>
     </AuthLayout>

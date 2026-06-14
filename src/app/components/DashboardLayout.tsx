@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
   Bell, Search, Menu, X, LogOut, HeartHandshake,
@@ -16,6 +17,7 @@ import { AeroBackground } from "./onboarding/aeroTheme";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 import { consumeNewSignupTour } from "../utils/onboarding";
 import { fetchActivePostCount } from "../../lib/posts";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 type Screen = "home" | "board" | "community" | "post" | "profile" | "settings";
 type BoardMode = "all" | "needs" | "offers";
@@ -26,22 +28,22 @@ type NavigateOptions = {
   boardTab?: BoardTab;
 };
 
-const navItems: { id: Screen; label: string; shortLabel: string; icon: React.ReactNode }[] = [
-  { id: "home", label: "Home", shortLabel: "Home", icon: <Home size={18} /> },
-  { id: "board", label: "Job Board", shortLabel: "Board", icon: <Briefcase size={18} /> },
-  { id: "community", label: "Community", shortLabel: "Pool", icon: <HeartHandshake size={18} /> },
-  { id: "post", label: "Post Request", shortLabel: "Post", icon: <PlusCircle size={18} /> },
-  { id: "profile", label: "Profile", shortLabel: "Profile", icon: <User size={18} /> },
-  { id: "settings", label: "Settings", shortLabel: "Settings", icon: <SettingsIcon size={18} /> },
+const navItemIds: { id: Screen; labelKey: string; shortKey: string; icon: React.ReactNode }[] = [
+  { id: "home", labelKey: "nav.home", shortKey: "nav.home", icon: <Home size={18} /> },
+  { id: "board", labelKey: "nav.board", shortKey: "nav.boardShort", icon: <Briefcase size={18} /> },
+  { id: "community", labelKey: "nav.community", shortKey: "nav.communityShort", icon: <HeartHandshake size={18} /> },
+  { id: "post", labelKey: "nav.post", shortKey: "nav.postShort", icon: <PlusCircle size={18} /> },
+  { id: "profile", labelKey: "nav.profile", shortKey: "nav.profile", icon: <User size={18} /> },
+  { id: "settings", labelKey: "nav.settings", shortKey: "nav.settings", icon: <SettingsIcon size={18} /> },
 ];
 
-const pageTitles: Record<Screen, string> = {
-  home: "Dashboard",
-  board: "Job Board",
-  community: "Community Pool",
-  post: "Post a Request",
-  profile: "My Profile",
-  settings: "Settings",
+const pageTitleKeys: Record<Screen, string> = {
+  home: "pages.dashboard",
+  board: "pages.jobBoard",
+  community: "pages.communityPool",
+  post: "pages.postRequest",
+  profile: "pages.myProfile",
+  settings: "pages.settings",
 };
 
 export function DashboardLayout({
@@ -51,6 +53,7 @@ export function DashboardLayout({
   previewMode?: boolean;
   onExitPreview?: () => void;
 } = {}) {
+  const { t } = useTranslation();
   const { user, logout, completeOnboarding, resetOnboarding } = useAuth();
   const navigate = useNavigate();
   const [screen, setScreen] = useState<Screen>("home");
@@ -115,36 +118,31 @@ export function DashboardLayout({
   const tourSteps: TourStep[] = useMemo(
     () => [
       {
-        title: `Welcome, ${firstName}!`,
-        description:
-          "ChronoShare is a solarpunk time bank — trade skills in hours, not dollars. This quick tour shows where everything lives on your dashboard.",
+        title: t("tour.welcome", { name: firstName }),
+        description: t("tour.welcomeDesc"),
       },
       {
-        title: "How hours move",
-        description:
-          "Help on a need → you earn hours. Post an offer → you earn from the community when someone accepts. Request help → hours spend from your balance. Both people confirm before hours transfer.",
+        title: t("tour.hoursTitle"),
+        description: t("tour.hoursDesc"),
       },
       {
         target: '[data-tour="nav-home"]',
-        title: "Home dashboard",
-        description:
-          "Your command center — nearby map, listings in your area, hour balance, and recent exchanges. Toggle worldwide to browse anywhere.",
+        title: t("tour.homeTitle"),
+        description: t("tour.homeDesc"),
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="hour-balance"]',
-        title: "Your time bank",
-        description:
-          "Available hours always show here in the sidebar. Tap your name anytime to jump to Profile.",
+        title: t("tour.balanceTitle"),
+        description: t("tour.balanceDesc"),
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="quick-actions"]',
-        title: "Balance & quick actions",
-        description:
-          "See your balance at a glance. Offer Time posts a skill listing; Request Time asks the community for help.",
+        title: t("tour.quickTitle"),
+        description: t("tour.quickDesc"),
         position: "bottom",
         onEnter: () => {
           setScreen("home");
@@ -153,41 +151,36 @@ export function DashboardLayout({
       },
       {
         target: '[data-tour="nav-board"]',
-        title: "Job Board",
-        description:
-          "Browse open needs and offers, filter by type, and join exchanges. Past jobs live here too once both sides confirm.",
+        title: t("tour.boardTitle"),
+        description: t("tour.boardDesc"),
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="nav-community"]',
-        title: "Community Pool",
-        description:
-          "Donate spare hours to the solidarity pool. Help others first, then claim up to 1 hour per week during weekend windows.",
+        title: t("tour.poolTitle"),
+        description: t("tour.poolDesc"),
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="nav-post"]',
-        title: "Post a request",
-        description:
-          "Create a listing — offer a skill or request help. Set hours, category, and whether it's in person or remote.",
+        title: t("tour.postTitle"),
+        description: t("tour.postDesc"),
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="nav-profile"]',
-        title: "Profile & confirmations",
-        description:
-          "Confirm completed exchanges here — hours only move after both people confirm. View history, stats, and your public profile.",
+        title: t("tour.profileTitle"),
+        description: t("tour.profileDesc"),
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="header-search"]',
-        title: "Search",
-        description:
-          "Search for people, tasks, and skills across the platform.",
+        title: t("tour.searchTitle"),
+        description: t("tour.searchDesc"),
         position: "bottom",
         onEnter: () => {
           setScreen("home");
@@ -195,12 +188,11 @@ export function DashboardLayout({
         },
       },
       {
-        title: "You're ready to go!",
-        description:
-          "Browse nearby listings, post your first offer, or explore the Community Pool. Happy trading!",
+        title: t("tour.readyTitle"),
+        description: t("tour.readyDesc"),
       },
     ],
-    [firstName, sidebarStep],
+    [firstName, sidebarStep, t],
   );
 
   const handleTourComplete = useCallback(async () => {
@@ -250,7 +242,7 @@ export function DashboardLayout({
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItemIds.map((item) => {
             const active = screen === item.id;
             return (
               <button
@@ -262,7 +254,7 @@ export function DashboardLayout({
                 }`}
               >
                 {item.icon}
-                {item.label}
+                {t(item.labelKey)}
                 {item.id === "board" && jobCount > 0 && (
                   <span className="dash-badge ml-auto text-xs px-1.5 py-0.5 rounded-full">
                     {jobCount}
@@ -284,7 +276,9 @@ export function DashboardLayout({
             </div>
             <div className="text-left min-w-0" data-tour="hour-balance">
               <p className="text-xs font-medium dash-heading truncate">{user?.name}</p>
-              <p className="text-xs dash-subtext truncate">{user?.hoursAvailable.toFixed(1)} hrs available</p>
+              <p className="text-xs dash-subtext truncate">
+                {t("common.hrsAvailable", { count: user?.hoursAvailable.toFixed(1) })}
+              </p>
             </div>
           </button>
           <button
@@ -292,7 +286,7 @@ export function DashboardLayout({
             className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs dash-subtext hover:text-red-500 hover:bg-red-500/10 transition-colors"
           >
             <LogOut size={14} />
-            {previewMode ? "Exit preview" : "Sign out"}
+            {previewMode ? t("nav.exitPreview") : t("nav.signOut")}
           </button>
         </div>
       </aside>
@@ -312,12 +306,12 @@ export function DashboardLayout({
           <button
             className="sm:hidden dash-subtext hover:dash-heading transition-colors flex-shrink-0"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <h1 className="text-sm font-bold dash-page-title dash-mobile-header-title">{pageTitles[screen]}</h1>
+          <h1 className="text-sm font-bold dash-page-title dash-mobile-header-title">{t(pageTitleKeys[screen])}</h1>
 
           <div
             className="dash-search hidden sm:flex flex-1 max-w-xs ml-4 items-center gap-2 px-3 py-1.5 rounded-xl"
@@ -325,16 +319,17 @@ export function DashboardLayout({
           >
             <Search size={13} className="dash-subtext" />
             <input
-              placeholder="Search people, tasks..."
+              placeholder={t("nav.searchPlaceholder")}
               className="bg-transparent text-xs dash-heading placeholder:text-[var(--dash-text-faint)] outline-none w-full"
             />
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <LanguageSwitcher variant="compact" />
             <button
               className="sm:hidden relative dash-subtext hover:dash-heading transition-colors p-1"
               data-tour="header-search"
-              aria-label="Search"
+              aria-label={t("nav.search")}
               onClick={() => navigateScreen("board")}
             >
               <Search size={18} />
@@ -379,8 +374,8 @@ export function DashboardLayout({
       </div>
 
       {/* Mobile bottom navigation */}
-      <nav className="dash-mobile-bottom-nav sm:hidden" aria-label="Main navigation">
-        {navItems.map((item) => {
+      <nav className="dash-mobile-bottom-nav sm:hidden" aria-label={t("nav.home")}>
+        {navItemIds.map((item) => {
           const active = screen === item.id;
           return (
             <button
@@ -392,7 +387,7 @@ export function DashboardLayout({
               aria-current={active ? "page" : undefined}
             >
               {item.icon}
-              <span className="truncate max-w-full">{item.shortLabel}</span>
+              <span className="truncate max-w-full">{t(item.shortKey)}</span>
               {item.id === "board" && jobCount > 0 && (
                 <span className="dash-mobile-nav-badge">{jobCount}</span>
               )}

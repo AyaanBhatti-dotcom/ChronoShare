@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MapPin,
   Clock,
@@ -18,6 +19,8 @@ import {
   formatDistance,
   formatLocationLabel,
   formatPostLocation,
+  formatRadiusValue,
+  getDistanceUnit,
   type NearbyPost,
   type NearbySort,
   type UserLocation,
@@ -40,6 +43,7 @@ interface HomeDashboardProps {
 }
 
 export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
@@ -167,11 +171,11 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
           <div>
             <p className="text-sm font-semibold dash-heading">
               {needsYourConfirm > 0
-                ? `${needsYourConfirm} exchange${needsYourConfirm === 1 ? "" : "s"} need your confirmation`
-                : `${pendingCount} exchange${pendingCount === 1 ? "" : "s"} awaiting partner confirmation`}
+                ? t("home.confirmNeeded", { count: needsYourConfirm })
+                : t("home.awaitingPartner", { count: pendingCount })}
             </p>
             <p className="text-xs dash-subtext mt-0.5">
-              Both people must confirm before hours transfer. Open Profile to confirm or cancel.
+              {t("home.confirmHint")}
             </p>
           </div>
         </button>
@@ -183,17 +187,17 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
           <div className="flex items-center gap-2 mb-1">
             <MapPin size={16} className="dash-accent" />
             <h2 className="text-lg font-semibold dash-heading">
-              {scope === "worldwide" ? "Listings Anywhere" : "Nearby Listings"}
+              {scope === "worldwide" ? t("home.listingsAnywhere") : t("home.nearbyListings")}
             </h2>
           </div>
           <p className="text-sm dash-subtext">
             {locationLoading
-              ? "Loading your location..."
+              ? t("home.loadingLocation")
               : scope === "worldwide"
-                ? "Traveling? Browse opportunities worldwide and offer help wherever you go."
+                ? t("home.worldwideHint")
                 : userLocation
-                  ? `Showing opportunities near ${formatLocationLabel(userLocation)}`
-                  : "Set your location to see nearby listings on the map"}
+                  ? t("home.nearLocation", { location: formatLocationLabel(userLocation) })
+                  : t("home.setLocation")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -208,7 +212,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                   sort === option ? "dash-pill-active" : "dash-pill-inactive"
                 }`}
               >
-                {option === "nearest" ? "Nearest" : "Newest"}
+                {option === "nearest" ? t("sort.nearest") : t("sort.newest")}
               </button>
             ))}
           </div>
@@ -243,12 +247,12 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
       {userLocation && scope === "nearby" && (
         <div className="dash-card rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium dash-heading">Search radius</p>
+            <p className="text-sm font-medium dash-heading">{t("home.searchRadius")}</p>
             <span
               className="text-sm font-semibold dash-accent"
               style={{ fontFamily: "'DM Mono', monospace" }}
             >
-              {radiusMiles} mi
+              {formatRadiusValue(radiusMiles)} {getDistanceUnit()}
             </span>
           </div>
           <Slider
@@ -261,7 +265,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
           />
           <div className="flex justify-between text-[10px] dash-subtext uppercase tracking-wide">
             {RADIUS_OPTIONS.map((miles) => (
-              <span key={miles}>{miles}mi</span>
+              <span key={miles}>{formatRadiusValue(miles)}{getDistanceUnit()}</span>
             ))}
           </div>
         </div>
@@ -273,13 +277,13 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold dash-heading flex items-center gap-2">
             <Sparkles size={14} className="dash-accent-grass" />
-            {scope === "worldwide" ? "Opportunities worldwide" : "New in your area"}
+            {scope === "worldwide" ? t("home.opportunitiesWorldwide") : t("home.newInArea")}
           </h3>
           <button
             onClick={() => onNavigate("board")}
             className="flex items-center gap-1 text-xs dash-link"
           >
-            View all <ChevronRight size={14} />
+            {t("common.viewAll")} <ChevronRight size={14} />
           </button>
         </div>
 
@@ -291,20 +295,20 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
           <div className="dash-card rounded-2xl p-8 text-center">
             <p className="text-sm dash-subtext mb-3">
               {scope === "worldwide"
-                ? "No active listings yet."
-                : `No listings within ${radiusMiles} miles yet.`}
+                ? t("home.noListingsWorldwide")
+                : t("home.noListingsNearby", { radius: formatRadiusValue(radiusMiles), unit: getDistanceUnit() })}
             </p>
             <button
               onClick={() => onNavigate("post")}
               className="text-xs dash-link"
             >
-              Be the first to post in your area
+              {t("home.beFirst")}
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {nearbyPosts.map((post) => {
-              const name = post.profiles?.full_name ?? "User";
+              const name = post.profiles?.full_name ?? t("common.user");
               const impact = getHourImpact(post.post_type, true, post.hours_cost);
               const isOwn = user?.userId === post.user_id;
               const badgeStyle = impactBadgeStyle(
@@ -369,54 +373,54 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
       {/* Compact balance + recent */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="dash-card dash-card-hero rounded-2xl p-6 text-center" data-tour="quick-actions">
-          <p className="text-xs dash-subtext uppercase tracking-wide mb-2">Available Balance</p>
+          <p className="text-xs dash-subtext uppercase tracking-wide mb-2">{t("home.availableBalance")}</p>
           <p
             className="text-5xl font-semibold dash-heading mb-1"
             style={{ fontFamily: "'DM Mono', monospace" }}
           >
             {user?.hoursAvailable.toFixed(1) ?? "0.0"}
           </p>
-          <p className="dash-accent-grass text-sm mb-4">Hours</p>
+          <p className="dash-accent-grass text-sm mb-4">{t("common.hours")}</p>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2">
             <button
               onClick={() => onNavigate("post", { postType: "offers" })}
               className="dash-btn-primary px-5 py-2 rounded-full text-xs font-semibold w-full sm:w-auto"
             >
-              Offer Time
+              {t("home.offerTime")}
             </button>
             <button
               onClick={() => onNavigate("post", { postType: "needs" })}
               className="dash-btn-outline px-5 py-2 rounded-full text-xs font-semibold w-full sm:w-auto"
             >
-              Request Time
+              {t("home.requestTime")}
             </button>
           </div>
         </div>
 
         <div className="dash-card rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b dash-divider">
-            <h3 className="text-sm font-semibold dash-heading">Recent Exchanges</h3>
+            <h3 className="text-sm font-semibold dash-heading">{t("home.recentExchanges")}</h3>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onNavigate("board", { boardTab: "past" })}
                 className="text-xs dash-subtext hover:dash-heading transition-colors"
               >
-                Past jobs
+                {t("home.pastJobs")}
               </button>
               <button
                 onClick={() => onNavigate("profile")}
                 className="flex items-center gap-1 text-xs dash-link"
               >
-                View all <ChevronRight size={14} />
+                {t("common.viewAll")} <ChevronRight size={14} />
               </button>
             </div>
           </div>
           {exchanges.length === 0 ? (
-            <p className="px-5 py-6 text-sm dash-subtext text-center">No exchanges yet.</p>
+            <p className="px-5 py-6 text-sm dash-subtext text-center">{t("home.noExchanges")}</p>
           ) : (
             <div className="divide-y dash-divider">
               {exchanges.map((ex) => {
-                const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
+                const partner = user ? getExchangePartner(ex, user.userId) : { name: t("common.user"), role: "helper" as const };
                 const hourType = user ? getExchangeHourType(ex, user.userId) : "free";
                 return (
                   <div key={ex.id} className="flex items-center gap-3 px-5 py-3">
@@ -440,7 +444,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                       }}
                     >
                       {hourType === "earned" ? <ArrowUpRight size={10} /> : hourType === "spent" ? <ArrowDownRight size={10} /> : null}
-                      {hourType === "free" ? "Free" : `${hourType === "earned" ? "+" : "-"}${ex.hours}h`}
+                      {hourType === "free" ? t("home.free") : `${hourType === "earned" ? "+" : "-"}${ex.hours}h`}
                     </span>
                   </div>
                 );

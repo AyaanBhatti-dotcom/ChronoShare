@@ -1,3 +1,5 @@
+import i18n from "../i18n";
+import { usesMetricDistance } from "../i18n/languages";
 import { supabase } from "./supabase";
 import type { PostWithAuthor } from "../types/database";
 import { getStateName, getStateCode } from "./us-states";
@@ -34,10 +36,34 @@ export function haversineDistanceMiles(
 }
 
 export function formatDistance(miles: number | null): string {
-  if (miles == null) return "Nearby";
-  if (miles < 0.1) return "< 0.1 mi";
-  if (miles < 10) return `${miles.toFixed(1)} mi`;
-  return `${Math.round(miles)} mi`;
+  if (miles == null) return i18n.t("distance.nearby");
+
+  const metric = usesMetricDistance(i18n.language);
+  if (metric) {
+    const km = miles * 1.60934;
+    const unit = i18n.t("distance.unitKm");
+    if (km < 0.2) return i18n.t("distance.lessThan", { value: "0.2", unit });
+    if (km < 16) return `${km.toFixed(1)} ${unit}`;
+    return `${Math.round(km)} ${unit}`;
+  }
+
+  const unit = i18n.t("distance.unitMi");
+  if (miles < 0.1) return i18n.t("distance.lessThan", { value: "0.1", unit });
+  if (miles < 10) return `${miles.toFixed(1)} ${unit}`;
+  return `${Math.round(miles)} ${unit}`;
+}
+
+export function getDistanceUnit(): string {
+  return usesMetricDistance(i18n.language)
+    ? i18n.t("distance.unitKm")
+    : i18n.t("distance.unitMi");
+}
+
+export function formatRadiusValue(miles: number): string {
+  if (usesMetricDistance(i18n.language)) {
+    return `${Math.round(miles * 1.60934)}`;
+  }
+  return `${miles}`;
 }
 
 export function formatLocationLabel(location: UserLocation): string {

@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass, RotateCcw, MapPin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { getUserLocation, formatLocationLabel, type UserLocation } from "../../lib/location";
 import { LocationPicker } from "./LocationPicker";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LANGUAGES } from "../../i18n/languages";
 
 const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
   <button
@@ -47,6 +50,7 @@ export const Settings = ({
   onLogout?: () => void;
   onRestartOnboarding?: () => Promise<void>;
 }) => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [email, setEmail] = useState(user?.email ?? "");
   const [savedLocation, setSavedLocation] = useState<UserLocation | null>(null);
@@ -92,10 +96,10 @@ export const Settings = ({
     <div className="max-w-xl mx-auto space-y-4">
       {/* Account */}
       <div {...cardProps}>
-        <SectionHeader icon={<KeyRound size={16} />} title="Account Details" desc="Manage your login credentials" />
+        <SectionHeader icon={<KeyRound size={16} />} title={t("settings.accountTitle")} desc={t("settings.accountDesc")} />
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="dash-label">Email Address</label>
+            <label className="dash-label">{t("settings.emailAddress")}</label>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -103,26 +107,38 @@ export const Settings = ({
             />
           </div>
           <div className="space-y-1.5">
-            <label className="dash-label">Password</label>
+            <label className="dash-label">{t("auth.password")}</label>
             <button
               className="dash-input w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm dash-subtext transition-all duration-200 hover:dash-heading"
             >
               <Lock size={14} />
-              Reset password via email
+              {t("settings.resetViaEmail")}
             </button>
           </div>
           <button className="dash-btn-primary px-4 py-2 rounded-full text-xs font-semibold">
-            Save Changes
+            {t("settings.saveChanges")}
           </button>
         </div>
+      </div>
+
+      {/* Language */}
+      <div {...cardProps}>
+        <SectionHeader
+          icon={<Globe size={16} />}
+          title={t("settings.languageTitle")}
+          desc={t("settings.languageDesc")}
+        />
+        <SettingRow label={t("common.language")} desc={LANGUAGES.find((l) => l.code === i18n.language.split("-")[0])?.nativeName}>
+          <LanguageSwitcher variant="compact" />
+        </SettingRow>
       </div>
 
       {/* Location */}
       <div {...cardProps}>
         <SectionHeader
           icon={<MapPin size={16} />}
-          title="Your Location"
-          desc="Used for nearby listings and map — search any city worldwide"
+          title={t("settings.locationTitle")}
+          desc={t("settings.locationDesc")}
         />
         {locationLoading ? (
           <div className="flex justify-center py-6">
@@ -132,7 +148,7 @@ export const Settings = ({
           <>
             {savedLocation && (
               <p className="text-xs dash-subtext mb-4">
-                Current: <span className="dash-accent">{formatLocationLabel(savedLocation)}</span>
+                {t("settings.current")}: <span className="dash-accent">{formatLocationLabel(savedLocation)}</span>
               </p>
             )}
             <LocationPicker
@@ -147,18 +163,18 @@ export const Settings = ({
 
       {/* Privacy */}
       <div {...cardProps}>
-        <SectionHeader icon={<Eye size={16} />} title="Privacy & Security" desc="Control your visibility and account safety" />
+        <SectionHeader icon={<Eye size={16} />} title={t("settings.privacyTitle")} desc={t("settings.privacyDesc")} />
         <div>
-          <SettingRow label="Public Profile" desc="Let others in the community find you">
+          <SettingRow label={t("settings.publicProfile")} desc={t("settings.publicProfileDesc")}>
             <Toggle value={toggles.publicProfile} onChange={set("publicProfile")} />
           </SettingRow>
-          <SettingRow label="Show Community Rating" desc="Display your rating on listings">
+          <SettingRow label={t("settings.showRating")} desc={t("settings.showRatingDesc")}>
             <Toggle value={toggles.showRating} onChange={set("showRating")} />
           </SettingRow>
-          <SettingRow label="Show Exchange History" desc="Allow others to see your ledger">
+          <SettingRow label={t("settings.showHistory")} desc={t("settings.showHistoryDesc")}>
             <Toggle value={toggles.showHistory} onChange={set("showHistory")} />
           </SettingRow>
-          <SettingRow label="Two-Factor Authentication" desc="Require a code on new logins">
+          <SettingRow label={t("settings.twoFactor")} desc={t("settings.twoFactorDesc")}>
             <Toggle value={toggles.twoFactor} onChange={set("twoFactor")} />
           </SettingRow>
         </div>
@@ -166,32 +182,31 @@ export const Settings = ({
 
       {/* Notifications */}
       <div {...cardProps}>
-        <SectionHeader icon={<Bell size={16} />} title="Notifications" desc="Choose how you hear about activity" />
+        <SectionHeader icon={<Bell size={16} />} title={t("settings.notificationsTitle")} desc={t("settings.notificationsDesc")} />
         <div>
-          <SettingRow label="Email: Exchange Updates" desc="Confirmations and status changes">
+          <SettingRow label={t("settings.emailExchanges")} desc={t("settings.emailExchangesDesc")}>
             <Toggle value={toggles.emailExchanges} onChange={set("emailExchanges")} />
           </SettingRow>
-          <SettingRow label="Email: Weekly Digest" desc="Summary of activity and new listings">
+          <SettingRow label={t("settings.emailWeekly")} desc={t("settings.emailWeeklyDesc")}>
             <Toggle value={toggles.emailWeekly} onChange={set("emailWeekly")} />
           </SettingRow>
-          <SettingRow label="Push: New Matches" desc="Notify when someone accepts your post">
+          <SettingRow label={t("settings.pushMatches")} desc={t("settings.pushMatchesDesc")}>
             <Toggle value={toggles.pushMatches} onChange={set("pushMatches")} />
           </SettingRow>
-          <SettingRow label="Push: Direct Messages" desc="Notify on incoming messages">
+          <SettingRow label={t("settings.pushMessages")} desc={t("settings.pushMessagesDesc")}>
             <Toggle value={toggles.pushMessages} onChange={set("pushMessages")} />
           </SettingRow>
         </div>
 
-        {/* Channel icons legend */}
         <div className="flex items-center gap-4 mt-3 pt-3 border-t dash-divider">
           <div className="flex items-center gap-1.5 text-xs dash-subtext">
-            <Mail size={12} /> Email
+            <Mail size={12} /> {t("settings.channelEmail")}
           </div>
           <div className="flex items-center gap-1.5 text-xs dash-subtext">
-            <Smartphone size={12} /> Push
+            <Smartphone size={12} /> {t("settings.channelPush")}
           </div>
           <div className="flex items-center gap-1.5 text-xs dash-subtext">
-            <Globe size={12} /> In-app
+            <Globe size={12} /> {t("settings.channelInApp")}
           </div>
         </div>
       </div>
@@ -201,12 +216,12 @@ export const Settings = ({
         <div {...cardProps}>
           <SectionHeader
             icon={<Compass size={16} />}
-            title="Help & Onboarding"
-            desc="Revisit the dashboard walkthrough anytime"
+            title={t("settings.helpTitle")}
+            desc={t("settings.helpDesc")}
           />
           <SettingRow
-            label="Restart onboarding"
-            desc="Reset and walk through the full dashboard tour again"
+            label={t("settings.restartOnboarding")}
+            desc={t("settings.restartOnboardingDesc")}
           >
             <button
               type="button"
@@ -215,7 +230,7 @@ export const Settings = ({
               className="dash-btn-outline flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold disabled:opacity-60"
             >
               <RotateCcw size={12} />
-              {resetting ? "Resetting..." : "Restart"}
+              {resetting ? t("settings.resetting") : t("settings.restart")}
             </button>
           </SettingRow>
         </div>
@@ -223,8 +238,8 @@ export const Settings = ({
 
       {/* Danger zone */}
       <div className="dash-card rounded-2xl p-5 border-red-400/30">
-        <p className="text-sm font-semibold text-red-500 mb-1">Danger Zone</p>
-        <p className="text-xs dash-subtext mb-4">These actions are permanent and cannot be undone.</p>
+        <p className="text-sm font-semibold text-red-500 mb-1">{t("settings.dangerZone")}</p>
+        <p className="text-xs dash-subtext mb-4">{t("settings.dangerDesc")}</p>
         <div className="flex flex-wrap gap-2">
           {onLogout && (
             <button
@@ -233,20 +248,20 @@ export const Settings = ({
               style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444" }}
             >
               <LogOut size={12} />
-              Sign out
+              {t("nav.signOut")}
             </button>
           )}
           <button
             className="px-4 py-2 rounded-full text-xs font-medium border transition-all duration-200 hover:bg-red-500/10"
             style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444" }}
           >
-            Deactivate Account
+            {t("settings.deactivate")}
           </button>
           <button
             className="px-4 py-2 rounded-full text-xs font-medium border transition-all duration-200 hover:bg-red-500/20"
             style={{ borderColor: "rgba(239,68,68,0.4)", color: "#EF4444" }}
           >
-            Delete Account
+            {t("settings.deleteAccount")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Globe, MapPin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ListingScope } from "../../lib/listing-scope";
 
 interface ListingScopeToggleProps {
@@ -7,6 +8,8 @@ interface ListingScopeToggleProps {
 }
 
 export function ListingScopeToggle({ scope, onChange }: ListingScopeToggleProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="dash-pill-group flex rounded-full p-1 w-fit">
       {(["nearby", "worldwide"] as const).map((option) => (
@@ -19,7 +22,7 @@ export function ListingScopeToggle({ scope, onChange }: ListingScopeToggleProps)
           }`}
         >
           {option === "nearby" ? <MapPin size={12} /> : <Globe size={12} />}
-          {option === "nearby" ? "Near me" : "Anywhere"}
+          {t(`scope.${option}`)}
         </button>
       ))}
     </div>

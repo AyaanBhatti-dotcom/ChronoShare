@@ -1,4 +1,5 @@
 import { MapPin, Monitor, Shuffle } from "lucide-react";
+import i18n from "../i18n";
 
 export type ExchangeFormatPreference = "in_person" | "remote" | "flexible";
 export type ExchangeFormatResolved = "in_person" | "remote";
@@ -31,10 +32,10 @@ export const JOIN_FORMAT_OPTIONS = EXCHANGE_FORMAT_OPTIONS.filter(
 export function formatExchangeFormat(
   format: ExchangeFormatPreference | ExchangeFormatResolved | null | undefined,
 ): string {
-  if (format === "in_person") return "In person";
-  if (format === "remote") return "Remote";
-  if (format === "flexible") return "Either works";
-  return "Not specified";
+  if (format === "in_person") return i18n.t("exchangeFormat.inPerson");
+  if (format === "remote") return i18n.t("exchangeFormat.remote");
+  if (format === "flexible") return i18n.t("exchangeFormat.flexible");
+  return i18n.t("exchangeFormat.notSpecified");
 }
 
 export function isFlexibleFormat(
