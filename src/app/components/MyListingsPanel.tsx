@@ -13,7 +13,6 @@ import {
 } from "../../lib/posts";
 import { fetchMatchedPostIds } from "../../lib/exchanges";
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
-import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import type { Post } from "../../types/database";
 
 const categories = [
@@ -108,7 +107,7 @@ export function MyListingsPanel({
   const handleSaveEdit = async (postId: string) => {
     if (!editForm || !user) return;
 
-    if (!editForm.title.trim() || !editForm.category) {
+    if (!editForm.title.trim() || !editForm.category.trim()) {
       setError("Title and category are required.");
       return;
     }
@@ -279,17 +278,12 @@ export function MyListingsPanel({
                 ))}
               </div>
 
-              <ExchangeFormatSelector
-                value={editForm.exchangeFormat}
-                onChange={(v) => setEditForm((f) => f && { ...f, exchangeFormat: v as ExchangeFormatPreference })}
-              />
-
-              <input
-                value={editForm.title}
-                onChange={(e) => setEditForm((f) => f && { ...f, title: e.target.value })}
-                className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none"
-                placeholder="Title"
-              />
+                <input
+                  value={editForm.title}
+                  onChange={(e) => setEditForm((f) => f && { ...f, title: e.target.value })}
+                  className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  placeholder="Title"
+                />
 
               <textarea
                 value={editForm.description}
@@ -299,23 +293,14 @@ export function MyListingsPanel({
                 placeholder="Description (optional)"
               />
 
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setEditForm((f) => f && { ...f, category: cat.id })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                      editForm.category === cat.id ? "dash-category-active" : "dash-category-inactive"
-                    }`}
-                  >
-                    {cat.icon}
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
+                <input
+                  value={editForm.category}
+                  onChange={(e) => setEditForm((f) => f && { ...f, category: e.target.value })}
+                  className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  placeholder="Category"
+                />
 
-              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                 <label className="text-xs dash-label">Hours</label>
                 <input
                   type="number"

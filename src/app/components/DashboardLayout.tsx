@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
-  Bell, Search, Menu, X, LogOut,
+  Bell, Search, Menu, X, LogOut, HeartHandshake,
 } from "lucide-react";
 import { HomeDashboard } from "./HomeDashboard";
 import { LogoBrand } from "./Logo";
@@ -10,13 +10,14 @@ import { JobBoard, type BoardTab } from "./JobBoard";
 import { PostRequest } from "./PostRequest";
 import { Profile } from "./Profile";
 import { Settings } from "./Settings";
+import { CommunityPool } from "./CommunityPool";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { AeroBackground } from "./onboarding/aeroTheme";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 import { consumeNewSignupTour } from "../utils/onboarding";
 import { fetchActivePostCount } from "../../lib/posts";
 
-type Screen = "home" | "board" | "post" | "profile" | "settings";
+type Screen = "home" | "board" | "community" | "post" | "profile" | "settings";
 type BoardMode = "all" | "needs" | "offers";
 
 type NavigateOptions = {
@@ -28,6 +29,7 @@ type NavigateOptions = {
 const navItems: { id: Screen; label: string; shortLabel: string; icon: React.ReactNode }[] = [
   { id: "home", label: "Home", shortLabel: "Home", icon: <Home size={18} /> },
   { id: "board", label: "Job Board", shortLabel: "Board", icon: <Briefcase size={18} /> },
+  { id: "community", label: "Community", shortLabel: "Pool", icon: <HeartHandshake size={18} /> },
   { id: "post", label: "Post Request", shortLabel: "Post", icon: <PlusCircle size={18} /> },
   { id: "profile", label: "Profile", shortLabel: "Profile", icon: <User size={18} /> },
   { id: "settings", label: "Settings", shortLabel: "Settings", icon: <SettingsIcon size={18} /> },
@@ -36,6 +38,7 @@ const navItems: { id: Screen; label: string; shortLabel: string; icon: React.Rea
 const pageTitles: Record<Screen, string> = {
   home: "Dashboard",
   board: "Job Board",
+  community: "Community Pool",
   post: "Post a Request",
   profile: "My Profile",
   settings: "Settings",
@@ -352,6 +355,7 @@ export function DashboardLayout({
           {screen === "board" && (
             <JobBoard initialMode={boardMode} initialTab={boardTab} onNavigate={navigateScreen} />
           )}
+          {screen === "community" && <CommunityPool onNavigate={navigateScreen} />}
           {screen === "post" && (
             <PostRequest initialPostType={postType} onNavigate={navigateScreen} />
           )}

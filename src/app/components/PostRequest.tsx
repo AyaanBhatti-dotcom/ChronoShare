@@ -1,33 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
   Minus, Plus, CheckCircle2, Sparkles, PenLine, Layers,
-  HandHelping, Zap, Clock, FolderOpen, Check,
+  HandHelping, Clock, FolderOpen, Check,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../../lib/posts";
 import { getUserLocation } from "../../lib/location";
-import type { ExchangeFormatPreference } from "../../lib/exchange-format";
-import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import { MyListingsPanel } from "./MyListingsPanel";
-
-const categories = [
-  { id: "Tech", label: "Tech", icon: <Monitor size={18} /> },
-  { id: "Labor", label: "Labor", icon: <Wrench size={18} /> },
-  { id: "Education", label: "Education", icon: <BookOpen size={18} /> },
-  { id: "Music", label: "Music", icon: <Music size={18} /> },
-  { id: "Cooking", label: "Cooking", icon: <ChefHat size={18} /> },
-  { id: "Design", label: "Design", icon: <Palette size={18} /> },
-];
-
-const quickTemplates = [
-  { title: "Help moving furniture", category: "Labor", hours: 2 },
-  { title: "Tutoring session", category: "Education", hours: 1 },
-  { title: "Tech support / setup", category: "Tech", hours: 1.5 },
-  { title: "Need a ride to the airport", category: "Labor", hours: 1 },
-  { title: "Meal prep help", category: "Cooking", hours: 1.5 },
-  { title: "Logo or graphic design", category: "Design", hours: 2 },
-];
 
 interface PostRequestProps {
   initialPostType?: "needs" | "offers";
@@ -59,10 +38,9 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   const [tab, setTab] = useState<"create" | "listings">("create");
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
   const [postType, setPostType] = useState<"needs" | "offers">(initialPostType);
   const [hours, setHours] = useState(1);
-  const [exchangeFormat, setExchangeFormat] = useState<ExchangeFormatPreference | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -72,22 +50,12 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
     setPostType(initialPostType);
   }, [initialPostType]);
 
-  const applyTemplate = (template: (typeof quickTemplates)[0]) => {
-    setTitle(template.title);
-    setCategory(template.category);
-    setHours(template.hours);
-    setDesc("");
-    setTab("create");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !category || !user) return;
+    const trimmedTitle = title.trim();
+    const trimmedCategory = category.trim();
 
-    if (!exchangeFormat) {
-      setError("Choose how this exchange will happen — in person, remote, or either.");
-      return;
-    }
+    if (!trimmedTitle || !trimmedCategory || !user) return;
 
     if (isPreview) {
       setError("Preview mode — posting is disabled.");
@@ -108,12 +76,12 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
       const location = await getUserLocation(user.userId);
       await createPost({
         userId: user.userId,
-        title,
-        description: desc || null,
-        category,
+        title: trimmedTitle,
+        description: desc.trim() || null,
+        category: trimmedCategory,
         postType,
         hoursCost: hours,
-        exchangeFormat,
+        exchangeFormat: "flexible",
         location,
       });
       setLastPostedType(postType);
@@ -122,10 +90,9 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         setSubmitted(false);
         setTitle("");
         setDesc("");
-        setCategory(null);
+        setCategory("");
         setPostType(initialPostType);
         setHours(1);
-        setExchangeFormat(null);
       }, 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create listing");
@@ -170,7 +137,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
           </div>
           <h2 className="post-studio-hero-title">Create &amp; manage listings</h2>
           <p className="post-studio-hero-sub">
-            Post what you need or what you offer — the community trades in hours, not dollars.
+            Describe what you need or offer in your own words — set the hours and post.
           </p>
           {user && (
             <div className="post-studio-balance-chip">
@@ -203,209 +170,156 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
       </div>
 
       {tab === "create" ? (
-        <div className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <section className="post-studio-section">
             <SectionHead
-              icon={<Zap size={15} />}
-              label="Quick start"
-              hint="Tap a template to pre-fill — tweak anything before posting."
+              icon={<Layers size={15} />}
+              label="Listing type"
+              hint="Are you asking for help or offering a skill?"
             />
-            <div className="post-studio-templates">
-              {quickTemplates.map((template) => (
-                <button
-                  key={template.title}
-                  type="button"
-                  onClick={() => applyTemplate(template)}
-                  className="post-studio-template"
-                >
-                  <span className="post-studio-template-dot" aria-hidden />
-                  {template.title}
-                </button>
-              ))}
+            <div className="post-studio-type-grid">
+              {(["needs", "offers"] as const).map((type) => {
+                const active = postType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setPostType(type)}
+                    className={`post-studio-type-card ${
+                      active
+                        ? `post-studio-type-card-active post-studio-type-card-active-${type}`
+                        : ""
+                    }`}
+                  >
+                    {active && (
+                      <span className="post-studio-pick-badge" aria-hidden>
+                        <Check size={11} strokeWidth={3} />
+                      </span>
+                    )}
+                    <div className="post-studio-type-icon">
+                      {type === "needs" ? <HandHelping size={17} /> : <Sparkles size={17} />}
+                    </div>
+                    <span className="post-studio-type-title">
+                      {type === "needs" ? "Need Help" : "Offering Skill"}
+                    </span>
+                    <span className="post-studio-type-desc">
+                      {type === "needs"
+                        ? "Pay hours from your balance when someone helps."
+                        : "Earn hours from the pool when someone accepts."}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </section>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <section className="post-studio-section">
-              <SectionHead
-                icon={<Layers size={15} />}
-                label="Listing type"
-                hint="Choose whether you're asking for help or sharing a skill."
-              />
-              <div className="post-studio-type-grid">
-                {(["needs", "offers"] as const).map((type) => {
-                  const active = postType === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setPostType(type)}
-                      className={`post-studio-type-card ${
-                        active
-                          ? `post-studio-type-card-active post-studio-type-card-active-${type}`
-                          : ""
-                      }`}
-                    >
-                      {active && (
-                        <span className="post-studio-pick-badge" aria-hidden>
-                          <Check size={11} strokeWidth={3} />
-                        </span>
-                      )}
-                      <div className="post-studio-type-icon">
-                        {type === "needs" ? <HandHelping size={17} /> : <Sparkles size={17} />}
-                      </div>
-                      <span className="post-studio-type-title">
-                        {type === "needs" ? "Need Help" : "Offering Skill"}
-                      </span>
-                      <span className="post-studio-type-desc">
-                        {type === "needs"
-                          ? "Pay hours from your balance when someone helps."
-                          : "Earn hours from the pool when someone accepts."}
-                      </span>
-                    </button>
-                  );
-                })}
+          <section className="post-studio-section">
+            <SectionHead
+              icon={<PenLine size={15} />}
+              label="Details"
+              hint="Write it however you like — title, category, and description are all yours."
+            />
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="post-studio-section-label" htmlFor="listing-title">
+                  Title
+                </label>
+                <input
+                  id="listing-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="What do you need or what can you offer?"
+                  className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
+                  required
+                />
               </div>
-            </section>
-
-            <section className="post-studio-section">
-              <SectionHead
-                icon={<Monitor size={15} />}
-                label="Exchange format"
-                hint="How will this happen — in person, remote, or flexible?"
-              />
-              <ExchangeFormatSelector
-                value={exchangeFormat}
-                onChange={setExchangeFormat}
-                variant="studio"
-                hideLabel
-              />
-            </section>
-
-            <section className="post-studio-section">
-              <SectionHead
-                icon={<PenLine size={15} />}
-                label="Details"
-                hint="A clear title helps neighbors decide quickly."
-              />
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="post-studio-section-label" htmlFor="listing-title">
-                    Task title
-                  </label>
-                  <input
-                    id="listing-title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Need help moving furniture"
-                    className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="post-studio-section-label" htmlFor="listing-desc">
-                    Description
-                  </label>
-                  <textarea
-                    id="listing-desc"
-                    value={desc}
-                    onChange={(e) => setDesc(e.target.value)}
-                    placeholder="Optional — timing, location notes, or special requirements"
-                    rows={3}
-                    className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none resize-none transition-all duration-200"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <label className="post-studio-section-label" htmlFor="listing-category">
+                  Category
+                </label>
+                <input
+                  id="listing-category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g. Gardening, Tech, Moving, Music…"
+                  className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200"
+                  required
+                />
               </div>
-            </section>
-
-            <section className="post-studio-section">
-              <SectionHead
-                icon={<Palette size={15} />}
-                label="Category"
-                hint="Pick the area that best fits your listing."
-              />
-              <div className="post-studio-cat-grid">
-                {categories.map((cat) => {
-                  const active = category === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setCategory(cat.id)}
-                      className={`post-studio-cat-tile ${active ? "post-studio-cat-tile-active" : ""}`}
-                    >
-                      {active && (
-                        <span className="post-studio-pick-badge" aria-hidden>
-                          <Check size={9} strokeWidth={3} />
-                        </span>
-                      )}
-                      <span className="post-studio-cat-icon">{cat.icon}</span>
-                      {cat.label}
-                    </button>
-                  );
-                })}
+              <div className="space-y-1.5">
+                <label className="post-studio-section-label" htmlFor="listing-desc">
+                  Description
+                </label>
+                <textarea
+                  id="listing-desc"
+                  value={desc}
+                  onChange={(e) => setDesc(e.target.value)}
+                  placeholder="Optional — add any details that help people decide"
+                  rows={3}
+                  className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none resize-none transition-all duration-200"
+                />
               </div>
-            </section>
+            </div>
+          </section>
 
-            <section className="post-studio-section">
-              <SectionHead
-                icon={<Clock size={15} />}
-                label="Hour value"
-                hint="How many hours is this exchange worth?"
-              />
-              <div className="post-studio-hour-dial">
-                <button
-                  type="button"
-                  onClick={() => setHours(Math.max(0.5, hours - 0.5))}
-                  className="post-studio-hour-btn"
-                  aria-label="Decrease hours"
-                >
-                  <Minus size={16} />
-                </button>
-                <div className="post-studio-hour-value">
-                  <p className="post-studio-hour-num">{hours.toFixed(1)}</p>
-                  <p className="text-xs dash-subtext mt-0.5">hours</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setHours(Math.min(8, hours + 0.5))}
-                  className="post-studio-hour-btn"
-                  aria-label="Increase hours"
-                >
-                  <Plus size={16} />
-                </button>
+          <section className="post-studio-section">
+            <SectionHead
+              icon={<Clock size={15} />}
+              label="Hour value"
+              hint="How many hours is this exchange worth?"
+            />
+            <div className="post-studio-hour-dial">
+              <button
+                type="button"
+                onClick={() => setHours(Math.max(0.5, hours - 0.5))}
+                className="post-studio-hour-btn"
+                aria-label="Decrease hours"
+              >
+                <Minus size={16} />
+              </button>
+              <div className="post-studio-hour-value">
+                <input
+                  type="number"
+                  min={0.5}
+                  max={24}
+                  step={0.5}
+                  value={hours}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    if (!Number.isNaN(next) && next >= 0.5 && next <= 24) setHours(next);
+                  }}
+                  className="w-20 text-center bg-transparent border-none outline-none text-3xl font-bold dash-heading"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                  aria-label="Hours"
+                />
+                <p className="text-xs dash-subtext mt-0.5">hours</p>
               </div>
-              <div className="post-studio-hour-presets">
-                {[0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setHours(v)}
-                    className={`post-studio-hour-preset ${hours === v ? "post-studio-hour-preset-active" : ""}`}
-                  >
-                    {v}h
-                  </button>
-                ))}
-              </div>
-            </section>
+              <button
+                type="button"
+                onClick={() => setHours(Math.min(24, hours + 0.5))}
+                className="post-studio-hour-btn"
+                aria-label="Increase hours"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          </section>
 
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50/80 border border-red-200/60 rounded-xl px-4 py-2.5">
-                {error}
-              </p>
-            )}
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50/80 border border-red-200/60 rounded-xl px-4 py-2.5">
+              {error}
+            </p>
+          )}
 
-            <button
-              type="submit"
-              disabled={submitting || isPreview || !category || !exchangeFormat}
-              className="post-studio-submit disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Posting to community…" : "Post to Community"}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={submitting || isPreview || !title.trim() || !category.trim()}
+            className="post-studio-submit disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Posting to community…" : "Post to Community"}
+          </button>
+        </form>
       ) : (
         <MyListingsPanel onCreateClick={() => setTab("create")} />
       )}
