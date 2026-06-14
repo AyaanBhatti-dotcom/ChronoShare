@@ -21,6 +21,8 @@ create policy "Authenticated users can read pool activity"
   to authenticated
   using (true);
 
+grant select on public.community_pool_transactions to authenticated;
+
 -- Pool balance = donations minus claims
 create or replace function public.community_pool_balance()
 returns numeric
@@ -203,3 +205,5 @@ $$;
 
 grant execute on function public.donate_to_community_pool(numeric) to authenticated;
 grant execute on function public.claim_from_community_pool(numeric) to authenticated;
+
+notify pgrst, 'reload schema';
