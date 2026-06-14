@@ -35,7 +35,7 @@ import { LocationPicker } from "./LocationPicker";
 import { ListingScopeToggle } from "./ListingScopeToggle";
 import { ExchangeDetailModal } from "./ExchangeDetailModal";
 import { Slider } from "./ui/slider";
-import type { DashboardNavigateOptions } from "./DashboardLayout";
+import type { DashboardNavigateOptions } from "./dashboard-nav";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 

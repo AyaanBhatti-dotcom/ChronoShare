@@ -16,19 +16,13 @@ import { useAuth, getInitials } from "../context/AuthContext";
 import { AeroBackground } from "./onboarding/aeroTheme";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 import { consumeNewSignupTour } from "../utils/onboarding";
+import { fetchActivePostCount } from "../../lib/posts";
 import { getStoredListingScope, storeListingScope, type ListingScope } from "../../lib/listing-scope";
-import type { BoardTab } from "./JobBoard";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import type { DashboardNavigateOptions } from "./dashboard-nav";
 
 type Screen = "home" | "board" | "community" | "post" | "profile" | "settings";
 type BoardMode = "all" | "needs" | "offers";
-
-export type DashboardNavigateOptions = {
-  postType?: "needs" | "offers";
-  boardMode?: BoardMode;
-  boardTab?: BoardTab;
-  postId?: string;
-  listingScope?: ListingScope;
-};
 
 const navItemIds: { id: Screen; labelKey: string; shortKey: string; icon: React.ReactNode }[] = [
   { id: "home", labelKey: "nav.home", shortKey: "nav.home", icon: <Home size={18} /> },
