@@ -16,16 +16,18 @@ import { useAuth, getInitials } from "../context/AuthContext";
 import { AeroBackground } from "./onboarding/aeroTheme";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
 import { consumeNewSignupTour } from "../utils/onboarding";
-import { fetchActivePostCount } from "../../lib/posts";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { getStoredListingScope, storeListingScope, type ListingScope } from "../../lib/listing-scope";
+import type { BoardTab } from "./JobBoard";
 
 type Screen = "home" | "board" | "community" | "post" | "profile" | "settings";
 type BoardMode = "all" | "needs" | "offers";
 
-type NavigateOptions = {
+export type DashboardNavigateOptions = {
   postType?: "needs" | "offers";
   boardMode?: BoardMode;
   boardTab?: BoardTab;
+  postId?: string;
+  listingScope?: ListingScope;
 };
 
 const navItemIds: { id: Screen; labelKey: string; shortKey: string; icon: React.ReactNode }[] = [
@@ -63,13 +65,14 @@ export function DashboardLayout({
   const [postType, setPostType] = useState<"needs" | "offers">("needs");
   const [boardMode, setBoardMode] = useState<BoardMode>("all");
   const [boardTab, setBoardTab] = useState<BoardTab>("open");
+  const [boardPostId, setBoardPostId] = useState<string | null>(null);
   const [showTour, setShowTour] = useState(false);
   const [tourKey, setTourKey] = useState(0);
 
   const initials = user ? getInitials(user.name) : "?";
   const firstName = user?.name.split(" ")[0] ?? "there";
 
-  const navigateScreen = useCallback((s: string, options?: NavigateOptions) => {
+  const navigateScreen = useCallback((s: string, options?: DashboardNavigateOptions) => {
     if (options?.postType) {
       setPostType(options.postType);
     } else if (s === "post") {
@@ -84,6 +87,14 @@ export function DashboardLayout({
       setBoardTab(options.boardTab);
     } else if (s === "board") {
       setBoardTab("open");
+    }
+    if (options?.listingScope) {
+      storeListingScope(options.listingScope, "board");
+    }
+    if (options?.postId) {
+      setBoardPostId(options.postId);
+    } else if (s === "board") {
+      setBoardPostId(null);
     }
     setScreen(s as Screen);
     setMobileOpen(false);
@@ -356,7 +367,13 @@ export function DashboardLayout({
         <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-5 sm:px-8 py-6 max-sm:py-0 dash-mobile-main">
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
           {screen === "board" && (
-            <JobBoard initialMode={boardMode} initialTab={boardTab} onNavigate={navigateScreen} />
+            <JobBoard
+              initialMode={boardMode}
+              initialTab={boardTab}
+              initialPostId={boardPostId}
+              onInitialPostHandled={() => setBoardPostId(null)}
+              onNavigate={navigateScreen}
+            />
           )}
           {screen === "community" && <CommunityPool onNavigate={navigateScreen} />}
           {screen === "post" && (

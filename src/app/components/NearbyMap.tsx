@@ -60,14 +60,18 @@ function MapWorldViewport({
   center,
   posts,
   includeUserCenter,
+  frozen = false,
 }: {
   center: [number, number];
   posts: NearbyPost[];
   includeUserCenter: boolean;
+  frozen?: boolean;
 }) {
   const map = useMap();
 
   useEffect(() => {
+    if (frozen) return;
+
     const points: L.LatLngExpression[] = includeUserCenter ? [center] : [];
     for (const post of posts) {
       if (post.latitude != null && post.longitude != null) {
@@ -86,7 +90,7 @@ function MapWorldViewport({
     }
 
     map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 8 });
-  }, [center, posts, includeUserCenter, map]);
+  }, [center, posts, includeUserCenter, map, frozen]);
 
   return null;
 }
@@ -125,13 +129,21 @@ function MapPopupContent({
     if (!el) return;
     L.DomEvent.disableClickPropagation(el);
     L.DomEvent.disableScrollPropagation(el);
+    const popupContent = el.closest(".leaflet-popup-content");
+    if (popupContent instanceof HTMLElement) {
+      L.DomEvent.disableClickPropagation(popupContent);
+      L.DomEvent.disableScrollPropagation(popupContent);
+    }
   }, []);
 
-  const handleViewDetails = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const openDetails = () => {
     map.closePopup();
     onSelectPost?.(post);
+  };
+
+  const stopMapEvent = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   return (
@@ -157,8 +169,11 @@ function MapPopupContent({
       <button
         type="button"
         className="dash-map-popup-btn"
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={handleViewDetails}
+        onMouseDown={stopMapEvent}
+        onClick={(e) => {
+          stopMapEvent(e);
+          openDetails();
+        }}
       >
         View details
       </button>
@@ -302,6 +317,7 @@ export function NearbyMap({
               center={center}
               posts={mapPosts}
               includeUserCenter={showUserMarker}
+              frozen={Boolean(selectedPost)}
             />
           ) : (
             <>
@@ -331,7 +347,23 @@ export function NearbyMap({
                 position={[post.latitude!, post.longitude!]}
                 icon={postIconForType(post.post_type)}
               >
-                <Popup closeOnClick={false}>
+                <Popup
+                  closeOnClick={false}
+                  autoClose={false}
+                  eventHandlers={{
+                    add(event) {
+                      const root = event.target.getElement();
+                      if (!root) return;
+                      L.DomEvent.disableClickPropagation(root);
+                      L.DomEvent.disableScrollPropagation(root);
+                      const content = root.querySelector(".leaflet-popup-content");
+                      if (content instanceof HTMLElement) {
+                        L.DomEvent.disableClickPropagation(content);
+                        L.DomEvent.disableScrollPropagation(content);
+                      }
+                    },
+                  }}
+                >
                   <MapPopupContent
                     post={post}
                     worldwide={worldwide}

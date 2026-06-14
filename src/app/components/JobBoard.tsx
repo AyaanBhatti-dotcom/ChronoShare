@@ -52,9 +52,17 @@ interface JobBoardProps {
   onNavigate?: (screen: string, options?: { postType?: "needs" | "offers"; boardMode?: BoardMode; boardTab?: BoardTab }) => void;
   initialMode?: BoardMode;
   initialTab?: BoardTab;
+  initialPostId?: string | null;
+  onInitialPostHandled?: () => void;
 }
 
-export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" }: JobBoardProps) => {
+export const JobBoard = ({
+  onNavigate,
+  initialMode = "all",
+  initialTab = "open",
+  initialPostId = null,
+  onInitialPostHandled,
+}: JobBoardProps) => {
   const { user, refreshUser, isPreview } = useAuth();
   const [boardTab, setBoardTab] = useState<BoardTab>(initialTab);
   const [mode, setMode] = useState<BoardMode>(initialMode);
@@ -152,6 +160,26 @@ export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" 
       loadPosts();
     }
   }, [loadPosts, boardTab]);
+
+  useEffect(() => {
+    if (!initialPostId || loading) return;
+    const match = jobs.find((job) => job.id === initialPostId);
+    if (!match) return;
+
+    setBoardTab("open");
+    setMode("all");
+    setCategory("All");
+    setSearch("");
+    setScope((current) => {
+      if (current === "nearby") {
+        storeListingScope("worldwide", "board");
+        return "worldwide";
+      }
+      return current;
+    });
+    setSelectedJob(match);
+    onInitialPostHandled?.();
+  }, [initialPostId, loading, jobs, onInitialPostHandled]);
 
   const scopedJobs = useMemo(() => {
     const effectiveScope = scope === "nearby" && !userLocation ? "worldwide" : scope;

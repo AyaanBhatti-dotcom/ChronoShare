@@ -35,12 +35,12 @@ import { LocationPicker } from "./LocationPicker";
 import { ListingScopeToggle } from "./ListingScopeToggle";
 import { ExchangeDetailModal } from "./ExchangeDetailModal";
 import { Slider } from "./ui/slider";
-import type { BoardTab } from "./JobBoard";
+import type { DashboardNavigateOptions } from "./DashboardLayout";
 
 const RADIUS_OPTIONS = [5, 10, 25, 50, 100];
 
 interface HomeDashboardProps {
-  onNavigate: (s: string, options?: { postType?: "needs" | "offers"; boardTab?: BoardTab }) => void;
+  onNavigate: (s: string, options?: DashboardNavigateOptions) => void;
 }
 
 export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
@@ -241,7 +241,14 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
           selectedPost={selectedMapPost}
           onSelectPost={setSelectedMapPost}
           onClosePost={() => setSelectedMapPost(null)}
-          onOpenBoard={() => onNavigate("board")}
+          onOpenBoard={(post) =>
+            onNavigate("board", {
+              postId: post.id,
+              listingScope: scope,
+              boardMode: "all",
+              boardTab: "open",
+            })
+          }
         />
       ) : null}
 
