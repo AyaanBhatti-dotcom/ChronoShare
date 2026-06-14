@@ -133,10 +133,6 @@ export default function RotatingEarth({
     let landFeatures: GeoFeatureCollection | null = null;
     let allDots: DotData[] = [];
 
-    const baseCanvas = document.createElement("canvas");
-    const baseCtx = baseCanvas.getContext("2d");
-    let cachedBaseScale = -1;
-
     const projection = d3
       .geoOrthographic()
       .scale(100)
@@ -167,33 +163,25 @@ export default function RotatingEarth({
       canvas.style.height = `${containerHeight}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      baseCanvas.width = canvas.width;
-      baseCanvas.height = canvas.height;
-      baseCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
-
       projection.scale(radius).translate([containerWidth / 2, containerHeight / 2]);
-      cachedBaseScale = -1;
       needsRender = true;
     };
 
-    const drawBaseLayer = (scale: number) => {
-      if (!baseCtx) return;
-
+    /** Ocean + glow — same center as d3 orthographic projection */
+    const drawOcean = (scale: number) => {
       const cx = containerWidth / 2;
       const cy = containerHeight / 2;
 
-      baseCtx.clearRect(0, 0, containerWidth, containerHeight);
-
-      const glow = baseCtx.createRadialGradient(cx, cy, scale * 0.2, cx, cy, scale * 1.15);
+      const glow = context.createRadialGradient(cx, cy, scale * 0.2, cx, cy, scale * 1.15);
       glow.addColorStop(0, "rgba(94, 255, 240, 0.18)");
       glow.addColorStop(0.6, "rgba(45, 212, 200, 0.08)");
       glow.addColorStop(1, "rgba(45, 212, 200, 0)");
-      baseCtx.fillStyle = glow;
-      baseCtx.fillRect(0, 0, containerWidth, containerHeight);
+      context.fillStyle = glow;
+      context.fillRect(0, 0, containerWidth, containerHeight);
 
-      baseCtx.beginPath();
-      baseCtx.arc(cx, cy, scale, 0, 2 * Math.PI);
-      const oceanGrad = baseCtx.createRadialGradient(
+      context.beginPath();
+      context.arc(cx, cy, scale, 0, 2 * Math.PI);
+      const oceanGrad = context.createRadialGradient(
         cx - scale * 0.25,
         cy - scale * 0.25,
         scale * 0.1,
@@ -204,13 +192,11 @@ export default function RotatingEarth({
       oceanGrad.addColorStop(0, GLOBE_THEME.oceanGlow);
       oceanGrad.addColorStop(0.45, "#3DD9C8");
       oceanGrad.addColorStop(1, GLOBE_THEME.ocean);
-      baseCtx.fillStyle = oceanGrad;
-      baseCtx.fill();
-      baseCtx.strokeStyle = GLOBE_THEME.ring;
-      baseCtx.lineWidth = 2;
-      baseCtx.stroke();
-
-      cachedBaseScale = scale;
+      context.fillStyle = oceanGrad;
+      context.fill();
+      context.strokeStyle = GLOBE_THEME.ring;
+      context.lineWidth = 2;
+      context.stroke();
     };
 
     const drawDotsBatched = (scaleFactor: number) => {
@@ -237,14 +223,10 @@ export default function RotatingEarth({
       const scale = projection.scale();
       const scaleFactor = scale / radius;
 
-      if (cachedBaseScale !== scale) {
-        drawBaseLayer(scale);
-      }
-
       context.clearRect(0, 0, containerWidth, containerHeight);
-      context.drawImage(baseCanvas, 0, 0);
+      drawOcean(scale);
 
-      projection.rotate(rotation);
+      projection.scale(scale).translate([containerWidth / 2, containerHeight / 2]).rotate(rotation);
 
       if (!isDragging) {
         context.beginPath();
@@ -421,12 +403,13 @@ export default function RotatingEarth({
         </div>
       )}
       <div
-        className="pointer-events-none absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-auto rounded-lg px-2.5 py-1 text-[10px] sm:text-xs"
+        className="pointer-events-none absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-auto rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-medium"
         style={{
-          background: "rgba(255,255,255,0.72)",
+          background: "rgba(255, 255, 255, 0.9)",
           border: `1px solid ${aero.glass.border}`,
-          color: aero.textMuted,
+          color: aero.text,
           backdropFilter: "blur(8px)",
+          boxShadow: "0 2px 10px rgba(26, 95, 122, 0.12)",
         }}
       >
         <span className="hidden sm:inline">Drag to rotate · Scroll to zoom · </span>

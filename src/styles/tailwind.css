@@ -3309,65 +3309,88 @@ html {
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
-  .pool-glass {
-    padding: 1.35rem 1.4rem;
-    border-radius: 1.5rem;
-    background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(18px) saturate(1.25);
-    -webkit-backdrop-filter: blur(18px) saturate(1.25);
-    border: 1px solid rgba(255, 255, 255, 0.92);
+  /* One organic sheet — not stacked boxes */
+  .pool-sheet {
+    position: relative;
+    padding: 1.35rem 1.25rem 1.75rem;
+    border-radius: 2rem 2.35rem 2.75rem 1.65rem / 2.1rem 2.5rem 2.15rem 2.4rem;
+    background: linear-gradient(
+      168deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(248, 253, 255, 0.86) 45%,
+      rgba(228, 247, 250, 0.8) 100%
+    );
+    backdrop-filter: blur(22px) saturate(1.3);
+    -webkit-backdrop-filter: blur(22px) saturate(1.3);
     box-shadow:
-      0 10px 32px rgba(26, 95, 122, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.98);
+      0 18px 52px rgba(26, 95, 122, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.98),
+      inset 0 -12px 32px rgba(94, 255, 240, 0.06);
+    overflow: hidden;
   }
 
-  .pool-hero {
+  .pool-sheet::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 92% 8%, rgba(255, 209, 102, 0.18) 0%, transparent 38%),
+      radial-gradient(circle at 8% 92%, rgba(94, 255, 240, 0.1) 0%, transparent 42%);
+    pointer-events: none;
+  }
+
+  .pool-sheet > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (min-width: 640px) {
+    .pool-sheet {
+      padding: 1.75rem 1.75rem 2rem;
+    }
+  }
+
+  .pool-hero-zone {
     position: relative;
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.25rem;
-    padding: 1.5rem 1.25rem 1.25rem;
-    border-radius: 2rem;
-    background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.88) 0%,
-      rgba(255, 255, 255, 0.78) 38%,
-      rgba(198, 235, 250, 0.72) 100%
-    );
-    backdrop-filter: blur(20px) saturate(1.35);
-    -webkit-backdrop-filter: blur(20px) saturate(1.35);
-    box-shadow:
-      0 12px 40px rgba(58, 158, 196, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.88);
-    overflow: hidden;
-  }
-
-  .pool-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 88% 12%, rgba(255, 209, 102, 0.22) 0%, transparent 42%);
-    pointer-events: none;
-  }
-
-  .pool-hero::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, rgba(94, 255, 240, 0.65), rgba(91, 199, 122, 0.55), transparent);
-    pointer-events: none;
+    padding-bottom: 0.25rem;
   }
 
   @media (min-width: 768px) {
-    .pool-hero {
+    .pool-hero-zone {
       grid-template-columns: minmax(0, 1.05fr) minmax(220px, 0.95fr);
       align-items: center;
-      padding: 2rem 2rem 1.75rem;
       gap: 1.5rem;
     }
+  }
+
+  .pool-wave-divider {
+    margin: 1.35rem -1.25rem;
+    height: 1.75rem;
+    overflow: hidden;
+    opacity: 0.85;
+  }
+
+  @media (min-width: 640px) {
+    .pool-wave-divider {
+      margin-inline: -1.75rem;
+    }
+  }
+
+  .pool-wave-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .pool-band {
+    padding: 0.15rem 0;
+  }
+
+  .pool-band-last {
+    padding-bottom: 0.25rem;
   }
 
   .pool-hero-copy {
@@ -3380,12 +3403,17 @@ html {
     z-index: 1;
     min-height: 200px;
     height: clamp(200px, 38vw, 280px);
-    border-radius: 1.75rem;
+    aspect-ratio: 1;
+    max-width: 100%;
+    margin-inline: auto;
+    border-radius: 50%;
     overflow: hidden;
-    background: radial-gradient(circle at 50% 40%, rgba(94, 255, 240, 0.14) 0%, rgba(27, 95, 122, 0.06) 70%);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-      0 8px 28px rgba(45, 212, 200, 0.12);
+    background: radial-gradient(circle at 50% 38%, rgba(94, 255, 240, 0.12) 0%, rgba(27, 95, 122, 0.04) 72%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+
+  .pool-hero-globe canvas {
+    border-radius: 50%;
   }
 
   .pool-scene .dash-pill-inactive {
@@ -3569,12 +3597,9 @@ html {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    margin: 0.75rem 0 1rem;
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    background: rgba(91, 199, 122, 0.12);
-    border: 1px solid rgba(91, 199, 122, 0.28);
+    gap: 0.15rem;
+    margin: 0.85rem 0 1rem;
+    padding: 0;
   }
 
   .pool-claim-value {
