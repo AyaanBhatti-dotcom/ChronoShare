@@ -402,18 +402,6 @@ export default function RotatingEarth({
           />
         </div>
       )}
-      <div
-        className="pointer-events-none absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-auto rounded-full px-3 py-1.5 text-[10px] sm:text-xs font-medium"
-        style={{
-          background: "rgba(255, 255, 255, 0.9)",
-          border: `1px solid ${aero.glass.border}`,
-          color: aero.text,
-          backdropFilter: "blur(8px)",
-          boxShadow: "0 2px 10px rgba(26, 95, 122, 0.12)",
-        }}
-      >
-        One global community
-      </div>
     </div>
   );
 }
