@@ -291,6 +291,6 @@ export type PostWithAuthor = Post & {
 export type Exchange = Database["public"]["Tables"]["exchanges"]["Row"];
 
 export type ExchangeWithProfiles = Exchange & {
-  poster: Pick<Profile, "full_name"> | null;
-  acceptor: Pick<Profile, "full_name"> | null;
+  poster: Pick<Profile, "full_name" | "username"> | null;
+  acceptor: Pick<Profile, "full_name" | "username"> | null;
 };

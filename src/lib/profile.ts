@@ -104,12 +104,26 @@ export type PublicMemberProfile = {
   created_at: string;
 };
 
+export type MemberNameFields = Pick<PublicMemberProfile, "full_name" | "username">;
+
+export function getMemberDisplayName(profile: MemberNameFields | null | undefined): string {
+  if (profile?.username) return profile.username;
+  const fullName = profile?.full_name?.trim();
+  if (fullName) return fullName;
+  return "Member";
+}
+
+export function formatMemberLabel(profile: MemberNameFields | null | undefined): string {
+  if (profile?.username) return `@${profile.username}`;
+  return getMemberDisplayName(profile);
+}
+
 const PUBLIC_PROFILE_SELECT =
   "id, full_name, username, avatar_url, city, state, country, hours_available, mfa_enabled, created_at";
 
 export async function fetchPublicProfile(userId: string): Promise<PublicMemberProfile | null> {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("member_profiles")
     .select(PUBLIC_PROFILE_SELECT)
     .eq("id", userId)
     .maybeSingle();

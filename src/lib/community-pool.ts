@@ -99,6 +99,39 @@ export async function fetchPoolBalance(): Promise<number> {
   return Number(data ?? 0);
 }
 
+export async function fetchTotalPoolDonations(): Promise<number> {
+  const { data, error } = await supabase
+    .from("community_pool_transactions")
+    .select("amount")
+    .eq("transaction_type", "donation");
+
+  if (error) {
+    if (error.code === "42P01" || error.code === "PGRST205") return 0;
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+}
+
+/** Well fill milestones — fill level is progress toward the next tier. */
+export const POOL_WELL_MILESTONES = [10, 25, 50, 100, 250, 500] as const;
+
+export function getWellFillProgress(totalDonated: number): {
+  fill: number;
+  milestone: number;
+  prevMilestone: number;
+} {
+  const milestones = POOL_WELL_MILESTONES;
+  const nextIdx = milestones.findIndex((m) => totalDonated < m);
+  const milestone = nextIdx === -1 ? milestones[milestones.length - 1] * 2 : milestones[nextIdx];
+  const prevMilestone = nextIdx <= 0 ? 0 : milestones[nextIdx - 1];
+  const range = milestone - prevMilestone;
+  const raw = range > 0 ? (totalDonated - prevMilestone) / range : 1;
+  const fill = totalDonated <= 0 ? 0.04 : Math.min(1, Math.max(0.06, raw));
+
+  return { fill, milestone, prevMilestone };
+}
+
 export async function fetchUserDonationsInWindow(
   userId: string,
   days = POOL_RULES.donationLookbackDays,

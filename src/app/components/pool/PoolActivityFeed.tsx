@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Droplets, Gift } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { getInitials } from "../context/AuthContext";
+import { getInitials } from "../../context/AuthContext";
 import { MemberProfileModal } from "../MemberProfileModal";
 import { dashColors } from "../onboarding/aeroTheme";
-import type { PoolTransaction } from "../../lib/community-pool";
+import type { PoolTransaction } from "../../../lib/community-pool";
 
 function formatActivityTimestamp(iso: string): { primary: string; relative: string } {
   const date = new Date(iso);

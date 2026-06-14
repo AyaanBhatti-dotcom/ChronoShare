@@ -3416,6 +3416,138 @@ html {
     border-radius: 50%;
   }
 
+  .pool-hero-well {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 240px;
+  }
+
+  .pool-well {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(100%, 220px);
+    margin-inline: auto;
+  }
+
+  .pool-well-caption {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pool-text-soft);
+    margin-bottom: 0.35rem;
+  }
+
+  .pool-well-vessel {
+    position: relative;
+    width: 100%;
+  }
+
+  .pool-well-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 10px 24px rgba(27, 95, 122, 0.18));
+  }
+
+  .pool-well-water {
+    transition: y 0.9s cubic-bezier(0.22, 1, 0.36, 1), height 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .pool-well-surface {
+    transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .pool-well-wave {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .pool-well-wave-a {
+    animation: pool-well-wave-drift 3.2s ease-in-out infinite;
+  }
+
+  .pool-well-wave-b {
+    animation: pool-well-wave-drift 4.1s ease-in-out infinite reverse;
+    opacity: 0.85;
+  }
+
+  @keyframes pool-well-wave-drift {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(-6px);
+    }
+  }
+
+  .pool-well-stats {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1.75rem;
+    pointer-events: none;
+    text-align: center;
+  }
+
+  .pool-well-stat-primary {
+    font-size: 1.65rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--pool-text);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .pool-well-stat-unit {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pool-text-muted);
+  }
+
+  .pool-well-stat-secondary {
+    margin-top: 0.45rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--pool-text-soft);
+    max-width: 9rem;
+    line-height: 1.35;
+  }
+
+  .pool-well-stat-muted {
+    opacity: 0.75;
+  }
+
+  .pool-well-balance {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--pool-text-muted);
+  }
+
+  .pool-well-balance-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2dd4c8, #5bc77a);
+    box-shadow: 0 0 8px rgba(45, 212, 200, 0.55);
+    flex-shrink: 0;
+  }
+
   .pool-scene .dash-pill-inactive {
     color: var(--pool-text-muted);
     font-weight: 600;

@@ -11,6 +11,7 @@ import {
   getExchangePartnerLabel,
   getExchangeHourType,
 } from "../../lib/exchanges";
+import { formatMemberLabel } from "../../lib/profile";
 import type { ExchangeWithProfiles } from "../../types/database";
 import { dashColors } from "./onboarding/aeroTheme";
 import { formatExchangeFormat } from "../../lib/exchange-format";
@@ -117,6 +118,8 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
           if (!user) return null;
 
           const partner = getExchangePartner(ex, user.userId);
+          const partnerProfile = ex.poster_id === user.userId ? ex.acceptor : ex.poster;
+          const partnerLabel = formatMemberLabel(partnerProfile);
           const hourType = getExchangeHourType(ex, user.userId);
           const roleLabel = getExchangePartnerLabel(ex, user.userId);
           const completedDate = formatCompletedDate(ex.completed_at ?? ex.created_at);
@@ -140,7 +143,7 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <p className="text-xs dash-subtext">{partner.name}</p>
+                    <p className="text-xs dash-subtext">{partnerLabel}</p>
                     <span className="dash-badge-neutral text-[10px] px-2 py-0.5 rounded-full font-medium capitalize">
                       {ex.post_type === "needs" ? "Need help" : "Offering"}
                     </span>
@@ -199,7 +202,7 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
                 className="dash-btn-outline w-full py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5"
               >
                 <User size={13} />
-                View {partner.name.split(" ")[0]}&apos;s profile
+                View {partnerLabel}&apos;s profile
               </button>
             </article>
           );

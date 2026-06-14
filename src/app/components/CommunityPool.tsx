@@ -12,11 +12,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import RotatingEarth from "./ui/wireframe-dotted-globe";
 import {
   POOL_RULES,
   fetchPoolEligibility,
   fetchRecentPoolActivity,
+  fetchTotalPoolDonations,
   donateToPool,
   claimFromPool,
   formatClaimWindowLabel,
@@ -24,6 +24,7 @@ import {
   type PoolTransaction,
 } from "../../lib/community-pool";
 import { PoolActivityFeed } from "./pool/PoolActivityFeed";
+import { PoolWell } from "./pool/PoolWell";
 
 interface CommunityPoolProps {
   onNavigate: (screen: string, options?: { boardMode?: "all" | "needs" | "offers" }) => void;
@@ -34,6 +35,7 @@ const DONATE_PRESETS = [0.5, 1, 2];
 export function CommunityPool({ onNavigate }: CommunityPoolProps) {
   const { user, refreshUser } = useAuth();
   const [eligibility, setEligibility] = useState<PoolEligibility | null>(null);
+  const [totalDonated, setTotalDonated] = useState(0);
   const [activity, setActivity] = useState<PoolTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [donateAmount, setDonateAmount] = useState(1);
@@ -45,12 +47,14 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
     if (!user) return;
     setLoading(true);
     try {
-      const [elig, recent] = await Promise.all([
+      const [elig, recent, donated] = await Promise.all([
         fetchPoolEligibility(user.userId),
         fetchRecentPoolActivity(),
+        fetchTotalPoolDonations(),
       ]);
       setEligibility(elig);
       setActivity(recent);
+      setTotalDonated(donated);
     } catch (err) {
       console.warn(err);
     } finally {
@@ -136,12 +140,20 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
 
             <div className="flex items-center gap-2 pool-body mt-3">
               <Droplets size={14} className="dash-accent flex-shrink-0" />
-              <span>Funded by donations · separate from offer minting</span>
+              <span>
+                {loading
+                  ? "Funded by donations · separate from offer minting"
+                  : `${totalDonated.toFixed(1)}h donated in total · separate from offer minting`}
+              </span>
             </div>
           </div>
 
-          <div className="pool-hero-globe">
-            <RotatingEarth height={280} className="h-full" />
+          <div className="pool-hero-well">
+            <PoolWell
+              totalDonated={totalDonated}
+              poolBalance={eligibility?.poolBalance ?? 0}
+              loading={loading}
+            />
           </div>
 
           <Sparkles

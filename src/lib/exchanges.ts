@@ -1,16 +1,43 @@
 import { supabase } from "./supabase";
 import type { Exchange, ExchangeWithProfiles } from "../types/database";
 import type { PostExchangeInfo } from "./listing-status";
+import { getMemberDisplayName } from "./profile";
 
 import type { ExchangeFormatResolved } from "./exchange-format";
 
 const EXCHANGE_SELECT = `
   id, post_id, poster_id, acceptor_id, title, category, post_type, hours, status,
   created_at, completed_at, exchange_format,
-  poster_confirmed_at, acceptor_confirmed_at, hours_settled,
-  poster:profiles!exchanges_poster_id_fkey(full_name),
-  acceptor:profiles!exchanges_acceptor_id_fkey(full_name)
+  poster_confirmed_at, acceptor_confirmed_at, hours_settled
 `;
+
+async function attachExchangeProfiles(exchanges: Exchange[]): Promise<ExchangeWithProfiles[]> {
+  if (exchanges.length === 0) return [];
+
+  const profileIds = [
+    ...new Set(exchanges.flatMap((ex) => [ex.poster_id, ex.acceptor_id])),
+  ];
+
+  const { data, error } = await supabase
+    .from("member_profiles")
+    .select("id, full_name, username")
+    .in("id", profileIds);
+
+  if (error) throw new Error(error.message);
+
+  const byId = new Map(
+    (data ?? []).map((profile) => [
+      profile.id,
+      { full_name: profile.full_name, username: profile.username },
+    ]),
+  );
+
+  return exchanges.map((ex) => ({
+    ...ex,
+    poster: byId.get(ex.poster_id) ?? null,
+    acceptor: byId.get(ex.acceptor_id) ?? null,
+  }));
+}
 
 export async function acceptPost(
   postId: string,
@@ -48,7 +75,7 @@ export async function fetchMyExchanges(userId: string): Promise<ExchangeWithProf
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ExchangeWithProfiles[];
+  return attachExchangeProfiles((data ?? []) as Exchange[]);
 }
 
 export async function fetchPendingExchanges(userId: string): Promise<ExchangeWithProfiles[]> {
@@ -60,7 +87,7 @@ export async function fetchPendingExchanges(userId: string): Promise<ExchangeWit
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ExchangeWithProfiles[];
+  return attachExchangeProfiles((data ?? []) as Exchange[]);
 }
 
 /** Post IDs the user has already joined and are still awaiting confirmation. */
@@ -125,7 +152,7 @@ export async function fetchCompletedExchanges(userId: string): Promise<ExchangeW
     .order("completed_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as ExchangeWithProfiles[];
+  return attachExchangeProfiles((data ?? []) as Exchange[]);
 }
 
 export function getExchangePartner(
@@ -133,20 +160,17 @@ export function getExchangePartner(
   userId: string,
 ): { name: string; role: "helper" | "recipient" } {
   const isPoster = exchange.poster_id === userId;
+  const partnerProfile = isPoster ? exchange.acceptor : exchange.poster;
 
   if (exchange.post_type === "needs") {
     return {
-      name: isPoster
-        ? (exchange.acceptor?.full_name ?? "Community member")
-        : (exchange.poster?.full_name ?? "Community member"),
+      name: getMemberDisplayName(partnerProfile),
       role: isPoster ? "recipient" : "helper",
     };
   }
 
   return {
-    name: isPoster
-      ? (exchange.acceptor?.full_name ?? "Community member")
-      : (exchange.poster?.full_name ?? "Community member"),
+    name: getMemberDisplayName(partnerProfile),
     role: isPoster ? "helper" : "recipient",
   };
 }

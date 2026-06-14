@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, MapPin, Clock, ShieldCheck, User } from "lucide-react";
 import { getInitials } from "../context/AuthContext";
-import { fetchPublicProfile, formatPublicLocation, type PublicMemberProfile } from "../../lib/profile";
+import { fetchPublicProfile, formatMemberLabel, formatPublicLocation, getMemberDisplayName, type PublicMemberProfile } from "../../lib/profile";
 
 interface MemberProfileModalProps {
   userId: string | null;
@@ -92,15 +92,15 @@ export function MemberProfileModal({ userId, roleLabel, onClose }: MemberProfile
                 />
               ) : (
                 <div className="dash-avatar w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0">
-                  {getInitials(profile.full_name ?? "?")}
+                  {getInitials(getMemberDisplayName(profile))}
                 </div>
               )}
               <div className="min-w-0 pt-1">
                 <h3 className="text-lg font-bold dash-heading truncate">
-                  {profile.full_name ?? "Community member"}
+                  {formatMemberLabel(profile)}
                 </h3>
-                {profile.username && (
-                  <p className="text-sm dash-subtext">@{profile.username}</p>
+                {profile.full_name && (
+                  <p className="text-sm dash-subtext">{profile.full_name}</p>
                 )}
                 {profile.mfa_enabled && (
                   <span className="inline-flex items-center gap-1 mt-2 dash-badge-earn px-2 py-0.5 rounded-full text-[10px] font-medium">
