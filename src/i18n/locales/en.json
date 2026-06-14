@@ -236,5 +236,14 @@
     "successTitle": "Request sent!",
     "successBody": "Thanks — we've notified our team. We'll consider adding your language in a future update.",
     "error": "Could not send your request. Please try again."
+  },
+  "onboarding": {
+    "language": {
+      "stepLabel": "Language",
+      "title": "Choose your language",
+      "subtitle": "ChronoShare works worldwide — pick the language you're most comfortable with. You can change this anytime in Settings.",
+      "continue": "Continue",
+      "back": "Back"
+    }
   }
 }

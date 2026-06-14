@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ArrowRight,
@@ -29,6 +30,7 @@ import {
 import { formatLocationLabel, type UserLocation } from "../../../lib/location";
 import { LocationPicker } from "../LocationPicker";
 import { LogoBrand } from "../Logo";
+import { LanguagePicker, OnboardingLanguageBadge } from "../LanguagePicker";
 import {
   INSECURE_PASSWORD_MESSAGE,
   isPasswordInRockyou,
@@ -39,6 +41,7 @@ import { aero } from "../onboarding/aeroTheme";
 
 const STEPS = [
   { id: "welcome", label: "Welcome" },
+  { id: "language", label: "Language" },
   { id: "identity", label: "You" },
   { id: "account", label: "Account" },
   { id: "verify", label: "Verify" },
@@ -51,13 +54,19 @@ function clearSignupDraft() {
   sessionStorage.removeItem("chronoshare-signup-draft");
 }
 
-function ProgressBar({ step }: { step: number }) {
+function stepLabel(id: string, fallback: string, t: (key: string) => string) {
+  const key = `onboarding.${id}.stepLabel`;
+  const translated = t(key);
+  return translated === key ? fallback : translated;
+}
+
+function ProgressBar({ step, t }: { step: number; t: (key: string) => string }) {
   const progress = ((step + 1) / STEPS.length) * 100;
   return (
     <div className="mb-8">
       <p className="signup-progress-step sm:hidden">
         Step {step + 1} of {STEPS.length}
-        <span className="signup-progress-label-active"> · {STEPS[step]?.label}</span>
+        <span className="signup-progress-label-active"> · {stepLabel(STEPS[step]?.id ?? "", STEPS[step]?.label ?? "", t)}</span>
       </p>
       <div className="signup-progress-labels hidden sm:flex">
         {STEPS.map((s, i) => (
@@ -65,7 +74,7 @@ function ProgressBar({ step }: { step: number }) {
             key={s.id}
             className={`transition-colors ${i <= step ? "signup-progress-label-active" : ""}`}
           >
-            {s.label}
+            {stepLabel(s.id, s.label, t)}
           </span>
         ))}
       </div>
@@ -116,13 +125,14 @@ function SignupScene() {
 }
 
 export function SignupOnboarding() {
+  const { t } = useTranslation();
   const { user, signup, signInAfterEmailConfirmation, resendSignupEmail, finishProfileSetup, refreshUser } =
     useAuth();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const resumingSetup = !!user && !user.profileSetupCompleted;
-  const initialStep = resumingSetup ? 4 : 0;
+  const initialStep = resumingSetup ? 5 : 0;
 
   const [step, setStep] = useState(initialStep);
   const [name, setName] = useState(resumingSetup ? user!.name : "");
@@ -158,12 +168,12 @@ export function SignupOnboarding() {
   }, []);
 
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 3) return;
     preloadRockyouSet();
   }, [step]);
 
   useEffect(() => {
-    if (step !== 2 || !password) {
+    if (step !== 3 || !password) {
       setPasswordInsecure(false);
       return;
     }
@@ -194,13 +204,13 @@ export function SignupOnboarding() {
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (!user || step !== 3) return;
+    if (!user || step !== 4) return;
     setEmailVerified(true);
-    setStep(4);
+    setStep(5);
   }, [user, step]);
 
   useEffect(() => {
-    if (step !== 3 || emailVerified) return;
+    if (step !== 4 || emailVerified) return;
     const onFocus = () => {
       void refreshUser();
     };
@@ -224,7 +234,7 @@ export function SignupOnboarding() {
     return () => window.clearTimeout(timer);
   }, [username, user?.userId]);
 
-  const minStep = user && !user.profileSetupCompleted ? 4 : 0;
+  const minStep = user && !user.profileSetupCompleted ? 5 : 0;
 
   const goNext = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, minStep));
@@ -246,7 +256,7 @@ export function SignupOnboarding() {
     }
 
     setEmailVerified(true);
-    setStep(4);
+    setStep(5);
   };
 
   const handleCreateAccount = async () => {
@@ -278,7 +288,7 @@ export function SignupOnboarding() {
       goNext();
     } else {
       setEmailVerified(true);
-      setStep(4);
+      setStep(5);
     }
   };
 
@@ -362,16 +372,19 @@ export function SignupOnboarding() {
         <Link to="/" className="signup-brand">
           <LogoBrand size="sm" nameClassName="signup-brand-name" />
         </Link>
-        {step > 0 && step < STEPS.length - 1 && (
-          <Link to="/login" className="signup-header-link">
-            Already have an account?
-          </Link>
-        )}
+        <div className="flex items-center gap-3">
+          {step > 0 && <OnboardingLanguageBadge />}
+          {step > 0 && step < STEPS.length - 1 && (
+            <Link to="/login" className="signup-header-link">
+              Already have an account?
+            </Link>
+          )}
+        </div>
       </header>
 
       <main className="signup-main auth-aero-content">
         <div className="signup-shell">
-          {step < STEPS.length - 1 && <ProgressBar step={step} />}
+          {step < STEPS.length - 1 && <ProgressBar step={step} t={t} />}
 
           <div className="auth-glass-card p-6 sm:p-8">
             {error && <div className="auth-alert-error mb-5">{error}</div>}
@@ -421,6 +434,24 @@ export function SignupOnboarding() {
             )}
 
             {step === 1 && (
+              <StepShell
+                title={t("onboarding.language.title")}
+                subtitle={t("onboarding.language.subtitle")}
+              >
+                <LanguagePicker variant="onboarding" />
+                <div className="signup-btn-row mt-6">
+                  <button type="button" onClick={goBack} className="signup-btn-back">
+                    <ArrowLeft size={16} />
+                    {t("onboarding.language.back")}
+                  </button>
+                  <button type="button" onClick={goNext} className="auth-btn-primary">
+                    {t("onboarding.language.continue")}
+                  </button>
+                </div>
+              </StepShell>
+            )}
+
+            {step === 2 && (
               <StepShell
                 title="First, tell us about you"
                 subtitle="Your name and username are how the community will recognize you."
@@ -495,7 +526,7 @@ export function SignupOnboarding() {
               </StepShell>
             )}
 
-            {step === 2 && (
+            {step === 3 && (
               <StepShell
                 title={`Nice to meet you, ${firstName}!`}
                 subtitle="Create your login credentials. You'll use these to sign in from any device."
@@ -584,7 +615,7 @@ export function SignupOnboarding() {
               </StepShell>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <StepShell
                 title="Confirm your email"
                 subtitle={`We sent a confirmation link to ${email}. Open it to verify your account, then return here to continue setup.`}
@@ -652,7 +683,7 @@ export function SignupOnboarding() {
               </StepShell>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <StepShell
                 title="Add a face to your profile"
                 subtitle="A photo helps neighbors recognize you. Totally optional — you can always add one later."
@@ -708,7 +739,7 @@ export function SignupOnboarding() {
               </StepShell>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <StepShell
                 title="Where are you based?"
                 subtitle="This powers your nearby map and local listings. Search any city worldwide, or use detect as a shortcut."
@@ -730,7 +761,7 @@ export function SignupOnboarding() {
               </StepShell>
             )}
 
-            {step === 6 && (
+            {step === 7 && (
               <div className="text-center py-4">
                 <div className="signup-done-icon">
                   <Sparkles size={36} />
