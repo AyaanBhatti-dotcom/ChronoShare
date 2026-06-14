@@ -62,6 +62,18 @@ export async function fetchPendingExchanges(userId: string): Promise<ExchangeWit
   return (data ?? []) as ExchangeWithProfiles[];
 }
 
+/** Post IDs the user has already joined and are still awaiting confirmation. */
+export async function fetchUserJoinedPostIds(userId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("exchanges")
+    .select("post_id")
+    .eq("acceptor_id", userId)
+    .eq("status", "pending");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.post_id as string);
+}
+
 export async function fetchRecentExchanges(userId: string, limit = 5): Promise<ExchangeWithProfiles[]> {
   const { data, error } = await supabase
     .from("exchanges")

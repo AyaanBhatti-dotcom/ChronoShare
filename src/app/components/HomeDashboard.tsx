@@ -9,7 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
-import { fetchRecentExchanges, getExchangePartner, fetchPendingExchanges, hasUserConfirmed } from "../../lib/exchanges";
+import { fetchRecentExchanges, getExchangePartner, fetchPendingExchanges, fetchUserJoinedPostIds, hasUserConfirmed } from "../../lib/exchanges";
 import { fetchActivePosts } from "../../lib/posts";
 import {
   getUserLocation,
@@ -50,6 +50,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const [exchanges, setExchanges] = useState<ExchangeWithProfiles[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [needsYourConfirm, setNeedsYourConfirm] = useState(0);
+  const [joinedPostIds, setJoinedPostIds] = useState<Set<string>>(() => new Set());
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
@@ -117,12 +118,17 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
         );
       })
       .catch(console.warn);
+    fetchUserJoinedPostIds(user.userId)
+      .then((ids) => setJoinedPostIds(new Set(ids)))
+      .catch(console.warn);
   }, [user]);
 
   const nearbyPosts = useMemo(() => {
     const sorted = filterAndSortListings(posts, { scope, radiusMiles, sort });
-    return sorted.slice(0, scope === "worldwide" ? 12 : 8);
-  }, [posts, scope, radiusMiles, sort]);
+    return sorted
+      .filter((post) => !joinedPostIds.has(post.id))
+      .slice(0, scope === "worldwide" ? 12 : 8);
+  }, [posts, scope, radiusMiles, sort, joinedPostIds]);
 
   const radiusIndex = RADIUS_OPTIONS.indexOf(radiusMiles);
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
   Clock, ChevronDown, Search, X, ArrowUpRight, ArrowDownRight,
@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { deletePost, fetchActivePosts } from "../../lib/posts";
-import { acceptPost, getHourImpact, formatHourImpactLabel } from "../../lib/exchanges";
+import { acceptPost, fetchUserJoinedPostIds, getHourImpact, formatHourImpactLabel } from "../../lib/exchanges";
 import {
   enrichPostsWithDistance,
   filterAndSortListings,
@@ -65,6 +65,21 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   const [radiusMiles] = useState(100);
   const [deleting, setDeleting] = useState(false);
   const [joinFormat, setJoinFormat] = useState<ExchangeFormatResolved | null>(null);
+  const [joinedPostIds, setJoinedPostIds] = useState<Set<string>>(() => new Set());
+  const acceptInFlightRef = useRef(false);
+
+  const loadJoinedPostIds = useCallback(async () => {
+    if (!user) {
+      setJoinedPostIds(new Set());
+      return;
+    }
+    try {
+      const ids = await fetchUserJoinedPostIds(user.userId);
+      setJoinedPostIds(new Set(ids));
+    } catch (err) {
+      console.warn("Could not load joined listings:", err);
+    }
+  }, [user]);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
@@ -99,6 +114,10 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   }, [userLocation]);
 
   useEffect(() => {
+    loadJoinedPostIds();
+  }, [loadJoinedPostIds]);
+
+  useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
 
@@ -112,6 +131,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
   }, [jobs, scope, userLocation, radiusMiles, sort]);
 
   const filtered = scopedJobs.filter((j) => {
+    if (joinedPostIds.has(j.id)) return false;
     const authorName = j.profiles?.full_name ?? "User";
     const matchMode = mode === "all" || j.post_type === mode;
     const matchCat = category === "All" || j.category === category;
@@ -147,6 +167,11 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
 
   const handleAccept = async () => {
     if (!selectedJob || isPreview || (user && selectedJob.user_id === user.userId)) return;
+    if (joinedPostIds.has(selectedJob.id)) {
+      setAcceptError("You have already joined this listing. Confirm it in your Profile.");
+      return;
+    }
+    if (acceptInFlightRef.current) return;
 
     const needsFormatChoice = isFlexibleFormat(selectedJob.exchange_format);
     if (needsFormatChoice && !joinFormat) {
@@ -154,6 +179,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
       return;
     }
 
+    acceptInFlightRef.current = true;
     setAccepting(true);
     setAcceptError(null);
 
@@ -163,15 +189,20 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
         needsFormatChoice ? joinFormat ?? undefined : undefined,
       );
       await refreshUser();
+      setJoinedPostIds((prev) => new Set(prev).add(selectedJob.id));
       setAcceptSuccess(true);
       setJobs((prev) => prev.filter((j) => j.id !== selectedJob.id));
+      await loadJoinedPostIds();
       setTimeout(() => {
         setSelectedJob(null);
         setAcceptSuccess(false);
       }, 2000);
     } catch (err) {
       setAcceptError(err instanceof Error ? err.message : "Could not accept listing");
+      await loadPosts();
+      await loadJoinedPostIds();
     } finally {
+      acceptInFlightRef.current = false;
       setAccepting(false);
     }
   };
@@ -181,6 +212,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
     : null;
 
   const isOwnSelected = user && selectedJob?.user_id === user.userId;
+  const alreadyJoined = Boolean(selectedJob && joinedPostIds.has(selectedJob.id));
 
   return (
     <div className="space-y-5">
@@ -490,6 +522,25 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                       {deleting ? "Deleting..." : "Delete listing"}
                     </button>
                   </div>
+                ) : alreadyJoined ? (
+                  <div className="space-y-3">
+                    <div className="dash-badge-earn rounded-xl p-4 text-center">
+                      <p className="text-sm dash-accent font-medium">You&apos;ve already joined this listing</p>
+                      <p className="text-xs text-[#9CA3AF] mt-1">
+                        Head to Profile to confirm the exchange. This listing is no longer open to others.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedJob(null);
+                        onNavigate?.("profile");
+                      }}
+                      className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold"
+                    >
+                      Open Profile
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
@@ -497,6 +548,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
                     disabled={
                       accepting ||
                       isPreview ||
+                      alreadyJoined ||
                       (isFlexibleFormat(selectedJob.exchange_format) && !joinFormat)
                     }
                     className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold disabled:opacity-60"
