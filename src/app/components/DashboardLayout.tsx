@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
-  Bell, Search, Menu, X, LogOut, HeartHandshake,
+  Bell, Search, Menu, X, LogOut, HeartHandshake, Crown,
 } from "lucide-react";
 import { HomeDashboard } from "./HomeDashboard";
 import { LogoBrand } from "./Logo";
@@ -12,6 +12,7 @@ import { PostRequest } from "./PostRequest";
 import { Profile } from "./Profile";
 import { Settings } from "./Settings";
 import { CommunityPool } from "./CommunityPool";
+import { Founders } from "./Founders";
 import { useAuth, getInitials } from "../context/AuthContext";
 import { AeroBackground } from "./onboarding/aeroTheme";
 import { OnboardingTour, type TourStep } from "./onboarding/OnboardingTour";
@@ -21,13 +22,14 @@ import { getStoredListingScope, storeListingScope, type ListingScope } from "../
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import type { DashboardNavigateOptions } from "./dashboard-nav";
 
-type Screen = "home" | "board" | "community" | "post" | "profile" | "settings";
+type Screen = "home" | "board" | "community" | "founders" | "post" | "profile" | "settings";
 type BoardMode = "all" | "needs" | "offers";
 
 const navItemIds: { id: Screen; labelKey: string; shortKey: string; icon: React.ReactNode }[] = [
   { id: "home", labelKey: "nav.home", shortKey: "nav.home", icon: <Home size={18} /> },
   { id: "board", labelKey: "nav.board", shortKey: "nav.boardShort", icon: <Briefcase size={18} /> },
   { id: "community", labelKey: "nav.community", shortKey: "nav.communityShort", icon: <HeartHandshake size={18} /> },
+  { id: "founders", labelKey: "nav.founders", shortKey: "nav.foundersShort", icon: <Crown size={18} /> },
   { id: "post", labelKey: "nav.post", shortKey: "nav.postShort", icon: <PlusCircle size={18} /> },
   { id: "profile", labelKey: "nav.profile", shortKey: "nav.profile", icon: <User size={18} /> },
   { id: "settings", labelKey: "nav.settings", shortKey: "nav.settings", icon: <SettingsIcon size={18} /> },
@@ -37,6 +39,7 @@ const pageTitleKeys: Record<Screen, string> = {
   home: "pages.dashboard",
   board: "pages.jobBoard",
   community: "pages.communityPool",
+  founders: "pages.founders",
   post: "pages.postRequest",
   profile: "pages.myProfile",
   settings: "pages.settings",
@@ -379,6 +382,7 @@ export function DashboardLayout({
             />
           )}
           {screen === "community" && <CommunityPool onNavigate={navigateScreen} />}
+          {screen === "founders" && <Founders />}
           {screen === "post" && (
             <PostRequest initialPostType={postType} onNavigate={navigateScreen} />
           )}

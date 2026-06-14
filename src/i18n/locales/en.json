@@ -21,6 +21,8 @@
     "boardShort": "Board",
     "community": "Community",
     "communityShort": "Pool",
+    "founders": "Founders",
+    "foundersShort": "Founders",
     "post": "Post Request",
     "postShort": "Post",
     "profile": "Profile",
@@ -39,6 +41,7 @@
     "dashboard": "Dashboard",
     "jobBoard": "Job Board",
     "communityPool": "Community Pool",
+    "founders": "Founders",
     "postRequest": "Post a Request",
     "myProfile": "My Profile",
     "settings": "Settings"
@@ -242,6 +245,25 @@
     "successTitle": "Request sent!",
     "successBody": "Thanks — we've notified our team. We'll consider adding your language in a future update.",
     "error": "Could not send your request. Please try again."
+  },
+  "founders": {
+    "title": "Meet the Founders",
+    "subtitle": "The people building ChronoShare's solarpunk future — united, we are stronger.",
+    "jungl3master": {
+      "name": "Jungl3master (Ayaan)",
+      "role": "A wanderer of the digital wilderness",
+      "bio": "Cybersecurity student, Linux enthusiast, malware analyst, and devoted Claude user. I spend my time exploring systems, uncovering weaknesses, building new tools, and helping others navigate the ever-changing technological landscape."
+    },
+    "atlas": {
+      "name": "Atlas Morphoenix",
+      "role": "Artist of Life & Energy Healer",
+      "bio": "From an early age, I experienced what life was like to be in pain and suffering without knowing why I would be born just to suffer. This longing for meaning has lead me to blaze a trail of my own gnosis & meaning in life. Everyday, I choose as a sovereign being to lead with love knowing this love will ALL-ways find its way back to me. I'm honored to be the change I wish to be in our world."
+    },
+    "daniela": {
+      "name": "Daniela Parra",
+      "role": "",
+      "bio": "For me, solarpunk isn't just a concept. It's proof that a reality exists where humanity can tangibly achieve that. Me and my team believe that ChronoShare is the first step towards building that future. Because united, we are stronger."
+    }
   },
   "onboarding": {
     "language": {
