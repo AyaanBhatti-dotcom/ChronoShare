@@ -30,6 +30,7 @@ export interface Database {
           show_public_profile: boolean;
           show_rating: boolean;
           show_history: boolean;
+          is_demo: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -53,6 +54,7 @@ export interface Database {
           show_public_profile?: boolean;
           show_rating?: boolean;
           show_history?: boolean;
+          is_demo?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -76,6 +78,7 @@ export interface Database {
           show_public_profile?: boolean;
           show_rating?: boolean;
           show_history?: boolean;
+          is_demo?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -246,6 +249,10 @@ export interface Database {
       };
       admin_delete_post: {
         Args: { p_key: string; p_post_id: string };
+        Returns: void;
+      };
+      admin_seed_demo_listings: {
+        Args: { p_key: string };
         Returns: void;
       };
       submit_language_request: {

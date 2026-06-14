@@ -106,6 +106,11 @@ export async function deleteAdminPost(key: string, postId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
+export async function seedDemoListings(key: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_seed_demo_listings", { p_key: key });
+  if (error) throw new Error(error.message);
+}
+
 export async function fetchAdminLanguageRequests(key: string): Promise<LanguageRequest[]> {
   const { data, error } = await supabase.rpc("admin_list_language_requests", { p_key: key });
   if (error) throw new Error(error.message);

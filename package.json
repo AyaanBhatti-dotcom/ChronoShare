@@ -9,6 +9,7 @@
     "dev": "vite",
     "setup:supabase-auth": "node scripts/setup-supabase-auth.mjs",
     "db:apply-migration": "node scripts/apply-migration.mjs",
+    "db:seed-demo": "node scripts/apply-migration.mjs 024_demo_listings",
     "supabase:config-push": "supabase config push --project-ref vthefxwlwecyjsrznchr"
   },
   "dependencies": {
