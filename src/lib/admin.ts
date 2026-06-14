@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { AdminPost, AdminProfile, LanguageRequest } from "../types/database";
+import type { AdminPost, AdminProfile, ExchangeReport, LanguageRequest } from "../types/database";
 
 const ADMIN_KEY_STORAGE = "chronoshare_admin_key";
 
@@ -120,6 +120,26 @@ export async function updateAdminLanguageRequest(
   const { error } = await supabase.rpc("admin_update_language_request", {
     p_key: key,
     p_request_id: requestId,
+    p_status: updates.status ?? null,
+    p_admin_read: updates.adminRead ?? null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function fetchAdminExchangeReports(key: string): Promise<ExchangeReport[]> {
+  const { data, error } = await supabase.rpc("admin_list_exchange_reports", { p_key: key });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ExchangeReport[];
+}
+
+export async function updateAdminExchangeReport(
+  key: string,
+  reportId: string,
+  updates: { status?: ExchangeReport["status"]; adminRead?: boolean },
+): Promise<void> {
+  const { error } = await supabase.rpc("admin_update_exchange_report", {
+    p_key: key,
+    p_report_id: reportId,
     p_status: updates.status ?? null,
     p_admin_read: updates.adminRead ?? null,
   });

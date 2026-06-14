@@ -144,7 +144,7 @@
     "remote": "Remote",
     "flexible": "Either works",
     "notSpecified": "Not specified",
-    "inPersonDesc": "Meet locally — at a home, café, or agreed spot",
+    "inPersonDesc": "Meet locally in a public place — library, café, or community space",
     "remoteDesc": "Video call, phone, or online collaboration",
     "flexibleDesc": "Whoever joins can choose in person or remote"
   },
@@ -222,6 +222,12 @@
     "lessThan": "< {{value}} {{unit}}",
     "unitMi": "mi",
     "unitKm": "km"
+  },
+  "meetingPreference": {
+    "publicVenue": "Public meetup",
+    "remoteOnly": "Remote only",
+    "flexible": "Either works",
+    "notSpecified": "Not specified"
   },
   "languageRequest": {
     "requestButton": "Request a language",

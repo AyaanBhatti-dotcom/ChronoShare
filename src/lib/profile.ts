@@ -38,6 +38,9 @@ export async function updateProfileFields(
     username?: string;
     avatarUrl?: string | null;
     mfaEnabled?: boolean;
+    showPublicProfile?: boolean;
+    showRating?: boolean;
+    showHistory?: boolean;
   },
 ): Promise<void> {
   const payload: Record<string, unknown> = {};
@@ -45,9 +48,36 @@ export async function updateProfileFields(
   if (fields.username !== undefined) payload.username = fields.username.trim().toLowerCase();
   if (fields.avatarUrl !== undefined) payload.avatar_url = fields.avatarUrl;
   if (fields.mfaEnabled !== undefined) payload.mfa_enabled = fields.mfaEnabled;
+  if (fields.showPublicProfile !== undefined) payload.show_public_profile = fields.showPublicProfile;
+  if (fields.showRating !== undefined) payload.show_rating = fields.showRating;
+  if (fields.showHistory !== undefined) payload.show_history = fields.showHistory;
 
   const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
   if (error) throw new Error(error.message);
+}
+
+export type ProfilePrivacySettings = {
+  showPublicProfile: boolean;
+  showRating: boolean;
+  showHistory: boolean;
+  mfaEnabled: boolean;
+};
+
+export async function fetchProfilePrivacySettings(userId: string): Promise<ProfilePrivacySettings> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("show_public_profile, show_rating, show_history, mfa_enabled")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  return {
+    showPublicProfile: data?.show_public_profile ?? true,
+    showRating: data?.show_rating ?? true,
+    showHistory: data?.show_history ?? false,
+    mfaEnabled: data?.mfa_enabled ?? false,
+  };
 }
 
 export async function completeProfileSetup(userId: string): Promise<void> {

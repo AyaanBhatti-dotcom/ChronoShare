@@ -14,6 +14,7 @@ import {
   Bell,
   Check,
   X,
+  Flag,
 } from "lucide-react";
 import {
   deleteAdminPost,
@@ -21,12 +22,14 @@ import {
   fetchAdminPosts,
   fetchAdminProfiles,
   fetchAdminLanguageRequests,
+  fetchAdminExchangeReports,
   updateAdminLanguageRequest,
+  updateAdminExchangeReport,
   updateAdminPost,
   updateAdminPostStatus,
   updateAdminProfile,
 } from "../../../lib/admin";
-import type { AdminPost, AdminProfile, LanguageRequest } from "../../../types/database";
+import type { AdminPost, AdminProfile, ExchangeReport, LanguageRequest } from "../../../types/database";
 import { AdminUserPreview } from "./AdminUserPreview";
 import { Logo } from "../Logo";
 import {
@@ -37,7 +40,7 @@ import {
   AdminTextarea,
 } from "./AdminModal";
 
-type Tab = "users" | "posts" | "requests" | "preview";
+type Tab = "users" | "posts" | "requests" | "reports" | "preview";
 
 const POST_CATEGORIES = ["Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -70,6 +73,7 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
   const [users, setUsers] = useState<AdminProfile[]>([]);
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [languageRequests, setLanguageRequests] = useState<LanguageRequest[]>([]);
+  const [exchangeReports, setExchangeReports] = useState<ExchangeReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -82,14 +86,16 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     setError(null);
 
     try {
-      const [profilesData, postsData, requestsData] = await Promise.all([
+      const [profilesData, postsData, requestsData, reportsData] = await Promise.all([
         fetchAdminProfiles(adminKey),
         fetchAdminPosts(adminKey),
         fetchAdminLanguageRequests(adminKey),
+        fetchAdminExchangeReports(adminKey),
       ]);
       setUsers(profilesData);
       setPosts(postsData);
       setLanguageRequests(requestsData);
+      setExchangeReports(reportsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin data.");
     } finally {
@@ -214,6 +220,10 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     (r) => !r.admin_read && r.status === "pending",
   ).length;
 
+  const unreadExchangeReports = exchangeReports.filter(
+    (r) => !r.admin_read && r.status === "pending",
+  ).length;
+
   const handleLanguageRequestUpdate = async (
     request: LanguageRequest,
     updates: { status?: LanguageRequest["status"]; adminRead?: boolean },
@@ -240,6 +250,32 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     }
   };
 
+  const handleExchangeReportUpdate = async (
+    report: ExchangeReport,
+    updates: { status?: ExchangeReport["status"]; adminRead?: boolean },
+  ) => {
+    setActionLoading(true);
+    setError(null);
+    try {
+      await updateAdminExchangeReport(adminKey, report.id, updates);
+      setExchangeReports((prev) =>
+        prev.map((r) =>
+          r.id === report.id
+            ? {
+                ...r,
+                status: updates.status ?? r.status,
+                admin_read: updates.adminRead ?? r.admin_read,
+              }
+            : r,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update report.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ background: "#0B0F19" }}>
       <header
@@ -255,6 +291,19 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {unreadExchangeReports > 0 && (
+              <button
+                type="button"
+                onClick={() => setTab("reports")}
+                className="relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-red-300 hover:text-red-200 transition-colors"
+                style={{ border: "1px solid rgba(248,113,113,0.35)", background: "rgba(248,113,113,0.08)" }}
+              >
+                <Flag size={14} />
+                <span className="hidden sm:inline">
+                  {unreadExchangeReports} safety report{unreadExchangeReports === 1 ? "" : "s"}
+                </span>
+              </button>
+            )}
             {unreadLanguageRequests > 0 && (
               <button
                 type="button"
@@ -307,6 +356,12 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
               value={posts.filter((p) => p.status === "active").length}
             />
             <StatCard
+              label="Safety Reports"
+              value={unreadExchangeReports}
+              highlight={unreadExchangeReports > 0}
+              className="col-span-2 sm:col-span-1"
+            />
+            <StatCard
               label="Language Requests"
               value={unreadLanguageRequests}
               highlight={unreadLanguageRequests > 0}
@@ -327,6 +382,12 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
               label: "Language Requests",
               icon: Globe,
               badge: unreadLanguageRequests,
+            },
+            {
+              id: "reports" as const,
+              label: "Safety Reports",
+              icon: Flag,
+              badge: unreadExchangeReports,
             },
             { id: "preview" as const, label: "User Preview", icon: Eye },
           ]).map(({ id, label, icon: Icon, badge }) => (
@@ -396,6 +457,18 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
             }
             onDismiss={(request) =>
               handleLanguageRequestUpdate(request, { status: "dismissed", adminRead: true })
+            }
+          />
+        ) : tab === "reports" ? (
+          <ExchangeReportsTable
+            reports={exchangeReports}
+            disabled={actionLoading}
+            onMarkRead={(report) => handleExchangeReportUpdate(report, { adminRead: true })}
+            onActionTaken={(report) =>
+              handleExchangeReportUpdate(report, { status: "action_taken", adminRead: true })
+            }
+            onDismiss={(report) =>
+              handleExchangeReportUpdate(report, { status: "dismissed", adminRead: true })
             }
           />
         ) : (
@@ -693,6 +766,134 @@ function LanguageRequestsTable({
                     />
                     <ActionButton
                       onClick={() => onDismiss(request)}
+                      disabled={disabled}
+                      variant="delete"
+                      icon={<X size={12} />}
+                      label="Dismiss"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const REPORT_CATEGORY_LABELS: Record<ExchangeReport["category"], string> = {
+  no_show: "No-show",
+  incomplete_work: "Incomplete work",
+  harassment: "Harassment",
+  unsafe: "Felt unsafe",
+  scam: "Scam or fraud",
+  other: "Other",
+};
+
+function ExchangeReportsTable({
+  reports,
+  disabled,
+  onMarkRead,
+  onActionTaken,
+  onDismiss,
+}: {
+  reports: ExchangeReport[];
+  disabled: boolean;
+  onMarkRead: (report: ExchangeReport) => void;
+  onActionTaken: (report: ExchangeReport) => void;
+  onDismiss: (report: ExchangeReport) => void;
+}) {
+  if (reports.length === 0) {
+    return <EmptyState message="No safety reports yet." />;
+  }
+
+  return (
+    <div className="space-y-3">
+      {reports.map((report) => {
+        const isUnread = !report.admin_read && report.status === "pending";
+        return (
+          <div
+            key={report.id}
+            className="rounded-2xl p-5 border"
+            style={{
+              background: isUnread ? "rgba(248,113,113,0.06)" : "#111827",
+              borderColor: isUnread ? "rgba(248,113,113,0.3)" : "#1F2937",
+            }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <Flag size={16} className="text-red-400" />
+                  <h3 className="text-base font-semibold text-white">
+                    {REPORT_CATEGORY_LABELS[report.category]}
+                  </h3>
+                  {isUnread && (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                      style={{ background: "#F87171", color: "#000" }}
+                    >
+                      New
+                    </span>
+                  )}
+                  {report.also_block && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-[#D1D5DB]">
+                      Block requested
+                    </span>
+                  )}
+                  <span
+                    className="px-2 py-0.5 rounded-full text-xs font-medium capitalize"
+                    style={{
+                      background: "rgba(248,113,113,0.12)",
+                      color:
+                        report.status === "action_taken"
+                          ? "#10B981"
+                          : report.status === "dismissed"
+                            ? "#9CA3AF"
+                            : report.status === "reviewed"
+                              ? "#60A5FA"
+                              : "#F87171",
+                    }}
+                  >
+                    {report.status.replace("_", " ")}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#9CA3AF] mb-2">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={12} />
+                    {formatDate(report.created_at)}
+                  </span>
+                  <span>Reported user: {report.reported_user_id.slice(0, 8)}…</span>
+                  {report.exchange_id && <span>Exchange: {report.exchange_id.slice(0, 8)}…</span>}
+                </div>
+
+                {report.details && (
+                  <p className="text-sm text-[#D1D5DB] leading-relaxed">{report.details}</p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                {isUnread && (
+                  <ActionButton
+                    onClick={() => onMarkRead(report)}
+                    disabled={disabled}
+                    variant="edit"
+                    icon={<Check size={12} />}
+                    label="Mark read"
+                  />
+                )}
+                {report.status === "pending" && (
+                  <>
+                    <ActionButton
+                      onClick={() => onActionTaken(report)}
+                      disabled={disabled}
+                      variant="preview"
+                      icon={<Check size={12} />}
+                      label="Action taken"
+                    />
+                    <ActionButton
+                      onClick={() => onDismiss(report)}
                       disabled={disabled}
                       variant="delete"
                       icon={<X size={12} />}

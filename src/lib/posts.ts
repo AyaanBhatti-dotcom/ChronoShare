@@ -1,11 +1,12 @@
 import { supabase } from "./supabase";
 import type { Post, PostWithAuthor } from "../types/database";
 import type { ExchangeFormatPreference } from "./exchange-format";
+import type { MeetingPreference } from "./meeting-preference";
 import type { UserLocation } from "./location";
 import { fetchMatchedPostIds } from "./exchanges";
 
 const POST_SELECT =
-  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, exchange_format, created_at, profiles(full_name)";
+  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, exchange_format, meeting_preference, created_at, profiles(full_name)";
 
 export async function fetchActivePosts(): Promise<PostWithAuthor[]> {
   const matchedPostIds = await fetchMatchedPostIds();
@@ -50,6 +51,7 @@ export async function createPost(input: {
   postType: "needs" | "offers";
   hoursCost: number;
   exchangeFormat: ExchangeFormatPreference;
+  meetingPreference?: MeetingPreference;
   location?: UserLocation | null;
 }): Promise<void> {
   const { error } = await supabase.from("posts").insert({
@@ -60,6 +62,7 @@ export async function createPost(input: {
     post_type: input.postType,
     hours_cost: input.hoursCost,
     exchange_format: input.exchangeFormat,
+    meeting_preference: input.meetingPreference ?? "flexible",
     city: input.location?.city ?? null,
     region: input.location?.region ?? null,
     state: input.location?.state ?? null,
@@ -80,6 +83,7 @@ export async function updatePost(
     postType?: "needs" | "offers";
     hoursCost?: number;
     exchangeFormat?: ExchangeFormatPreference;
+    meetingPreference?: MeetingPreference;
   },
 ): Promise<void> {
   const matchedPostIds = await fetchMatchedPostIds();
@@ -94,6 +98,7 @@ export async function updatePost(
   if (input.postType !== undefined) updates.post_type = input.postType;
   if (input.hoursCost !== undefined) updates.hours_cost = input.hoursCost;
   if (input.exchangeFormat !== undefined) updates.exchange_format = input.exchangeFormat;
+  if (input.meetingPreference !== undefined) updates.meeting_preference = input.meetingPreference;
 
   const { error } = await supabase.from("posts").update(updates).eq("id", postId);
 

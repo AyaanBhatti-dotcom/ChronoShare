@@ -14,6 +14,12 @@ import {
 import { fetchMatchedPostIds, fetchExchangeInfoForPosts, fetchExchangesForPosts } from "../../lib/exchanges";
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
 import {
+  defaultMeetingPreferenceForFormat,
+  formatMeetingPreference,
+  type MeetingPreference,
+} from "../../lib/meeting-preference";
+import { MeetingPreferenceSelector } from "./safety/MeetingPreferenceSelector";
+import {
   canEditListing,
   getListingDisplayStatus,
   getListingStatusBadgeClass,
@@ -44,6 +50,7 @@ type EditForm = {
   postType: "needs" | "offers";
   hours: number;
   exchangeFormat: ExchangeFormatPreference;
+  meetingPreference: MeetingPreference;
 };
 
 function postToEditForm(post: Post): EditForm {
@@ -54,6 +61,7 @@ function postToEditForm(post: Post): EditForm {
     postType: post.post_type,
     hours: post.hours_cost,
     exchangeFormat: post.exchange_format,
+    meetingPreference: post.meeting_preference ?? "flexible",
   };
 }
 
@@ -162,6 +170,7 @@ export function MyListingsPanel({
         postType: editForm.postType,
         hoursCost: editForm.hours,
         exchangeFormat: editForm.exchangeFormat,
+        meetingPreference: editForm.meetingPreference,
       });
       cancelEdit();
       await loadMyPosts();
@@ -358,10 +367,23 @@ export function MyListingsPanel({
               <ExchangeFormatSelector
                 value={editForm.exchangeFormat}
                 onChange={(exchangeFormat) =>
-                  setEditForm((f) => f && { ...f, exchangeFormat })
+                  setEditForm((f) => f && {
+                    ...f,
+                    exchangeFormat,
+                    meetingPreference: defaultMeetingPreferenceForFormat(exchangeFormat),
+                  })
                 }
                 label="How will this exchange happen?"
               />
+
+              {editForm.exchangeFormat !== "remote" && (
+                <MeetingPreferenceSelector
+                  value={editForm.meetingPreference}
+                  onChange={(meetingPreference) =>
+                    setEditForm((f) => f && { ...f, meetingPreference })
+                  }
+                />
+              )}
 
               <div className="flex items-center gap-2">
                 <button
@@ -537,6 +559,7 @@ export function MyListingsPanel({
                   {post.post_type === "needs" ? "Need help" : "Offering"} · {post.category} ·{" "}
                   <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
                   {post.exchange_format ? ` · ${formatExchangeFormat(post.exchange_format)}` : ""}
+                  {post.meeting_preference ? ` · ${formatMeetingPreference(post.meeting_preference)}` : ""}
                 </p>
                 <p className="text-[11px] dash-subtext mt-0.5 opacity-80">{displayStatus.hint}</p>
                 {post.description && (

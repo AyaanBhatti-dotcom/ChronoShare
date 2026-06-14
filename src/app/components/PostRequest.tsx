@@ -7,6 +7,14 @@ import { useAuth } from "../context/AuthContext";
 import { createPost } from "../../lib/posts";
 import { getUserLocation } from "../../lib/location";
 import { MyListingsPanel } from "./MyListingsPanel";
+import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
+import { MeetingPreferenceSelector } from "./safety/MeetingPreferenceSelector";
+import { SafetyTipBanner } from "./safety/SafetyTipBanner";
+import type { ExchangeFormatPreference } from "../../lib/exchange-format";
+import {
+  defaultMeetingPreferenceForFormat,
+  type MeetingPreference,
+} from "../../lib/meeting-preference";
 
 interface PostRequestProps {
   initialPostType?: "needs" | "offers";
@@ -41,6 +49,8 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   const [category, setCategory] = useState("");
   const [postType, setPostType] = useState<"needs" | "offers">(initialPostType);
   const [hours, setHours] = useState(1);
+  const [exchangeFormat, setExchangeFormat] = useState<ExchangeFormatPreference>("remote");
+  const [meetingPreference, setMeetingPreference] = useState<MeetingPreference>("remote_only");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +59,11 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
   useEffect(() => {
     setPostType(initialPostType);
   }, [initialPostType]);
+
+  const handleExchangeFormatChange = (format: ExchangeFormatPreference) => {
+    setExchangeFormat(format);
+    setMeetingPreference(defaultMeetingPreferenceForFormat(format));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +96,8 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         category: trimmedCategory,
         postType,
         hoursCost: hours,
-        exchangeFormat: "flexible",
+        exchangeFormat,
+        meetingPreference,
         location,
       });
       setLastPostedType(postType);
@@ -93,6 +109,8 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
         setCategory("");
         setPostType(initialPostType);
         setHours(1);
+        setExchangeFormat("remote");
+        setMeetingPreference("remote_only");
       }, 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create listing");
@@ -260,6 +278,31 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                   className="dash-input w-full px-4 py-3 rounded-xl text-sm outline-none resize-none transition-all duration-200"
                 />
               </div>
+            </div>
+          </section>
+
+          <section className="post-studio-section">
+            <SectionHead
+              icon={<HandHelping size={15} />}
+              label="How it happens"
+              hint="Remote is the safest default. For in-person, prefer public meetups."
+            />
+            <div className="space-y-4">
+              <ExchangeFormatSelector
+                value={exchangeFormat}
+                onChange={handleExchangeFormatChange}
+                variant="studio"
+                label="Exchange format"
+                hint="Choose how people will connect for this listing."
+              />
+              {exchangeFormat !== "remote" && (
+                <MeetingPreferenceSelector
+                  value={meetingPreference}
+                  onChange={setMeetingPreference}
+                  variant="studio"
+                />
+              )}
+              {exchangeFormat !== "remote" && <SafetyTipBanner variant="compact" />}
             </div>
           </section>
 

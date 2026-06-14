@@ -25,6 +25,9 @@ import {
   isFlexibleFormat,
   type ExchangeFormatResolved,
 } from "../../lib/exchange-format";
+import { formatMeetingPreference } from "../../lib/meeting-preference";
+import { fetchBlockedUserIds } from "../../lib/trust-safety";
+import { SafetyTipBanner } from "./safety/SafetyTipBanner";
 import { ListingScopeToggle } from "./ListingScopeToggle";
 import { PastJobsPanel } from "./PastJobsPanel";
 
@@ -70,6 +73,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" 
   const [deleting, setDeleting] = useState(false);
   const [joinFormat, setJoinFormat] = useState<ExchangeFormatResolved | null>(null);
   const [joinedPostIds, setJoinedPostIds] = useState<Set<string>>(() => new Set());
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(() => new Set());
   const acceptInFlightRef = useRef(false);
 
   const loadJoinedPostIds = useCallback(async () => {
@@ -82,6 +86,19 @@ export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" 
       setJoinedPostIds(new Set(ids));
     } catch (err) {
       console.warn("Could not load joined listings:", err);
+    }
+  }, [user]);
+
+  const loadBlockedUserIds = useCallback(async () => {
+    if (!user) {
+      setBlockedUserIds(new Set());
+      return;
+    }
+    try {
+      const ids = await fetchBlockedUserIds();
+      setBlockedUserIds(new Set(ids));
+    } catch (err) {
+      console.warn("Could not load blocked users:", err);
     }
   }, [user]);
 
@@ -119,7 +136,8 @@ export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" 
 
   useEffect(() => {
     loadJoinedPostIds();
-  }, [loadJoinedPostIds]);
+    loadBlockedUserIds();
+  }, [loadJoinedPostIds, loadBlockedUserIds]);
 
   useEffect(() => {
     setMode(initialMode);
@@ -142,6 +160,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" 
 
   const filtered = scopedJobs.filter((j) => {
     if (joinedPostIds.has(j.id)) return false;
+    if (blockedUserIds.has(j.user_id)) return false;
     const authorName = j.profiles?.full_name ?? "User";
     const matchMode = mode === "all" || j.post_type === mode;
     const matchCat = category === "All" || j.category === category;
@@ -540,7 +559,17 @@ export const JobBoard = ({ onNavigate, initialMode = "all", initialTab = "open" 
                   <span className="dash-heading font-medium">
                     {formatExchangeFormat(selectedJob.exchange_format)}
                   </span>
+                  {selectedJob.meeting_preference && (
+                    <span> · {formatMeetingPreference(selectedJob.meeting_preference)}</span>
+                  )}
                 </p>
+
+                {!isOwnSelected &&
+                  (selectedJob.exchange_format === "in_person" ||
+                    joinFormat === "in_person" ||
+                    selectedJob.meeting_preference === "public_venue") && (
+                  <SafetyTipBanner variant="compact" />
+                )}
 
                 {!isOwnSelected && isFlexibleFormat(selectedJob.exchange_format) && (
                   <ExchangeFormatSelector

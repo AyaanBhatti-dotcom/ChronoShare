@@ -1,12 +1,14 @@
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
-  X, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight, User,
+  X, Clock, CheckCircle2, ArrowUpRight, ArrowDownRight, User, Flag, Star,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { getInitials } from "../context/AuthContext";
 import {
   getExchangePartner,
   getExchangePartnerLabel,
   getExchangeHourType,
+  getExchangePartnerId,
   hasUserConfirmed,
   isPartnerConfirmed,
   formatHourImpactLabel,
@@ -16,6 +18,10 @@ import { formatExchangeFormat } from "../../lib/exchange-format";
 import { formatMemberLabel } from "../../lib/profile";
 import { dashColors } from "./onboarding/aeroTheme";
 import type { ExchangeWithProfiles } from "../../types/database";
+import { SafetyTipBanner } from "./safety/SafetyTipBanner";
+import { ReportMemberDialog } from "./safety/ReportMemberDialog";
+import { ExchangeReviewDialog } from "./safety/ExchangeReviewDialog";
+import { hasExchangeReview } from "../../lib/trust-safety";
 
 function categoryIcon(cat: string) {
   const map: Record<string, React.ReactNode> = {
@@ -61,9 +67,27 @@ export function ExchangeDetailModal({
   actionId,
   isPreview,
 }: ExchangeDetailModalProps) {
+  const [showReport, setShowReport] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  useEffect(() => {
+    setShowReport(false);
+    setShowReview(false);
+    setReviewSubmitted(false);
+  }, [exchange?.id]);
+
+  useEffect(() => {
+    if (!exchange || !userId || exchange.status !== "completed") return;
+    hasExchangeReview(exchange.id)
+      .then((exists) => setReviewSubmitted(exists))
+      .catch(() => setReviewSubmitted(false));
+  }, [exchange, userId]);
+
   if (!exchange || !userId) return null;
 
   const partner = getExchangePartner(exchange, userId);
+  const partnerId = getExchangePartnerId(exchange, userId);
   const partnerProfile = exchange.poster_id === userId ? exchange.acceptor : exchange.poster;
   const partnerLabel = formatMemberLabel(partnerProfile);
   const roleLabel = getExchangePartnerLabel(exchange, userId);
@@ -125,6 +149,10 @@ export function ExchangeDetailModal({
             <span>{formatExchangeFormat(exchange.exchange_format)}</span>
           )}
         </div>
+
+        {exchange.exchange_format === "in_person" && (
+          <SafetyTipBanner variant="compact" />
+        )}
 
         <div className="rounded-xl border dash-divider p-4 space-y-3">
           <div className="flex items-center gap-3">
@@ -251,7 +279,47 @@ export function ExchangeDetailModal({
             )}
           </div>
         )}
+
+        {!isPending && exchange.status === "completed" && !reviewSubmitted && !isPreview && (
+          <button
+            type="button"
+            onClick={() => setShowReview(true)}
+            className="dash-btn-outline w-full py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5"
+          >
+            <Star size={13} />
+            Leave feedback
+          </button>
+        )}
+
+        {!isPreview && (
+          <button
+            type="button"
+            onClick={() => setShowReport(true)}
+            className="w-full py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 dash-subtext hover:text-red-400 transition-colors"
+          >
+            <Flag size={13} />
+            Report {partner.name.split(" ")[0]}
+          </button>
+        )}
       </div>
+
+      {showReport && (
+        <ReportMemberDialog
+          reportedUserId={partnerId}
+          reportedUserName={partner.name}
+          exchangeId={exchange.id}
+          onClose={() => setShowReport(false)}
+        />
+      )}
+
+      {showReview && (
+        <ExchangeReviewDialog
+          exchangeId={exchange.id}
+          partnerName={partner.name}
+          onClose={() => setShowReview(false)}
+          onSubmitted={() => setReviewSubmitted(true)}
+        />
+      )}
     </div>
   );
 }

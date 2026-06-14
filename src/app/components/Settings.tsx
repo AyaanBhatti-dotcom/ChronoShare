@@ -3,6 +3,7 @@ import { KeyRound, Eye, Bell, Mail, Smartphone, Globe, Lock, LogOut, Compass, Ro
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { getUserLocation, formatLocationLabel, type UserLocation } from "../../lib/location";
+import { fetchProfilePrivacySettings, updateProfileFields } from "../../lib/profile";
 import { LocationPicker } from "./LocationPicker";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LANGUAGES } from "../../i18n/languages";
@@ -56,6 +57,7 @@ export const Settings = ({
   const [savedLocation, setSavedLocation] = useState<UserLocation | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
+  const [privacyLoading, setPrivacyLoading] = useState(true);
   const [toggles, setToggles] = useState({
     publicProfile: true,
     showRating: true,
@@ -67,8 +69,44 @@ export const Settings = ({
     twoFactor: false,
   });
 
-  const set = (key: keyof typeof toggles) => (v: boolean) =>
-    setToggles((t) => ({ ...t, [key]: v }));
+  const set = (key: keyof typeof toggles) => async (v: boolean) => {
+    setToggles((prev) => ({ ...prev, [key]: v }));
+    if (!user) return;
+
+    const privacyKeys = ["publicProfile", "showRating", "showHistory", "twoFactor"] as const;
+    if (!privacyKeys.includes(key as typeof privacyKeys[number])) return;
+
+    try {
+      await updateProfileFields(user.userId, {
+        showPublicProfile: key === "publicProfile" ? v : toggles.publicProfile,
+        showRating: key === "showRating" ? v : toggles.showRating,
+        showHistory: key === "showHistory" ? v : toggles.showHistory,
+        mfaEnabled: key === "twoFactor" ? v : toggles.twoFactor,
+      });
+    } catch (err) {
+      console.warn("Could not save privacy setting:", err);
+      setToggles((prev) => ({ ...prev, [key]: !v }));
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      setPrivacyLoading(false);
+      return;
+    }
+    fetchProfilePrivacySettings(user.userId)
+      .then((settings) => {
+        setToggles((prev) => ({
+          ...prev,
+          publicProfile: settings.showPublicProfile,
+          showRating: settings.showRating,
+          showHistory: settings.showHistory,
+          twoFactor: settings.mfaEnabled,
+        }));
+      })
+      .catch(console.warn)
+      .finally(() => setPrivacyLoading(false));
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -164,6 +202,11 @@ export const Settings = ({
       {/* Privacy */}
       <div {...cardProps}>
         <SectionHeader icon={<Eye size={16} />} title={t("settings.privacyTitle")} desc={t("settings.privacyDesc")} />
+        {privacyLoading ? (
+          <div className="flex justify-center py-6">
+            <div className="w-6 h-6 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
+          </div>
+        ) : (
         <div>
           <SettingRow label={t("settings.publicProfile")} desc={t("settings.publicProfileDesc")}>
             <Toggle value={toggles.publicProfile} onChange={set("publicProfile")} />
@@ -178,6 +221,7 @@ export const Settings = ({
             <Toggle value={toggles.twoFactor} onChange={set("twoFactor")} />
           </SettingRow>
         </div>
+        )}
       </div>
 
       {/* Notifications */}

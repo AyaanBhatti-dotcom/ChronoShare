@@ -27,6 +27,9 @@ export interface Database {
           avatar_url: string | null;
           profile_setup_completed_at: string | null;
           mfa_enabled: boolean;
+          show_public_profile: boolean;
+          show_rating: boolean;
+          show_history: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -47,6 +50,9 @@ export interface Database {
           avatar_url?: string | null;
           profile_setup_completed_at?: string | null;
           mfa_enabled?: boolean;
+          show_public_profile?: boolean;
+          show_rating?: boolean;
+          show_history?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -67,6 +73,9 @@ export interface Database {
           avatar_url?: string | null;
           profile_setup_completed_at?: string | null;
           mfa_enabled?: boolean;
+          show_public_profile?: boolean;
+          show_rating?: boolean;
+          show_history?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -88,6 +97,7 @@ export interface Database {
           latitude: number | null;
           longitude: number | null;
           exchange_format: "in_person" | "remote" | "flexible";
+          meeting_preference: "public_venue" | "remote_only" | "flexible";
           created_at: string;
           updated_at: string;
         };
@@ -107,6 +117,7 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           exchange_format?: "in_person" | "remote" | "flexible";
+          meeting_preference?: "public_venue" | "remote_only" | "flexible";
           created_at?: string;
           updated_at?: string;
         };
@@ -126,6 +137,7 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           exchange_format?: "in_person" | "remote" | "flexible";
+          meeting_preference?: "public_venue" | "remote_only" | "flexible";
           created_at?: string;
           updated_at?: string;
         };
@@ -269,6 +281,65 @@ export interface Database {
         Args: { p_exchange_id: string };
         Returns: void;
       };
+      submit_exchange_report: {
+        Args: {
+          p_reported_user_id: string;
+          p_category: string;
+          p_exchange_id?: string | null;
+          p_details?: string | null;
+          p_also_block?: boolean | null;
+        };
+        Returns: string;
+      };
+      submit_exchange_review: {
+        Args: {
+          p_exchange_id: string;
+          p_showed_up?: boolean | null;
+          p_work_completed?: boolean | null;
+          p_would_exchange_again?: boolean | null;
+          p_felt_safe?: boolean | null;
+          p_details?: string | null;
+        };
+        Returns: string;
+      };
+      block_user: {
+        Args: { p_blocked_id: string };
+        Returns: void;
+      };
+      unblock_user: {
+        Args: { p_blocked_id: string };
+        Returns: void;
+      };
+      list_blocked_user_ids: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+      get_member_trust_stats: {
+        Args: { p_user_id: string };
+        Returns: {
+          completed_exchanges: number;
+          review_count: number;
+          positive_rating_pct: number | null;
+          show_rating: boolean;
+        }[];
+      };
+      has_exchange_review: {
+        Args: { p_exchange_id: string };
+        Returns: boolean;
+      };
+      admin_list_exchange_reports: {
+        Args: { p_key: string };
+        Returns: ExchangeReport[];
+      };
+      admin_update_exchange_report: {
+        Args: {
+          p_key: string;
+          p_report_id: string;
+          p_status?: string | null;
+          p_admin_read?: boolean | null;
+        };
+        Returns: void;
+      };
     };
     Enums: Record<string, never>;
   };
@@ -309,6 +380,19 @@ export interface LanguageRequest {
   requester_name: string | null;
   requester_email: string | null;
   status: "pending" | "reviewed" | "added" | "dismissed";
+  admin_read: boolean;
+  created_at: string;
+}
+
+export interface ExchangeReport {
+  id: string;
+  reporter_id: string | null;
+  reported_user_id: string;
+  exchange_id: string | null;
+  category: "no_show" | "incomplete_work" | "harassment" | "unsafe" | "scam" | "other";
+  details: string | null;
+  also_block: boolean;
+  status: "pending" | "reviewed" | "action_taken" | "dismissed";
   admin_read: boolean;
   created_at: string;
 }

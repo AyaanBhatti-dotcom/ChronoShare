@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { X, MapPin, Clock, ShieldCheck, User } from "lucide-react";
-import { getInitials } from "../context/AuthContext";
+import { X, MapPin, Clock, ShieldCheck, User, Star, Flag, Ban } from "lucide-react";
+import { getInitials, useAuth } from "../context/AuthContext";
 import { fetchPublicProfile, formatMemberLabel, formatPublicLocation, getMemberDisplayName, type PublicMemberProfile } from "../../lib/profile";
+import { fetchMemberTrustStats, blockUser, type MemberTrustStats } from "../../lib/trust-safety";
+import { ReportMemberDialog } from "./safety/ReportMemberDialog";
 
 interface MemberProfileModalProps {
   userId: string | null;
@@ -17,9 +19,16 @@ function formatMemberSince(iso: string) {
 }
 
 export function MemberProfileModal({ userId, roleLabel, onClose }: MemberProfileModalProps) {
+  const { user, isPreview } = useAuth();
   const [profile, setProfile] = useState<PublicMemberProfile | null>(null);
+  const [trustStats, setTrustStats] = useState<MemberTrustStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+
+  const isSelf = user?.userId === userId;
 
   useEffect(() => {
     if (!userId) {
@@ -51,10 +60,34 @@ export function MemberProfileModal({ userId, roleLabel, onClose }: MemberProfile
         if (!cancelled) setLoading(false);
       });
 
+    fetchMemberTrustStats(userId)
+      .then((stats) => {
+        if (!cancelled) setTrustStats(stats);
+      })
+      .catch(() => {
+        if (!cancelled) setTrustStats(null);
+      });
+
     return () => {
       cancelled = true;
     };
   }, [userId]);
+
+  const handleBlock = async () => {
+    if (!userId || isPreview || isSelf) return;
+    if (!window.confirm("Block this member? You won't see their listings or be able to exchange with them.")) {
+      return;
+    }
+    setBlocking(true);
+    try {
+      await blockUser(userId);
+      setBlocked(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not block user.");
+    } finally {
+      setBlocking(false);
+    }
+  };
 
   if (!userId) return null;
 
@@ -135,10 +168,55 @@ export function MemberProfileModal({ userId, roleLabel, onClose }: MemberProfile
                   <p className="text-sm dash-heading">{formatMemberSince(profile.created_at)}</p>
                 </div>
               </div>
+              {trustStats && (
+                <div className="member-profile-row">
+                  <Star size={14} className="dash-accent flex-shrink-0" />
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide dash-subtext">Community trust</p>
+                    <p className="text-sm dash-heading">
+                      {trustStats.completedExchanges} completed exchange{trustStats.completedExchanges === 1 ? "" : "s"}
+                      {trustStats.showRating && trustStats.positiveRatingPct != null && trustStats.reviewCount > 0 && (
+                        <span className="dash-subtext"> · {trustStats.positiveRatingPct}% would exchange again</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {!isSelf && !isPreview && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowReport(true)}
+                  className="dash-btn-outline flex-1 py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5"
+                >
+                  <Flag size={13} />
+                  Report
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBlock}
+                  disabled={blocking || blocked}
+                  className="dash-btn-outline flex-1 py-2 rounded-full text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-60"
+                >
+                  <Ban size={13} />
+                  {blocked ? "Blocked" : blocking ? "Blocking…" : "Block"}
+                </button>
+              </div>
+            )}
           </>
         ) : null}
       </div>
+
+      {showReport && userId && (
+        <ReportMemberDialog
+          reportedUserId={userId}
+          reportedUserName={profile ? getMemberDisplayName(profile) : undefined}
+          onClose={() => setShowReport(false)}
+          onSubmitted={() => setShowReport(false)}
+        />
+      )}
     </div>
   );
 }

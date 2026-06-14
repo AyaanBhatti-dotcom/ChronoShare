@@ -8,7 +8,7 @@ export const EXCHANGE_FORMAT_OPTIONS = [
   {
     id: "in_person" as const,
     label: "In person",
-    description: "Meet locally — at a home, café, or agreed spot",
+    description: "Meet locally in a public place — library, café, or community space",
     icon: MapPin,
   },
   {
