@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
   Minus, Plus, CheckCircle2, Sparkles, PenLine, Layers,
-  HandHelping, Zap, Clock, FolderOpen,
+  HandHelping, Zap, Clock, FolderOpen, Check,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { createPost } from "../../lib/posts";
@@ -239,9 +239,19 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                     <button
                       key={type}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => setPostType(type)}
-                      className={`post-studio-type-card ${active ? "post-studio-type-card-active" : ""}`}
+                      className={`post-studio-type-card ${
+                        active
+                          ? `post-studio-type-card-active post-studio-type-card-active-${type}`
+                          : ""
+                      }`}
                     >
+                      {active && (
+                        <span className="post-studio-pick-badge" aria-hidden>
+                          <Check size={11} strokeWidth={3} />
+                        </span>
+                      )}
                       <div className="post-studio-type-icon">
                         {type === "needs" ? <HandHelping size={17} /> : <Sparkles size={17} />}
                       </div>
@@ -265,7 +275,12 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                 label="Exchange format"
                 hint="How will this happen — in person, remote, or flexible?"
               />
-              <ExchangeFormatSelector value={exchangeFormat} onChange={setExchangeFormat} />
+              <ExchangeFormatSelector
+                value={exchangeFormat}
+                onChange={setExchangeFormat}
+                variant="studio"
+                hideLabel
+              />
             </section>
 
             <section className="post-studio-section">
@@ -317,9 +332,15 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                     <button
                       key={cat.id}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => setCategory(cat.id)}
                       className={`post-studio-cat-tile ${active ? "post-studio-cat-tile-active" : ""}`}
                     >
+                      {active && (
+                        <span className="post-studio-pick-badge" aria-hidden>
+                          <Check size={9} strokeWidth={3} />
+                        </span>
+                      )}
                       <span className="post-studio-cat-icon">{cat.icon}</span>
                       {cat.label}
                     </button>

@@ -52,6 +52,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const [pendingCount, setPendingCount] = useState(0);
   const [needsYourConfirm, setNeedsYourConfirm] = useState(0);
   const [joinedPostIds, setJoinedPostIds] = useState<Set<string>>(() => new Set());
+  const [selectedMapPost, setSelectedMapPost] = useState<NearbyPost | null>(null);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
@@ -124,12 +125,33 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
       .catch(console.warn);
   }, [user]);
 
-  const nearbyPosts = useMemo(() => {
-    const sorted = filterAndSortListings(posts, { scope, radiusMiles, sort });
-    return sorted
-      .filter((post) => !joinedPostIds.has(post.id))
-      .slice(0, scope === "worldwide" ? 12 : 8);
+  const visiblePosts = useMemo(() => {
+    return filterAndSortListings(posts, { scope, radiusMiles, sort }).filter(
+      (post) => !joinedPostIds.has(post.id),
+    );
   }, [posts, scope, radiusMiles, sort, joinedPostIds]);
+
+  const nearbyPosts = useMemo(
+    () => visiblePosts.slice(0, scope === "worldwide" ? 12 : 8),
+    [visiblePosts, scope],
+  );
+
+  const mapPosts = useMemo(
+    () =>
+      visiblePosts.filter(
+        (post) => post.latitude != null && post.longitude != null,
+      ),
+    [visiblePosts],
+  );
+
+  const mapUserLocation: UserLocation = userLocation ?? {
+    city: null,
+    region: null,
+    state: null,
+    country: null,
+    latitude: 20,
+    longitude: 0,
+  };
 
   const radiusIndex = RADIUS_OPTIONS.indexOf(radiusMiles);
 
@@ -203,13 +225,17 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
         <div className="dash-card dash-map-skeleton rounded-2xl flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
         </div>
-      ) : userLocation ? (
+      ) : userLocation || scope === "worldwide" ? (
         <NearbyMap
-          userLocation={userLocation}
-          posts={nearbyPosts}
+          userLocation={mapUserLocation}
+          posts={mapPosts}
           radiusMiles={radiusMiles}
           worldwide={scope === "worldwide"}
-          onSelectPost={() => onNavigate("board")}
+          showUserMarker={Boolean(userLocation)}
+          selectedPost={selectedMapPost}
+          onSelectPost={setSelectedMapPost}
+          onClosePost={() => setSelectedMapPost(null)}
+          onOpenBoard={() => onNavigate("board")}
         />
       ) : null}
 
