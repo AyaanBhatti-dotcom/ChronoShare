@@ -3286,6 +3286,376 @@ html {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
 
+  /* ── Community pool — flowing Frutiger Aero (no heavy boxes) ── */
+  .pool-scene {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    max-width: 56rem;
+  }
+
+  .pool-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.5rem 1.25rem 1.25rem;
+    border-radius: 2rem;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(142, 212, 240, 0.18) 42%,
+      rgba(94, 255, 240, 0.12) 68%,
+      rgba(91, 199, 122, 0.14) 100%
+    );
+    backdrop-filter: blur(20px) saturate(1.35);
+    -webkit-backdrop-filter: blur(20px) saturate(1.35);
+    box-shadow:
+      0 12px 40px rgba(58, 158, 196, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    overflow: hidden;
+  }
+
+  .pool-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 88% 12%, rgba(255, 209, 102, 0.22) 0%, transparent 42%);
+    pointer-events: none;
+  }
+
+  .pool-hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(94, 255, 240, 0.65), rgba(91, 199, 122, 0.55), transparent);
+    pointer-events: none;
+  }
+
+  @media (min-width: 768px) {
+    .pool-hero {
+      grid-template-columns: minmax(0, 1.05fr) minmax(220px, 0.95fr);
+      align-items: center;
+      padding: 2rem 2rem 1.75rem;
+      gap: 1.5rem;
+    }
+  }
+
+  .pool-hero-copy {
+    position: relative;
+    z-index: 1;
+  }
+
+  .pool-hero-globe {
+    position: relative;
+    z-index: 1;
+    min-height: 200px;
+    height: clamp(200px, 38vw, 280px);
+    border-radius: 1.75rem;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 40%, rgba(94, 255, 240, 0.14) 0%, rgba(27, 95, 122, 0.06) 70%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+      0 8px 28px rgba(45, 212, 200, 0.12);
+  }
+
+  .pool-balance {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+    padding: 0.35rem 0;
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-size: clamp(2.25rem, 5vw, 3rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--dash-heading, #1b5f7a);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .pool-balance-unit {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--dash-text-muted, #4a8fad);
+  }
+
+  .pool-toast {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: pool-toast-in 0.35s ease-out;
+  }
+
+  .pool-toast-success {
+    background: rgba(91, 199, 122, 0.2);
+    color: var(--dash-earn, #3d8b5e);
+    box-shadow: inset 0 0 0 1px rgba(91, 199, 122, 0.35);
+  }
+
+  .pool-toast-error {
+    background: rgba(239, 68, 68, 0.12);
+    color: #b91c1c;
+    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.28);
+  }
+
+  @keyframes pool-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .pool-split {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .pool-split {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .pool-flow-section {
+    position: relative;
+    padding-left: 1rem;
+  }
+
+  .pool-flow-section::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    bottom: 0.15rem;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #6ec6e8, #2dd4c8, #5bc77a);
+    box-shadow: 0 0 12px rgba(94, 255, 240, 0.45);
+  }
+
+  .pool-flow-section-accent::before {
+    background: linear-gradient(180deg, #ffd166, #5bc77a);
+    box-shadow: 0 0 12px rgba(255, 209, 102, 0.4);
+  }
+
+  .pool-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .pool-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dash-heading, #1b5f7a);
+  }
+
+  .pool-progress-track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.45);
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(27, 95, 122, 0.08);
+  }
+
+  .pool-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #6ec6e8, #2dd4c8, #5bc77a);
+    transition: width 0.5s ease;
+  }
+
+  .pool-status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    list-style: none;
+    padding: 0;
+  }
+
+  .pool-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.75rem;
+    color: var(--dash-text-muted, #4a8fad);
+    line-height: 1.35;
+  }
+
+  .pool-status-chip-done {
+    color: var(--dash-heading, #1b5f7a);
+  }
+
+  .pool-claim-meter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.75rem 0 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .pool-claim-value {
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, #3d8b5e, #2dd4c8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .pool-ribbon {
+    position: relative;
+    padding: 1.25rem 0;
+  }
+
+  .pool-ribbon::before,
+  .pool-ribbon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(94, 255, 240, 0.45), transparent);
+  }
+
+  .pool-ribbon::before {
+    top: 0;
+  }
+
+  .pool-ribbon::after {
+    bottom: 0;
+  }
+
+  .pool-donate-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .pool-steps {
+    display: grid;
+    gap: 1.25rem;
+    position: relative;
+    padding: 0.5rem 0;
+  }
+
+  @media (min-width: 640px) {
+    .pool-steps {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .pool-steps::before {
+      content: "";
+      position: absolute;
+      top: 1.35rem;
+      left: 12%;
+      right: 12%;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(110, 198, 232, 0.35), rgba(94, 255, 240, 0.55), rgba(91, 199, 122, 0.35));
+      z-index: 0;
+    }
+  }
+
+  .pool-step {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+    align-items: center;
+  }
+
+  .pool-step-badge {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, #6ec6e8, #3dd9c8, #5bc77a);
+    box-shadow: 0 4px 14px rgba(45, 212, 200, 0.35);
+  }
+
+  .pool-step-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--dash-heading, #1b5f7a);
+  }
+
+  .pool-step-desc {
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: var(--dash-text-muted, #4a8fad);
+    max-width: 14rem;
+  }
+
+  .pool-timeline {
+    padding-top: 0.5rem;
+  }
+
+  .pool-timeline-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pool-timeline-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0;
+    font-size: 0.75rem;
+    border-bottom: 1px solid rgba(94, 255, 240, 0.15);
+  }
+
+  .pool-timeline-item:last-child {
+    border-bottom: none;
+  }
+
+  .pool-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    color: var(--dash-text-muted, #4a8fad);
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
   @keyframes post-studio-float {
     0%,
     100% {
