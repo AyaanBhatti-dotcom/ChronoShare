@@ -35,7 +35,6 @@ import { dashColors } from "./onboarding/aeroTheme";
 import { formatExchangeFormat } from "../../lib/exchange-format";
 import { ProfileFloatingWindow } from "./profile/ProfileFloatingWindow";
 import { ProfileWin7Window } from "./profile/ProfileWin7Window";
-import { ProfileDesktopBuddies } from "./profile/ProfileDesktopBuddies";
 import { MyListingsPanel } from "./MyListingsPanel";
 import { fetchMyPosts } from "../../lib/posts";
 
@@ -495,8 +494,6 @@ export const Profile = () => {
           </ul>
         </div>
       </aside>
-
-      <ProfileDesktopBuddies hoursAvailable={user?.hoursAvailable ?? 0} />
 
       <div className="profile-windows" ref={desktopLayerRef}>
         {openWindows.size === 0 && (
