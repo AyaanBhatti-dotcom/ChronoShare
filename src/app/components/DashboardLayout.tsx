@@ -229,11 +229,11 @@ export function DashboardLayout({
       <AeroBackground />
 
       <div className={`relative z-10 flex min-h-0 overflow-hidden ${previewMode ? "h-full" : "h-screen max-sm:h-dvh"}`}>
-      {/* Sidebar — collapsed on desktop, expands on hover */}
+      {/* Sidebar — collapsed rail on desktop, expands on hover */}
       <aside
         data-expanded={showTour || undefined}
-        className={`dash-glass-sidebar dash-liquid-surface dash-sidebar-collapsible fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r sm:relative sm:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        className={`dash-glass-sidebar dash-liquid-surface dash-sidebar-collapsible fixed inset-y-0 left-0 z-40 flex flex-col border-r w-60 max-sm:w-60 sm:w-[4.5rem] sm:hover:w-60 sm:data-[expanded=true]:w-60 sm:hover:z-50 transition-[width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full sm:translate-x-0"
         }`}
         onTransitionEnd={(e) => {
           if (e.propertyName === "transform" || e.propertyName === "width") {
@@ -313,8 +313,8 @@ export function DashboardLayout({
         />
       )}
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+      {/* Main — offset by collapsed rail width on desktop */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden sm:ml-[4.5rem]">
         {/* Header */}
         <header className="dash-glass-header dash-liquid-surface dash-mobile-header flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0">
           <button

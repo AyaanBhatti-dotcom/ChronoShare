@@ -2185,12 +2185,7 @@ html {
 
   @media (min-width: 640px) {
     .dash-sidebar-collapsible {
-      width: 4.5rem;
-    }
-
-    .dash-sidebar-collapsible:hover,
-    .dash-sidebar-collapsible[data-expanded="true"] {
-      width: 15rem;
+      flex-shrink: 0;
     }
 
     .dash-sidebar-header {
@@ -2225,6 +2220,13 @@ html {
       justify-content: center;
     }
 
+    .dash-sidebar-collapsible:not(:hover):not([data-expanded="true"]) .dash-sidebar-nav-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      margin-inline: auto;
+    }
+
     .dash-sidebar-collapsible:hover .dash-sidebar-nav-btn,
     .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-nav-btn {
       justify-content: flex-start;
@@ -2255,6 +2257,18 @@ html {
     .dash-sidebar-collapsible:hover .dash-sidebar-brand,
     .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-brand {
       gap: 0.625rem;
+    }
+
+    .dash-sidebar-collapsible:not(:hover):not([data-expanded="true"]) .dash-sidebar-user-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      padding: 0;
+      margin-inline: auto;
+    }
+
+    .dash-sidebar-collapsible:not(:hover):not([data-expanded="true"]) .dash-sidebar-user-btn .dash-avatar {
+      width: 2rem;
+      height: 2rem;
     }
 
     .dash-sidebar-user-btn {
