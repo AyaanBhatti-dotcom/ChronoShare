@@ -1066,7 +1066,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
             >
               <div className={listingsMaximized ? "profile-window-layout-max" : ""}>
                 <p className="px-5 pt-4 text-xs dash-subtext">
-                  View, edit, close, or delete your job board listings.
+                  Open listings can be edited or closed. Use View on pending or completed exchanges for details.
                 </p>
                 <MyListingsPanel
                   variant="profile"

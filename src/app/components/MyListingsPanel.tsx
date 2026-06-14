@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
-  XCircle, RotateCcw, Trash2, Pencil, Check, X, FolderOpen, PlusCircle,
+  XCircle, RotateCcw, Trash2, Pencil, Check, X, FolderOpen, PlusCircle, Eye,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -289,7 +289,7 @@ export function MyListingsPanel({
   const listContent = (
     <>
       {error && (
-        <p className={`text-sm text-red-600 bg-red-50/80 border border-red-200/60 rounded-xl px-4 py-2 ${isProfile ? "mx-5 mt-3" : ""}`}>
+        <p className={`text-sm rounded-xl px-4 py-2 ${isProfile ? "mx-5 mt-3 text-red-300 bg-red-500/10 border border-red-400/30" : "text-red-600 bg-red-50/80 border border-red-200/60"}`}>
           {error}
         </p>
       )}
@@ -425,13 +425,22 @@ export function MyListingsPanel({
         const displayStatus = getListingDisplayStatus(post, exchangeInfo);
         const editable = canEditListing(post, exchangeInfo);
         const isLiveOnBoard = displayStatus.kind === "open";
+        const hasExchangeDetails = fullExchangeByPostId.has(post.id);
         const canViewDetails =
-          displayStatus.kind === "pending" || displayStatus.kind === "done";
+          hasExchangeDetails &&
+          (displayStatus.kind === "pending" || displayStatus.kind === "done");
+        const canDelete =
+          !matchedPostIds.has(post.id) &&
+          (isLiveOnBoard || displayStatus.kind === "closed" || displayStatus.kind === "archived");
+
         const openDetails = () => {
-          if (canViewDetails && fullExchangeByPostId.has(post.id)) {
-            setDetailPost(post);
-          }
+          if (canViewDetails) setDetailPost(post);
         };
+
+        const actionBtn =
+          "dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60";
+        const dangerBtn =
+          "dash-btn-danger flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60";
 
         const statusBadge = (
           <span
@@ -444,6 +453,19 @@ export function MyListingsPanel({
 
         const actions = (
           <div className={isProfile ? "flex items-center gap-2 flex-shrink-0 flex-wrap" : "listing-studio-card-actions"}>
+            {canViewDetails && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDetails();
+                }}
+                className={actionBtn}
+              >
+                <Eye size={13} />
+                View
+              </button>
+            )}
             {editable && (
               <button
                 type="button"
@@ -452,82 +474,54 @@ export function MyListingsPanel({
                   startEdit(post);
                 }}
                 disabled={actionId === post.id || isPreview}
-                className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
+                className={actionBtn}
               >
                 <Pencil size={13} />
                 Edit
               </button>
             )}
-            {isLiveOnBoard ? (
-              <>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseListing(post.id);
-                  }}
-                  disabled={actionId === post.id}
-                  className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
-                >
-                  <XCircle size={13} />
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteListing(post.id);
-                  }}
-                  disabled={actionId === post.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-                >
-                  <Trash2 size={13} />
-                  Delete
-                </button>
-              </>
-            ) : displayStatus.kind === "closed" ? (
-              <>
-                {!matchedPostIds.has(post.id) && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleReopenListing(post.id);
-                    }}
-                    disabled={actionId === post.id}
-                    className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
-                  >
-                    <RotateCcw size={13} />
-                    Reopen
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteListing(post.id);
-                  }}
-                  disabled={actionId === post.id}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-                >
-                  <Trash2 size={13} />
-                  Delete
-                </button>
-              </>
-            ) : displayStatus.kind === "done" || displayStatus.kind === "archived" ? (
+            {isLiveOnBoard && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCloseListing(post.id);
+                }}
+                disabled={actionId === post.id}
+                className={actionBtn}
+              >
+                <XCircle size={13} />
+                Close
+              </button>
+            )}
+            {displayStatus.kind === "closed" && !matchedPostIds.has(post.id) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReopenListing(post.id);
+                }}
+                disabled={actionId === post.id}
+                className={actionBtn}
+              >
+                <RotateCcw size={13} />
+                Reopen
+              </button>
+            )}
+            {canDelete && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteListing(post.id);
                 }}
-                disabled={actionId === post.id || matchedPostIds.has(post.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                disabled={actionId === post.id}
+                className={dangerBtn}
               >
                 <Trash2 size={13} />
                 Delete
               </button>
-            ) : null}
+            )}
           </div>
         );
 
@@ -566,7 +560,7 @@ export function MyListingsPanel({
                   <p className="text-xs dash-subtext mt-1 line-clamp-2">{post.description}</p>
                 )}
                 {canViewDetails && (
-                  <p className="text-[10px] dash-subtext mt-1 opacity-70">Tap for exchange details</p>
+                  <p className="text-[10px] dash-accent mt-1 opacity-90">View exchange details below</p>
                 )}
               </div>
               <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
@@ -620,7 +614,7 @@ export function MyListingsPanel({
                   <p className="text-xs dash-subtext mt-2 line-clamp-2 leading-relaxed">{post.description}</p>
                 )}
                 {canViewDetails && (
-                  <p className="text-[10px] dash-subtext mt-2 opacity-70">Tap for exchange details</p>
+                  <p className="text-[10px] dash-accent mt-2 opacity-90">View exchange details below</p>
                 )}
               </div>
             </div>

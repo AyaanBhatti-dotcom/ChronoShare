@@ -5842,6 +5842,31 @@ html {
     color: #7ad99a;
   }
 
+  .dash-btn-danger {
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    color: #fca5a5;
+    background: rgba(248, 113, 113, 0.08);
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .dash-btn-danger:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.16);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #fecaca;
+  }
+
+  .profile-win7-body .dash-btn-danger {
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #fca5a5;
+    background: rgba(80, 20, 20, 0.35);
+  }
+
+  .profile-win7-body .dash-btn-danger:hover:not(:disabled) {
+    background: rgba(120, 30, 30, 0.45);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #fecaca;
+  }
+
   .profile-win7-body .divide-y > *:hover,
   .profile-win7-body .profile-listing-row:hover {
     background: rgba(45, 212, 200, 0.08);
