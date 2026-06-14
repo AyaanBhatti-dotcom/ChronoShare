@@ -248,7 +248,8 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
 
       {/* Controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="dash-pill-group flex rounded-full p-1 w-fit">
+        <div className="dash-pill-scroll w-full sm:w-auto">
+        <div className="dash-pill-group flex rounded-full p-1 w-fit min-w-max">
           {(["all", "needs", "offers"] as const).map((m) => (
             <button
               key={m}
@@ -261,8 +262,9 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
             </button>
           ))}
         </div>
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="dash-search flex items-center gap-2 px-3 py-2 rounded-xl flex-1 sm:w-48">
             <Search size={14} className="dash-subtext" />
             <input
@@ -400,7 +402,7 @@ export const JobBoard = ({ onNavigate, initialMode = "all" }: JobBoardProps) => 
             className="absolute inset-0 dash-modal-overlay"
             onClick={() => !accepting && setSelectedJob(null)}
           />
-          <div className="dash-modal relative w-full max-w-md rounded-2xl p-6 space-y-5">
+          <div className="dash-modal relative w-full max-w-md rounded-2xl p-6 space-y-5 dash-modal-mobile">
             <button
               type="button"
               onClick={() => !accepting && setSelectedJob(null)}

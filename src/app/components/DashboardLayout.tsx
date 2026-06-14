@@ -23,12 +23,12 @@ type NavigateOptions = {
   boardMode?: BoardMode;
 };
 
-const navItems: { id: Screen; label: string; icon: React.ReactNode }[] = [
-  { id: "home", label: "Home", icon: <Home size={18} /> },
-  { id: "board", label: "Job Board", icon: <Briefcase size={18} /> },
-  { id: "post", label: "Post Request", icon: <PlusCircle size={18} /> },
-  { id: "profile", label: "Profile", icon: <User size={18} /> },
-  { id: "settings", label: "Settings", icon: <SettingsIcon size={18} /> },
+const navItems: { id: Screen; label: string; shortLabel: string; icon: React.ReactNode }[] = [
+  { id: "home", label: "Home", shortLabel: "Home", icon: <Home size={18} /> },
+  { id: "board", label: "Job Board", shortLabel: "Board", icon: <Briefcase size={18} /> },
+  { id: "post", label: "Post Request", shortLabel: "Post", icon: <PlusCircle size={18} /> },
+  { id: "profile", label: "Profile", shortLabel: "Profile", icon: <User size={18} /> },
+  { id: "settings", label: "Settings", shortLabel: "Settings", icon: <SettingsIcon size={18} /> },
 ];
 
 const pageTitles: Record<Screen, string> = {
@@ -292,18 +292,19 @@ export function DashboardLayout({
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <header className="dash-glass-header dash-liquid-surface flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0">
+        <header className="dash-glass-header dash-liquid-surface dash-mobile-header flex items-center gap-4 px-5 py-3.5 border-b flex-shrink-0">
           <button
-            className="sm:hidden dash-subtext hover:dash-heading transition-colors"
+            className="sm:hidden dash-subtext hover:dash-heading transition-colors flex-shrink-0"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <h1 className="text-sm font-bold dash-page-title">{pageTitles[screen]}</h1>
+          <h1 className="text-sm font-bold dash-page-title dash-mobile-header-title">{pageTitles[screen]}</h1>
 
           <div
-            className="dash-search flex-1 max-w-xs ml-4 flex items-center gap-2 px-3 py-1.5 rounded-xl"
+            className="dash-search hidden sm:flex flex-1 max-w-xs ml-4 items-center gap-2 px-3 py-1.5 rounded-xl"
             data-tour="header-search"
           >
             <Search size={13} className="dash-subtext" />
@@ -313,8 +314,16 @@ export function DashboardLayout({
             />
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
-            <button className="relative dash-subtext hover:dash-heading transition-colors">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <button
+              className="sm:hidden relative dash-subtext hover:dash-heading transition-colors p-1"
+              data-tour="header-search"
+              aria-label="Search"
+              onClick={() => navigateScreen("board")}
+            >
+              <Search size={18} />
+            </button>
+            <button className="relative dash-subtext hover:dash-heading transition-colors p-1">
               <Bell size={18} />
               {notifications > 0 && (
                 <span className="dash-btn-primary absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-semibold">
@@ -333,7 +342,7 @@ export function DashboardLayout({
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
+        <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-8 dash-mobile-main">
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
           {screen === "board" && (
             <JobBoard initialMode={boardMode} onNavigate={navigateScreen} />
@@ -351,6 +360,29 @@ export function DashboardLayout({
         </main>
       </div>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav className="dash-mobile-bottom-nav sm:hidden" aria-label="Main navigation">
+        {navItems.map((item) => {
+          const active = screen === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              data-tour={`nav-${item.id}`}
+              onClick={() => navigateScreen(item.id)}
+              className={`dash-mobile-nav-item relative ${active ? "dash-mobile-nav-item-active" : ""}`}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.icon}
+              <span className="truncate max-w-full">{item.shortLabel}</span>
+              {item.id === "board" && jobCount > 0 && (
+                <span className="dash-mobile-nav-badge">{jobCount}</span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
 
       {showTour && !previewMode && (
         <OnboardingTour

@@ -23,10 +23,14 @@ interface Rect {
   height: number;
 }
 
-const CARD_WIDTH = 320;
+const CARD_WIDTH_MAX = 320;
 const VIEWPORT_PAD = 16;
 const SPOTLIGHT_PAD = 8;
 const GAP = 20;
+
+function getCardWidth() {
+  return Math.min(window.innerWidth - VIEWPORT_PAD * 2, CARD_WIDTH_MAX);
+}
 
 function getTargetRect(selector: string): Rect | null {
   const el = document.querySelector(selector);
@@ -122,12 +126,13 @@ function computeCardPosition(
 }
 
 function centeredCardPos(): { top: number; left: number } {
+  const cardW = getCardWidth();
   return {
     top: clamp(window.innerHeight / 2 - 120, VIEWPORT_PAD, window.innerHeight - 300),
     left: clamp(
-      window.innerWidth / 2 - CARD_WIDTH / 2,
+      window.innerWidth / 2 - cardW / 2,
       VIEWPORT_PAD,
-      window.innerWidth - CARD_WIDTH - VIEWPORT_PAD,
+      window.innerWidth - cardW - VIEWPORT_PAD,
     ),
   };
 }
@@ -215,7 +220,7 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
       : computeCardPosition(
           spotlight,
           step?.position,
-          CARD_WIDTH,
+          getCardWidth(),
           cardRef.current.offsetHeight,
         );
 
@@ -276,7 +281,8 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
         style={{
           top: cardPos.top,
           left: cardPos.left,
-          width: CARD_WIDTH,
+          width: getCardWidth(),
+          maxWidth: `calc(100vw - ${VIEWPORT_PAD * 2}px)`,
           zIndex: 10001,
           background: "#0D1220",
           borderColor: "#1F2937",

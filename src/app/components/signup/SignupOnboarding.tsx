@@ -33,6 +33,8 @@ import {
   isPasswordInRockyou,
   preloadRockyouSet,
 } from "../../../lib/password-leak-check";
+import { setNewSignupTourPending } from "../../utils/onboarding";
+import { aero } from "../onboarding/aeroTheme";
 
 const STEPS = [
   { id: "welcome", label: "Welcome" },
@@ -48,32 +50,26 @@ function clearSignupDraft() {
   sessionStorage.removeItem("chronoshare-signup-draft");
 }
 
-const inputClass =
-  "w-full rounded-xl px-4 py-3 text-sm text-white placeholder-[#4B5563] outline-none transition-all focus:ring-2 focus:ring-emerald-500/40";
-const inputStyle = { background: "#111827", border: "1px solid #1F2937" } as const;
-
 function ProgressBar({ step }: { step: number }) {
   const progress = ((step + 1) / STEPS.length) * 100;
   return (
     <div className="mb-8">
-      <div className="flex justify-between text-[10px] uppercase tracking-wider text-[#6B7280] mb-2 px-1">
+      <p className="signup-progress-step sm:hidden">
+        Step {step + 1} of {STEPS.length}
+        <span className="signup-progress-label-active"> · {STEPS[step]?.label}</span>
+      </p>
+      <div className="signup-progress-labels hidden sm:flex">
         {STEPS.map((s, i) => (
           <span
             key={s.id}
-            className={`transition-colors ${i <= step ? "text-emerald-400" : ""}`}
+            className={`transition-colors ${i <= step ? "signup-progress-label-active" : ""}`}
           >
             {s.label}
           </span>
         ))}
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#1F2937" }}>
-        <div
-          className="h-full rounded-full transition-all duration-500 ease-out"
-          style={{
-            width: `${progress}%`,
-            background: "linear-gradient(90deg, #10B981, #06B6D4)",
-          }}
-        />
+      <div className="signup-progress-track">
+        <div className="signup-progress-fill" style={{ width: `${progress}%` }} />
       </div>
     </div>
   );
@@ -90,9 +86,30 @@ function StepShell({
 }) {
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-white mb-2">{title}</h2>
-      <p className="text-sm text-[#9CA3AF] mb-6 leading-relaxed">{subtitle}</p>
+      <h2 className="signup-step-title">{title}</h2>
+      <p className="signup-step-subtitle">{subtitle}</p>
       {children}
+    </div>
+  );
+}
+
+function SignupScene() {
+  return (
+    <div className="auth-aero-scene" aria-hidden="true">
+      <div className="auth-aero-sky" />
+      <div className="auth-aero-sun" />
+      <div className="auth-aero-ocean" />
+      <div className="auth-aero-wave auth-aero-wave-1" />
+      <div className="auth-aero-wave auth-aero-wave-2" />
+      <div className="auth-aero-shimmer" />
+      <div className="auth-aero-shimmer-grid" />
+      <div className="auth-aero-grass auth-aero-grass-back" />
+      <div className="auth-aero-grass auth-aero-grass-front" />
+      <div className="auth-aero-orb auth-aero-orb-aqua" />
+      <div className="auth-aero-orb auth-aero-orb-grass" />
+      <div className="auth-aero-spark auth-aero-spark-1" />
+      <div className="auth-aero-spark auth-aero-spark-2" />
+      <div className="auth-aero-spark auth-aero-spark-3" />
     </div>
   );
 }
@@ -322,7 +339,7 @@ export function SignupOnboarding() {
       particleCount: 120,
       spread: 70,
       origin: { y: 0.65 },
-      colors: ["#10B981", "#06B6D4", "#ffffff"],
+      colors: [aero.grass, aero.aqua, aero.sky, aero.sun, "#ffffff"],
     });
 
     window.setTimeout(() => {
@@ -337,63 +354,32 @@ export function SignupOnboarding() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        background: "radial-gradient(ellipse at top, #0f1e2e 0%, #0B0F19 50%, #050810 100%)",
-        fontFamily: "'Inter', sans-serif",
-      }}
-    >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, #10B981, transparent 70%)" }}
-        />
-        <div
-          className="absolute bottom-0 -left-24 w-80 h-80 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, #06B6D4, transparent 70%)" }}
-        />
-      </div>
+    <div className="auth-aero-page signup-aero-page min-h-screen flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <SignupScene />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 max-w-2xl mx-auto w-full">
-        <Link to="/" className="flex items-center gap-2 group">
+      <header className="signup-header auth-aero-content">
+        <Link to="/" className="signup-brand">
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)" }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center auth-aero-logo"
+            style={{ background: aero.gradientPrimary }}
           >
-            <Clock size={18} style={{ color: "#000" }} />
+            <Clock size={18} style={{ color: aero.text }} />
           </div>
-          <span className="text-sm font-semibold text-white group-hover:text-emerald-400 transition-colors">
-            ChronoShare
-          </span>
+          <span className="signup-brand-name">ChronoShare</span>
         </Link>
         {step > 0 && step < STEPS.length - 1 && (
-          <Link to="/login" className="text-xs text-[#9CA3AF] hover:text-white transition-colors">
+          <Link to="/login" className="signup-header-link">
             Already have an account?
           </Link>
         )}
       </header>
 
-      <main className="relative z-10 flex-1 flex items-start justify-center px-4 pb-12">
-        <div className="w-full max-w-lg">
+      <main className="signup-main auth-aero-content">
+        <div className="signup-shell">
           {step < STEPS.length - 1 && <ProgressBar step={step} />}
 
-          <div
-            className="rounded-3xl border p-6 sm:p-8"
-            style={{
-              background: "rgba(17, 24, 39, 0.85)",
-              borderColor: "#1F2937",
-              boxShadow: "0 24px 80px rgba(0,0,0,0.4)",
-            }}
-          >
-            {error && (
-              <div
-                className="rounded-xl px-4 py-3 text-sm text-red-400 border mb-5"
-                style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)" }}
-              >
-                {error}
-              </div>
-            )}
+          <div className="auth-glass-card p-6 sm:p-8">
+            {error && <div className="auth-alert-error mb-5">{error}</div>}
 
             {step === 0 && (
               <StepShell
@@ -403,45 +389,31 @@ export function SignupOnboarding() {
                 <div className="grid gap-3 mb-8">
                   {[
                     {
-                      icon: <Handshake size={18} className="text-emerald-400" />,
+                      icon: <Handshake size={18} />,
                       title: "Real people, real skills",
                       desc: "Tutoring, tech help, rides, design — whatever your community offers.",
                     },
                     {
-                      icon: <Sparkles size={18} className="text-cyan-400" />,
+                      icon: <Sparkles size={18} />,
                       title: "Start with 1 free hour",
                       desc: "Every new member gets an hour in the bank to kick things off.",
                     },
                     {
-                      icon: <MapPin size={18} className="text-emerald-400" />,
+                      icon: <MapPin size={18} />,
                       title: "Local by design",
                       desc: "Find listings near you on an interactive map.",
                     },
                   ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="flex items-start gap-3 rounded-2xl p-4 border transition-colors hover:border-emerald-500/30"
-                      style={{ background: "#0B0F19", borderColor: "#1F2937" }}
-                    >
-                      <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: "rgba(16,185,129,0.1)" }}
-                      >
-                        {item.icon}
-                      </div>
+                    <div key={item.title} className="signup-feature-card">
+                      <div className="signup-feature-icon">{item.icon}</div>
                       <div>
-                        <p className="text-sm font-medium text-white">{item.title}</p>
-                        <p className="text-xs text-[#9CA3AF] mt-0.5">{item.desc}</p>
+                        <p className="signup-feature-title">{item.title}</p>
+                        <p className="signup-feature-desc">{item.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-sm font-semibold transition-all hover:scale-[1.01] active:scale-[0.99]"
-                  style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
-                >
+                <button type="button" onClick={goNext} className="auth-btn-primary flex items-center justify-center gap-2">
                   Let&apos;s set up your account
                   <ArrowRight size={16} />
                 </button>
@@ -455,47 +427,38 @@ export function SignupOnboarding() {
               >
                 <div className="space-y-4 mb-6">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
-                      Full name
-                    </label>
+                    <label className="auth-label">Full name</label>
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Alex Johnson"
-                      className={inputClass}
-                      style={inputStyle}
+                      className="auth-input"
                       autoFocus
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
-                      Username
-                    </label>
+                    <label className="auth-label">Username</label>
                     <div className="relative">
-                      <AtSign
-                        size={14}
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6B7280]"
-                      />
+                      <AtSign size={14} className="signup-input-icon" />
                       <input
                         value={username}
                         onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
                         placeholder="alex_j"
-                        className={`${inputClass} pl-9`}
-                        style={inputStyle}
+                        className="auth-input signup-input-with-icon"
                         maxLength={20}
                       />
                     </div>
-                    <p className="text-[11px] text-[#6B7280] pl-1">
+                    <p className="text-[11px] signup-status-muted pl-1">
                       3–20 characters · letters, numbers, underscores
                     </p>
                     {username && (
                       <p
                         className={`text-xs pl-1 flex items-center gap-1 ${
                           checkingUsername
-                            ? "text-[#9CA3AF]"
+                            ? "signup-status-muted"
                             : usernameOk
-                              ? "text-emerald-400"
-                              : "text-red-400"
+                              ? "signup-status-ok"
+                              : "signup-status-error"
                         }`}
                       >
                         {checkingUsername ? (
@@ -515,22 +478,16 @@ export function SignupOnboarding() {
                     )}
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="px-5 py-3 rounded-full text-sm border text-[#9CA3AF] hover:text-white transition-colors"
-                    style={{ borderColor: "#374151" }}
-                  >
-                    <ArrowLeft size={16} className="inline mr-1" />
+                <div className="signup-btn-row">
+                  <button type="button" onClick={goBack} className="signup-btn-back">
+                    <ArrowLeft size={16} />
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={goNext}
                     disabled={!name.trim() || !usernameOk}
-                    className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40 transition-all"
-                    style={{ background: "#10B981", color: "#000" }}
+                    className="auth-btn-primary"
                   >
                     Continue
                   </button>
@@ -545,39 +502,33 @@ export function SignupOnboarding() {
               >
                 <div className="space-y-4 mb-6">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
-                      Email
-                    </label>
+                    <label className="auth-label">Email</label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className={inputClass}
-                      style={inputStyle}
+                      className="auth-input"
                       autoComplete="email"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
-                      Password
-                    </label>
+                    <label className="auth-label">Password</label>
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 6 characters"
-                      className={inputClass}
-                      style={inputStyle}
+                      className="auth-input"
                       autoComplete="new-password"
                     />
                     {password && (
                       <div className="space-y-1.5 pt-1">
                         <div className="flex justify-between text-[11px]">
                           <span style={{ color: passwordStrength.color }}>{passwordStrength.label}</span>
-                          <span className="text-[#6B7280]">{password.length} chars</span>
+                          <span className="signup-status-muted">{password.length} chars</span>
                         </div>
-                        <div className="h-1 rounded-full overflow-hidden" style={{ background: "#1F2937" }}>
+                        <div className="signup-strength-track">
                           <div
                             className="h-full rounded-full transition-all"
                             style={{
@@ -589,37 +540,29 @@ export function SignupOnboarding() {
                       </div>
                     )}
                     {passwordInsecure && (
-                      <p className="text-xs text-red-400 pl-1">{INSECURE_PASSWORD_MESSAGE}</p>
+                      <p className="text-xs signup-status-error pl-1">{INSECURE_PASSWORD_MESSAGE}</p>
                     )}
                     {checkingPassword && password && !passwordInsecure && (
-                      <p className="text-xs text-[#6B7280] pl-1">Checking password safety...</p>
+                      <p className="text-xs signup-status-muted pl-1">Checking password safety...</p>
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#9CA3AF] uppercase tracking-wide">
-                      Confirm password
-                    </label>
+                    <label className="auth-label">Confirm password</label>
                     <input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className={inputClass}
-                      style={inputStyle}
+                      className="auth-input"
                       autoComplete="new-password"
                     />
                     {confirmPassword && password !== confirmPassword && (
-                      <p className="text-xs text-red-400 pl-1">Passwords do not match</p>
+                      <p className="text-xs signup-status-error pl-1">Passwords do not match</p>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="px-5 py-3 rounded-full text-sm border text-[#9CA3AF]"
-                    style={{ borderColor: "#374151" }}
-                  >
+                <div className="signup-btn-row">
+                  <button type="button" onClick={goBack} className="signup-btn-back">
                     Back
                   </button>
                   <button
@@ -633,8 +576,7 @@ export function SignupOnboarding() {
                       password.length < 6 ||
                       password !== confirmPassword
                     }
-                    className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
-                    style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+                    className="auth-btn-primary"
                   >
                     {loading ? "Creating account..." : "Continue — we'll email you a link"}
                   </button>
@@ -649,19 +591,16 @@ export function SignupOnboarding() {
               >
                 {emailVerified ? (
                   <div className="text-center py-6 mb-4">
-                    <CheckCircle2 size={48} className="text-emerald-400 mx-auto mb-3" />
-                    <p className="text-sm text-white font-medium">Email confirmed!</p>
+                    <CheckCircle2 size={48} className="signup-status-ok mx-auto mb-3" />
+                    <p className="text-sm auth-aero-title font-semibold">Email confirmed!</p>
                   </div>
                 ) : (
                   <div className="space-y-4 mb-6">
-                    <div
-                      className="rounded-2xl p-5 border text-center"
-                      style={{ background: "#0B0F19", borderColor: "#1F2937" }}
-                    >
-                      <Mail size={32} className="text-emerald-400 mx-auto mb-3" />
-                      <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                    <div className="signup-inner-panel">
+                      <Mail size={32} className="mx-auto mb-3" />
+                      <p className="text-sm signup-step-subtitle mb-0 leading-relaxed">
                         Check your inbox (and spam folder) for an email from{" "}
-                        <span className="text-white/80">noreply@mail.app.supabase.io</span> with a
+                        <span className="auth-aero-title font-medium">noreply@mail.app.supabase.io</span> with a
                         confirmation link. Proton and other providers sometimes delay or filter
                         these — also check All Mail.
                       </p>
@@ -670,8 +609,7 @@ export function SignupOnboarding() {
                       type="button"
                       onClick={handleContinueAfterLink}
                       disabled={checkingEmail || !password}
-                      className="w-full py-3 rounded-full text-sm font-semibold disabled:opacity-40"
-                      style={{ background: "#10B981", color: "#000" }}
+                      className="auth-btn-primary"
                     >
                       {checkingEmail ? "Checking..." : "I've clicked the link — continue"}
                     </button>
@@ -679,40 +617,34 @@ export function SignupOnboarding() {
                       type="button"
                       onClick={handleResendLink}
                       disabled={loading || resendCooldown > 0}
-                      className="w-full text-xs text-[#9CA3AF] hover:text-emerald-400 disabled:opacity-50 transition-colors"
+                      className="signup-text-btn"
                     >
                       {resendCooldown > 0
                         ? `Resend link in ${resendCooldown}s`
                         : "Didn't get it? Resend confirmation link"}
                     </button>
                     {linkResent && (
-                      <p className="text-xs text-emerald-400 text-center">
+                      <p className="text-xs signup-status-ok text-center">
                         Link sent again — check spam and wait a minute.
                       </p>
                     )}
-                    <p className="text-xs text-[#6B7280] text-center">
+                    <p className="text-xs signup-status-muted text-center">
                       Already have an account?{" "}
-                      <Link to="/login" className="text-emerald-400 hover:text-emerald-300">
+                      <Link to="/login" className="auth-link">
                         Sign in instead
                       </Link>
                     </p>
                   </div>
                 )}
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="px-5 py-3 rounded-full text-sm border text-[#9CA3AF]"
-                    style={{ borderColor: "#374151" }}
-                  >
+                <div className="signup-btn-row">
+                  <button type="button" onClick={goBack} className="signup-btn-back">
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={goNext}
                     disabled={!emailVerified}
-                    className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
-                    style={{ background: "#10B981", color: "#000" }}
+                    className="auth-btn-primary"
                   >
                     Continue
                   </button>
@@ -726,17 +658,11 @@ export function SignupOnboarding() {
                 subtitle="A photo helps neighbors recognize you. Totally optional — you can always add one later."
               >
                 <div className="flex flex-col items-center mb-6">
-                  <div
-                    className="relative w-28 h-28 rounded-full flex items-center justify-center overflow-hidden border-2 mb-4"
-                    style={{
-                      borderColor: avatarPreview ? "#10B981" : "#374151",
-                      background: "linear-gradient(135deg, #10B981, #06B6D4)",
-                    }}
-                  >
+                  <div className="signup-avatar-ring">
                     {avatarPreview ? (
-                      <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={avatarPreview} alt="Preview" />
                     ) : (
-                      <span className="text-2xl font-bold text-black">
+                      <span className="signup-avatar-initials">
                         {name ? getInitials(name) : <User size={32} />}
                       </span>
                     )}
@@ -744,9 +670,9 @@ export function SignupOnboarding() {
                       <button
                         type="button"
                         onClick={() => handleAvatarChange(null)}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center"
+                        className="signup-avatar-remove"
                       >
-                        <X size={12} className="text-white" />
+                        <X size={12} />
                       </button>
                     )}
                   </div>
@@ -760,28 +686,21 @@ export function SignupOnboarding() {
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-medium border transition-all hover:border-emerald-500/50"
-                    style={{ borderColor: "#374151", color: "#9CA3AF" }}
+                    className="signup-upload-btn"
                   >
                     {avatarPreview ? <Camera size={14} /> : <Upload size={14} />}
                     {avatarPreview ? "Choose a different photo" : "Upload a photo"}
                   </button>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="px-5 py-3 rounded-full text-sm border text-[#9CA3AF]"
-                    style={{ borderColor: "#374151" }}
-                  >
+                <div className="signup-btn-row">
+                  <button type="button" onClick={goBack} className="signup-btn-back">
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={() => handlePhotoContinue(!avatarFile)}
                     disabled={loading}
-                    className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
-                    style={{ background: "#10B981", color: "#000" }}
+                    className="auth-btn-primary"
                   >
                     {loading ? "Uploading..." : avatarFile ? "Save & continue" : "Skip for now"}
                   </button>
@@ -795,21 +714,15 @@ export function SignupOnboarding() {
                 subtitle="This powers your nearby map and local listings. Search any city worldwide, or use detect as a shortcut."
               >
                 <LocationPicker onSaved={handleLocationSaved} compact showSuccessMessage />
-                <div className="flex gap-3 mt-4">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    className="px-5 py-3 rounded-full text-sm border text-[#9CA3AF]"
-                    style={{ borderColor: "#374151" }}
-                  >
+                <div className="signup-btn-row mt-4">
+                  <button type="button" onClick={goBack} className="signup-btn-back">
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={goNext}
                     disabled={!locationSaved}
-                    className="flex-1 py-3 rounded-full text-sm font-semibold disabled:opacity-40"
-                    style={{ background: "#10B981", color: "#000" }}
+                    className="auth-btn-primary"
                   >
                     {locationSaved ? "Continue" : "Save location to continue"}
                   </button>
@@ -819,38 +732,29 @@ export function SignupOnboarding() {
 
             {step === 6 && (
               <div className="text-center py-4">
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2))",
-                    border: "2px solid rgba(16,185,129,0.4)",
-                  }}
-                >
-                  <Sparkles size={36} className="text-emerald-400" />
+                <div className="signup-done-icon">
+                  <Sparkles size={36} />
                 </div>
-                <h2 className="text-2xl font-semibold text-white mb-2">
-                  You&apos;re all set, {firstName}!
-                </h2>
-                <p className="text-sm text-[#9CA3AF] mb-2">
+                <h2 className="signup-step-title text-center">You&apos;re all set, {firstName}!</h2>
+                <p className="signup-step-subtitle text-center mb-2">
                   Welcome to ChronoShare
                   {user?.username ? `, @${user.username}` : ""}.
                 </p>
                 {savedLocation && (
-                  <p className="text-xs text-emerald-400/80 mb-6 flex items-center justify-center gap-1">
+                  <p className="signup-location-tag">
                     <MapPin size={12} />
                     Based in {formatLocationLabel(savedLocation)}
                   </p>
                 )}
-                <p className="text-sm text-[#9CA3AF] mb-8 leading-relaxed">
-                  You start with <span className="text-emerald-400 font-medium">1 hour</span> in your
+                <p className="signup-step-subtitle text-center mb-8">
+                  You start with <span className="signup-highlight">1 hour</span> in your
                   bank. Browse nearby listings or post your first offer — we&apos;ll show you around.
                 </p>
                 <button
                   type="button"
                   onClick={handleFinish}
                   disabled={loading}
-                  className="w-full py-3.5 rounded-full text-sm font-semibold transition-all hover:scale-[1.01] disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #10B981, #06B6D4)", color: "#000" }}
+                  className="auth-btn-primary"
                 >
                   {loading ? "Opening dashboard..." : "Enter ChronoShare"}
                 </button>

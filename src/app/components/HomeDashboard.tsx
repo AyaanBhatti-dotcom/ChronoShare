@@ -199,7 +199,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
 
       {/* Map */}
       {locationLoading ? (
-        <div className="dash-card h-[340px] rounded-2xl flex items-center justify-center">
+        <div className="dash-card dash-map-skeleton rounded-2xl flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 dash-spinner border-t-transparent animate-spin" />
         </div>
       ) : userLocation ? (
@@ -350,16 +350,16 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
             {user?.hoursAvailable.toFixed(1) ?? "0.0"}
           </p>
           <p className="dash-accent-grass text-sm mb-4">Hours</p>
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2">
             <button
               onClick={() => onNavigate("post", { postType: "offers" })}
-              className="dash-btn-primary px-5 py-2 rounded-full text-xs font-semibold"
+              className="dash-btn-primary px-5 py-2 rounded-full text-xs font-semibold w-full sm:w-auto"
             >
               Offer Time
             </button>
             <button
               onClick={() => onNavigate("post", { postType: "needs" })}
-              className="dash-btn-outline px-5 py-2 rounded-full text-xs font-semibold"
+              className="dash-btn-outline px-5 py-2 rounded-full text-xs font-semibold w-full sm:w-auto"
             >
               Request Time
             </button>

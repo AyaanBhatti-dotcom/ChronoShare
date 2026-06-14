@@ -114,7 +114,7 @@ export function NearbyMap({
           zoom={10}
           scrollWheelZoom={false}
           zoomControl={false}
-          className="dash-map-leaflet h-[340px] w-full z-0"
+          className="dash-map-leaflet w-full z-0"
           style={{ background: "#a8d4f0" }}
         >
           <ZoomControl position="topleft" />

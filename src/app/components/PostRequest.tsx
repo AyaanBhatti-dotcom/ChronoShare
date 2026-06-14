@@ -236,7 +236,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
 
             <div className="space-y-2">
               <label className="dash-label">Category</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {categories.map((cat) => {
                   const active = category === cat.id;
                   return (
@@ -283,7 +283,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                   <Plus size={16} />
                 </button>
               </div>
-              <div className="flex justify-between px-1">
+              <div className="flex flex-wrap justify-center gap-1 sm:justify-between sm:px-1">
                 {[0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map((v) => (
                   <button
                     key={v}
