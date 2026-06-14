@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import RotatingEarth from "./ui/wireframe-dotted-globe";
 import {
   POOL_RULES,
   fetchPoolEligibility,
@@ -140,20 +141,12 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
 
             <div className="flex items-center gap-2 pool-body mt-3">
               <Droplets size={14} className="dash-accent flex-shrink-0" />
-              <span>
-                {loading
-                  ? "Funded by donations · separate from offer minting"
-                  : `${totalDonated.toFixed(1)}h donated in total · separate from offer minting`}
-              </span>
+              <span>Funded by donations · separate from offer minting</span>
             </div>
           </div>
 
-          <div className="pool-hero-well">
-            <PoolWell
-              totalDonated={totalDonated}
-              poolBalance={eligibility?.poolBalance ?? 0}
-              loading={loading}
-            />
+          <div className="pool-hero-globe">
+            <RotatingEarth height={280} className="h-full" />
           </div>
 
           <Sparkles
@@ -284,47 +277,59 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
         <PoolWaveDivider />
 
         <section className="pool-band" aria-labelledby="pool-donate-heading">
-          <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
-            <div className="pool-section-head mb-0">
-              <Gift size={16} className="dash-accent" />
-              <h3 id="pool-donate-heading" className="pool-section-title">
-                Donate hours
-              </h3>
-            </div>
-            {user && (
-              <p className="pool-label">
-                Your balance:{" "}
-                <span className="font-bold dash-heading">{user.hoursAvailable.toFixed(1)}h</span>
+          <div className="pool-donate-layout">
+            <div className="pool-donate-copy">
+              <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
+                <div className="pool-section-head mb-0">
+                  <Gift size={16} className="dash-accent" />
+                  <h3 id="pool-donate-heading" className="pool-section-title">
+                    Donate hours
+                  </h3>
+                </div>
+                {user && (
+                  <p className="pool-label">
+                    Your balance:{" "}
+                    <span className="font-bold dash-heading">{user.hoursAvailable.toFixed(1)}h</span>
+                  </p>
+                )}
+              </div>
+
+              <p className="pool-body max-w-2xl">
+                Give back to the community. Donors get credit toward pool access — each hour donated in the
+                last 90 days counts as one help toward the requirement.
               </p>
-            )}
-          </div>
 
-          <p className="pool-body max-w-2xl">
-            Give back to the community. Donors get credit toward pool access — each hour donated in the
-            last 90 days counts as one help toward the requirement.
-          </p>
+              <div className="pool-donate-row">
+                {DONATE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setDonateAmount(preset)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      donateAmount === preset ? "dash-pill-active" : "dash-pill-inactive"
+                    }`}
+                  >
+                    {preset}h
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={donating || !user || user.hoursAvailable < donateAmount}
+                  onClick={handleDonate}
+                  className="dash-btn-secondary px-6 py-2.5 rounded-full text-sm font-medium disabled:opacity-45"
+                >
+                  {donating ? "Donating…" : `Donate ${donateAmount}h to pool`}
+                </button>
+              </div>
+            </div>
 
-          <div className="pool-donate-row">
-            {DONATE_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setDonateAmount(preset)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  donateAmount === preset ? "dash-pill-active" : "dash-pill-inactive"
-                }`}
-              >
-                {preset}h
-              </button>
-            ))}
-            <button
-              type="button"
-              disabled={donating || !user || user.hoursAvailable < donateAmount}
-              onClick={handleDonate}
-              className="dash-btn-secondary px-6 py-2.5 rounded-full text-sm font-medium disabled:opacity-45"
-            >
-              {donating ? "Donating…" : `Donate ${donateAmount}h to pool`}
-            </button>
+            <div className="pool-donate-well">
+              <PoolWell
+                totalDonated={totalDonated}
+                poolBalance={eligibility?.poolBalance ?? 0}
+                loading={loading}
+              />
+            </div>
           </div>
         </section>
 

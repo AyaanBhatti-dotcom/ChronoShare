@@ -3416,13 +3416,29 @@ html {
     border-radius: 50%;
   }
 
-  .pool-hero-well {
-    position: relative;
-    z-index: 1;
+  .pool-donate-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .pool-donate-layout {
+      grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr);
+      gap: 2rem;
+    }
+  }
+
+  .pool-donate-well {
     display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: 240px;
+  }
+
+  @media (min-width: 768px) {
+    .pool-donate-well {
+      justify-content: flex-end;
+    }
   }
 
   .pool-well {
