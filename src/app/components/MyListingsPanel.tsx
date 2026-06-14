@@ -11,7 +11,7 @@ import {
   reopenPost,
   deletePost,
 } from "../../lib/posts";
-import { fetchMatchedPostIds, fetchExchangeInfoForPosts } from "../../lib/exchanges";
+import { fetchMatchedPostIds, fetchExchangeInfoForPosts, fetchExchangesForPosts } from "../../lib/exchanges";
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
 import {
   canEditListing,
@@ -21,6 +21,8 @@ import {
 } from "../../lib/listing-status";
 import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import type { Post } from "../../types/database";
+import type { ExchangeWithProfiles } from "../../types/database";
+import { ExchangeDetailModal } from "./ExchangeDetailModal";
 
 const categories = [
   { id: "Tech", label: "Tech", icon: <Monitor size={16} /> },
@@ -79,6 +81,10 @@ export function MyListingsPanel({
   const [exchangeByPostId, setExchangeByPostId] = useState<Map<string, PostExchangeInfo>>(
     () => new Map(),
   );
+  const [fullExchangeByPostId, setFullExchangeByPostId] = useState<Map<string, ExchangeWithProfiles>>(
+    () => new Map(),
+  );
+  const [detailPost, setDetailPost] = useState<Post | null>(null);
 
   const loadMyPosts = useCallback(async () => {
     if (!user) return;
@@ -86,13 +92,15 @@ export function MyListingsPanel({
     try {
       const data = await fetchMyPosts(user.userId);
       const postIds = data.map((p) => p.id);
-      const [matchedIds, exchangeMap] = await Promise.all([
+      const [matchedIds, exchangeMap, fullExchangeMap] = await Promise.all([
         fetchMatchedPostIds(),
         fetchExchangeInfoForPosts(postIds),
+        fetchExchangesForPosts(postIds),
       ]);
       setMyPosts(data);
       setMatchedPostIds(new Set(matchedIds));
       setExchangeByPostId(exchangeMap);
+      setFullExchangeByPostId(fullExchangeMap);
 
       const openCount = data.filter(
         (p) => getListingDisplayStatus(p, exchangeMap.get(p.id)).kind === "open",
@@ -395,6 +403,13 @@ export function MyListingsPanel({
         const displayStatus = getListingDisplayStatus(post, exchangeInfo);
         const editable = canEditListing(post, exchangeInfo);
         const isLiveOnBoard = displayStatus.kind === "open";
+        const canViewDetails =
+          displayStatus.kind === "pending" || displayStatus.kind === "done";
+        const openDetails = () => {
+          if (canViewDetails && fullExchangeByPostId.has(post.id)) {
+            setDetailPost(post);
+          }
+        };
 
         const statusBadge = (
           <span
@@ -410,7 +425,10 @@ export function MyListingsPanel({
             {editable && (
               <button
                 type="button"
-                onClick={() => startEdit(post)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEdit(post);
+                }}
                 disabled={actionId === post.id || isPreview}
                 className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
               >
@@ -422,7 +440,10 @@ export function MyListingsPanel({
               <>
                 <button
                   type="button"
-                  onClick={() => handleCloseListing(post.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseListing(post.id);
+                  }}
                   disabled={actionId === post.id}
                   className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
                 >
@@ -431,7 +452,10 @@ export function MyListingsPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDeleteListing(post.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteListing(post.id);
+                  }}
                   disabled={actionId === post.id}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
                 >
@@ -444,7 +468,10 @@ export function MyListingsPanel({
                 {!matchedPostIds.has(post.id) && (
                   <button
                     type="button"
-                    onClick={() => handleReopenListing(post.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReopenListing(post.id);
+                    }}
                     disabled={actionId === post.id}
                     className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
                   >
@@ -454,7 +481,10 @@ export function MyListingsPanel({
                 )}
                 <button
                   type="button"
-                  onClick={() => handleDeleteListing(post.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteListing(post.id);
+                  }}
                   disabled={actionId === post.id}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
                 >
@@ -465,7 +495,10 @@ export function MyListingsPanel({
             ) : displayStatus.kind === "done" || displayStatus.kind === "archived" ? (
               <button
                 type="button"
-                onClick={() => handleDeleteListing(post.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteListing(post.id);
+                }}
                 disabled={actionId === post.id || matchedPostIds.has(post.id)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
               >
@@ -478,7 +511,23 @@ export function MyListingsPanel({
 
         if (isProfile) {
           return (
-            <div key={post.id} className={`flex flex-col gap-3 px-5 py-4 transition-colors ${isProfile ? "profile-listing-row" : "hover:bg-white/20"}`}>
+            <div
+              key={post.id}
+              className={`flex flex-col gap-3 px-5 py-4 transition-colors ${isProfile ? "profile-listing-row" : "hover:bg-white/20"} ${canViewDetails ? "cursor-pointer hover:bg-white/15" : ""}`}
+              onClick={canViewDetails ? openDetails : undefined}
+              onKeyDown={
+                canViewDetails
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openDetails();
+                      }
+                    }
+                  : undefined
+              }
+              role={canViewDetails ? "button" : undefined}
+              tabIndex={canViewDetails ? 0 : undefined}
+            >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>
@@ -493,8 +542,13 @@ export function MyListingsPanel({
                 {post.description && (
                   <p className="text-xs dash-subtext mt-1 line-clamp-2">{post.description}</p>
                 )}
+                {canViewDetails && (
+                  <p className="text-[10px] dash-subtext mt-1 opacity-70">Tap for exchange details</p>
+                )}
               </div>
+              <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
               {actions}
+              </div>
             </div>
           );
         }
@@ -502,7 +556,20 @@ export function MyListingsPanel({
         return (
           <article
             key={post.id}
-            className={`listing-studio-card ${post.post_type === "needs" ? "listing-studio-card-needs" : ""}`}
+            className={`listing-studio-card ${post.post_type === "needs" ? "listing-studio-card-needs" : ""} ${canViewDetails ? "cursor-pointer hover:brightness-[1.02]" : ""}`}
+            onClick={canViewDetails ? openDetails : undefined}
+            onKeyDown={
+              canViewDetails
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openDetails();
+                    }
+                  }
+                : undefined
+            }
+            role={canViewDetails ? "button" : undefined}
+            tabIndex={canViewDetails ? 0 : undefined}
           >
             <div className="listing-studio-card-head">
               <div className="listing-studio-cat-bubble">{categoryIcon(post.category)}</div>
@@ -529,27 +596,45 @@ export function MyListingsPanel({
                 {post.description && (
                   <p className="text-xs dash-subtext mt-2 line-clamp-2 leading-relaxed">{post.description}</p>
                 )}
+                {canViewDetails && (
+                  <p className="text-[10px] dash-subtext mt-2 opacity-70">Tap for exchange details</p>
+                )}
               </div>
             </div>
+            <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
             {actions}
+            </div>
           </article>
         );
       })}
     </>
   );
 
+  const detailModal = (
+    <ExchangeDetailModal
+      exchange={detailPost ? fullExchangeByPostId.get(detailPost.id) ?? null : null}
+      userId={user?.userId}
+      description={detailPost?.description}
+      onClose={() => setDetailPost(null)}
+    />
+  );
+
   if (isProfile) {
     const scrollLocked = scrollClassName !== "max-h-none";
     return (
-      <div
-        className={`divide-y dash-divider ${scrollLocked ? `overflow-y-auto ${scrollClassName ?? "max-h-80"}` : ""}`}
-      >
-        {listContent}
-      </div>
+      <>
+        <div
+          className={`divide-y dash-divider ${scrollLocked ? `overflow-y-auto ${scrollClassName ?? "max-h-80"}` : ""}`}
+        >
+          {listContent}
+        </div>
+        {detailModal}
+      </>
     );
   }
 
   return (
+    <>
     <div className="listing-studio">
       <div className="listing-studio-summary">
         <div className="listing-studio-stat">
@@ -571,5 +656,7 @@ export function MyListingsPanel({
       </div>
       {listContent}
     </div>
+    {detailModal}
+    </>
   );
 }

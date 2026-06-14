@@ -43,6 +43,7 @@ import { ProfileMobile } from "./profile/ProfileMobile";
 import { useIsMobile } from "./ui/use-mobile";
 import { MyListingsPanel } from "./MyListingsPanel";
 import { MemberProfileModal } from "./MemberProfileModal";
+import { ExchangeDetailModal } from "./ExchangeDetailModal";
 import { fetchMyPosts } from "../../lib/posts";
 import {
   isProfileDesktopHintPending,
@@ -151,6 +152,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
   const desktopLayerRef = useRef<HTMLDivElement>(null);
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [viewingMemberLabel, setViewingMemberLabel] = useState<string | undefined>();
+  const [selectedExchange, setSelectedExchange] = useState<ExchangeWithProfiles | null>(null);
   const [showDesktopHint, setShowDesktopHint] = useState(false);
 
   const getWindowState = useCallback(
@@ -274,6 +276,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
       await confirmExchange(exchangeId);
       await refreshUser();
       await loadExchanges();
+      setSelectedExchange(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not confirm exchange");
     }
@@ -288,6 +291,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
       await cancelExchange(exchangeId);
       await refreshUser();
       await loadExchanges();
+      setSelectedExchange(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not cancel exchange");
     }
@@ -781,7 +785,19 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
                 const partnerConfirmed = user ? isPartnerConfirmed(ex, user.userId) : false;
                 const isSkillOfferRequest = ex.post_type === "offers" && user?.userId === ex.poster_id;
                 return (
-                  <div key={ex.id} className={`flex flex-col gap-3 px-5 py-4 ${pendingMaximized ? "profile-pending-card" : ""}`}>
+                  <div
+                    key={ex.id}
+                    className={`flex flex-col gap-3 px-5 py-4 cursor-pointer hover:bg-white/15 transition-colors ${pendingMaximized ? "profile-pending-card" : ""}`}
+                    onClick={() => setSelectedExchange(ex)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedExchange(ex);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium dash-heading">{ex.title}</p>
                       <p className="text-xs dash-subtext">
@@ -811,7 +827,11 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
                         {partner.name.split(" ")[0]} {partnerConfirmed ? "confirmed" : "pending"}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div
+                      className="flex flex-wrap items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <button
                         type="button"
                         onClick={() => openMemberProfile(ex)}
@@ -942,7 +962,19 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
                 </div>
               )}
               {filtered.map((item) => (
-                <div key={item.id} className={`${ledgerMaximized ? "profile-ledger-row" : "flex items-center gap-4 px-5 py-3.5 hover:bg-white/30 transition-colors"}`}>
+                <div
+                  key={item.id}
+                  className={`${ledgerMaximized ? "profile-ledger-row" : "flex items-center gap-4 px-5 py-3.5 hover:bg-white/30 transition-colors cursor-pointer"} ${ledgerMaximized ? "cursor-pointer hover:bg-white/20" : ""}`}
+                  onClick={() => setSelectedExchange(item.raw)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedExchange(item.raw);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <div
                     className={`${ledgerMaximized ? "profile-ledger-type" : "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"} ${
                       item.type === "given"
@@ -1109,6 +1141,17 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
           <p className="profile-egg-body">{eggToast.body}</p>
         </div>
       )}
+
+      <ExchangeDetailModal
+        exchange={selectedExchange}
+        userId={user?.userId}
+        onClose={() => setSelectedExchange(null)}
+        onViewPartner={openMemberProfile}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        actionId={actionId}
+        isPreview={isPreview}
+      />
 
       <MemberProfileModal
         userId={viewingMemberId}

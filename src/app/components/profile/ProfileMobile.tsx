@@ -26,6 +26,7 @@ import {
 } from "../../../lib/exchanges";
 import { MyListingsPanel } from "../MyListingsPanel";
 import { MemberProfileModal } from "../MemberProfileModal";
+import { ExchangeDetailModal } from "../ExchangeDetailModal";
 import type { BoardTab } from "../JobBoard";
 
 type HistoryTab = "all" | "given" | "received";
@@ -104,6 +105,7 @@ export function ProfileMobile({
   );
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [viewingMemberLabel, setViewingMemberLabel] = useState<string | undefined>();
+  const [selectedExchange, setSelectedExchange] = useState<ExchangeWithProfiles | null>(null);
 
   const openMemberProfile = (exchange: ExchangeWithProfiles) => {
     if (!user) return;
@@ -251,7 +253,19 @@ export function ProfileMobile({
                   const isSkillOfferRequest = ex.post_type === "offers" && user?.userId === ex.poster_id;
 
                   return (
-                    <div key={ex.id} className="p-4 space-y-3">
+                    <div
+                      key={ex.id}
+                      className="p-4 space-y-3 cursor-pointer hover:bg-white/10 transition-colors"
+                      onClick={() => setSelectedExchange(ex)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedExchange(ex);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
                       <div>
                         <p className="text-sm font-semibold dash-heading">{ex.title}</p>
                         <p className="text-xs dash-subtext mt-1">
@@ -267,7 +281,11 @@ export function ProfileMobile({
                           {partner.name.split(" ")[0]} {partnerConfirmed ? "confirmed" : "pending"}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div
+                        className="flex flex-wrap gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
                         <button
                           type="button"
                           onClick={() => openMemberProfile(ex)}
@@ -335,7 +353,19 @@ export function ProfileMobile({
             ) : (
               <div className="divide-y dash-divider">
                 {filtered.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 px-4 py-3.5">
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-white/10 transition-colors"
+                    onClick={() => setSelectedExchange(item.raw)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedExchange(item.raw);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                         item.type === "given"
@@ -394,6 +424,26 @@ export function ProfileMobile({
           </div>
         )}
       </section>
+
+      <ExchangeDetailModal
+        exchange={selectedExchange}
+        userId={user?.userId}
+        onClose={() => setSelectedExchange(null)}
+        onViewPartner={(exchange) => {
+          setSelectedExchange(null);
+          openMemberProfile(exchange);
+        }}
+        onConfirm={(id) => {
+          onConfirm(id);
+          setSelectedExchange(null);
+        }}
+        onCancel={(id) => {
+          onCancel(id);
+          setSelectedExchange(null);
+        }}
+        actionId={actionId}
+        isPreview={isPreview}
+      />
 
       <MemberProfileModal
         userId={viewingMemberId}

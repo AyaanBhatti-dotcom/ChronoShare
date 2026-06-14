@@ -33,6 +33,7 @@ import { formatExchangeFormat } from "../../lib/exchange-format";
 import { NearbyMap } from "./NearbyMap";
 import { LocationPicker } from "./LocationPicker";
 import { ListingScopeToggle } from "./ListingScopeToggle";
+import { ExchangeDetailModal } from "./ExchangeDetailModal";
 import { Slider } from "./ui/slider";
 import type { BoardTab } from "./JobBoard";
 
@@ -57,6 +58,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const [needsYourConfirm, setNeedsYourConfirm] = useState(0);
   const [joinedPostIds, setJoinedPostIds] = useState<Set<string>>(() => new Set());
   const [selectedMapPost, setSelectedMapPost] = useState<NearbyPost | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<ExchangeWithProfiles | null>(null);
 
   const handleScopeChange = (next: ListingScope) => {
     setScope(next);
@@ -423,7 +425,12 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                 const partner = user ? getExchangePartner(ex, user.userId) : { name: t("common.user"), role: "helper" as const };
                 const hourType = user ? getExchangeHourType(ex, user.userId) : "free";
                 return (
-                  <div key={ex.id} className="flex items-center gap-3 px-5 py-3">
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => setSelectedExchange(ex)}
+                    className="flex items-center gap-3 px-5 py-3 w-full text-left hover:bg-white/10 transition-colors"
+                  >
                     <div className="dash-avatar w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-semibold">
                       {getInitials(partner.name)}
                     </div>
@@ -446,13 +453,19 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
                       {hourType === "earned" ? <ArrowUpRight size={10} /> : hourType === "spent" ? <ArrowDownRight size={10} /> : null}
                       {hourType === "free" ? t("home.free") : `${hourType === "earned" ? "+" : "-"}${ex.hours}h`}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           )}
         </div>
       </div>
+
+      <ExchangeDetailModal
+        exchange={selectedExchange}
+        userId={user?.userId}
+        onClose={() => setSelectedExchange(null)}
+      />
     </div>
   );
 };

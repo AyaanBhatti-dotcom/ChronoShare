@@ -16,6 +16,7 @@ import type { ExchangeWithProfiles } from "../../types/database";
 import { dashColors } from "./onboarding/aeroTheme";
 import { formatExchangeFormat } from "../../lib/exchange-format";
 import { MemberProfileModal } from "./MemberProfileModal";
+import { ExchangeDetailModal } from "./ExchangeDetailModal";
 
 const categories = ["All", "Tech", "Labor", "Education", "Music", "Cooking", "Design"];
 
@@ -54,6 +55,7 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
   const [loading, setLoading] = useState(true);
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [viewingMemberLabel, setViewingMemberLabel] = useState<string | undefined>();
+  const [selectedExchange, setSelectedExchange] = useState<ExchangeWithProfiles | null>(null);
 
   const loadPastJobs = useCallback(async () => {
     if (!user) {
@@ -127,12 +129,22 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
           return (
             <article
               key={ex.id}
-              className="dash-card rounded-2xl p-5 flex flex-col gap-4 text-left"
+              className="dash-card dash-card-hover rounded-2xl p-5 flex flex-col gap-4 text-left cursor-pointer transition-all duration-200"
+              onClick={() => setSelectedExchange(ex)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedExchange(ex);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="flex items-start gap-3">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setViewingMemberId(getExchangePartnerId(ex, user.userId));
                     setViewingMemberLabel(roleLabel);
                   }}
@@ -195,7 +207,8 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
 
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setViewingMemberId(getExchangePartnerId(ex, user.userId));
                   setViewingMemberLabel(roleLabel);
                 }}
@@ -208,6 +221,18 @@ export function PastJobsPanel({ mode, category, search }: PastJobsPanelProps) {
           );
         })}
       </div>
+
+      <ExchangeDetailModal
+        exchange={selectedExchange}
+        userId={user?.userId}
+        onClose={() => setSelectedExchange(null)}
+        onViewPartner={(exchange) => {
+          if (!user) return;
+          setSelectedExchange(null);
+          setViewingMemberId(getExchangePartnerId(exchange, user.userId));
+          setViewingMemberLabel(getExchangePartnerLabel(exchange, user.userId));
+        }}
+      />
 
       <MemberProfileModal
         userId={viewingMemberId}

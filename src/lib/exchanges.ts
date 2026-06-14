@@ -113,6 +113,28 @@ export async function fetchMatchedPostIds(): Promise<string[]> {
   return [...new Set((data ?? []).map((row) => row.post_id as string))];
 }
 
+export async function fetchExchangesForPosts(
+  postIds: string[],
+): Promise<Map<string, ExchangeWithProfiles>> {
+  if (postIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("exchanges")
+    .select(EXCHANGE_SELECT)
+    .in("post_id", postIds)
+    .in("status", ["pending", "completed"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const withProfiles = await attachExchangeProfiles((data ?? []) as Exchange[]);
+  const map = new Map<string, ExchangeWithProfiles>();
+  for (const ex of withProfiles) {
+    if (!map.has(ex.post_id)) map.set(ex.post_id, ex);
+  }
+  return map;
+}
+
 export async function fetchExchangeInfoForPosts(
   postIds: string[],
 ): Promise<Map<string, PostExchangeInfo>> {
