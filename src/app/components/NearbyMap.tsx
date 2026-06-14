@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Clock, MapPin, X } from "lucide-react";
@@ -104,6 +104,66 @@ function MapFocusPost({ post }: { post: NearbyPost | null | undefined }) {
 
 function postTypeLabel(postType: "needs" | "offers"): string {
   return postType === "needs" ? "Needs help" : "Offering skill";
+}
+
+function MapPopupContent({
+  post,
+  worldwide,
+  onSelectPost,
+}: {
+  post: NearbyPost;
+  worldwide: boolean;
+  onSelectPost?: (post: NearbyPost) => void;
+}) {
+  const map = useMap();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const authorName = post.profiles?.full_name ?? "Community member";
+  const isNeeds = post.post_type === "needs";
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+  }, []);
+
+  const handleViewDetails = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    map.closePopup();
+    onSelectPost?.(post);
+  };
+
+  return (
+    <div ref={containerRef} className="dash-map-popup">
+      <span
+        className={`dash-map-type-pill ${isNeeds ? "dash-map-type-pill-needs" : "dash-map-type-pill-offers"}`}
+      >
+        {postTypeLabel(post.post_type)}
+      </span>
+      <p className="dash-map-popup-author">{authorName}</p>
+      <p className="dash-map-popup-title">{post.title}</p>
+      {post.description && (
+        <p className="dash-map-popup-desc">{post.description}</p>
+      )}
+      <p className="dash-map-popup-meta">
+        {formatPostLocation(post)}
+        {!worldwide && post.distanceMiles != null && (
+          <> · {formatDistance(post.distanceMiles)}</>
+        )}
+        {" · "}
+        {post.hours_cost}h
+      </p>
+      <button
+        type="button"
+        className="dash-map-popup-btn"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={handleViewDetails}
+      >
+        View details
+      </button>
+    </div>
+  );
 }
 
 interface MapListingDetailProps {
@@ -265,50 +325,21 @@ export function NearbyMap({
               <Popup>You are here</Popup>
             </Marker>
           )}
-          {mapPosts.map((post) => {
-            const authorName = post.profiles?.full_name ?? "Community member";
-            const isNeeds = post.post_type === "needs";
-            return (
+          {mapPosts.map((post) => (
               <Marker
                 key={post.id}
                 position={[post.latitude!, post.longitude!]}
                 icon={postIconForType(post.post_type)}
-                eventHandlers={{
-                  click: () => onSelectPost?.(post),
-                }}
               >
-                <Popup>
-                  <div className="dash-map-popup">
-                    <span
-                      className={`dash-map-type-pill ${isNeeds ? "dash-map-type-pill-needs" : "dash-map-type-pill-offers"}`}
-                    >
-                      {postTypeLabel(post.post_type)}
-                    </span>
-                    <p className="dash-map-popup-author">{authorName}</p>
-                    <p className="dash-map-popup-title">{post.title}</p>
-                    {post.description && (
-                      <p className="dash-map-popup-desc">{post.description}</p>
-                    )}
-                    <p className="dash-map-popup-meta">
-                      {formatPostLocation(post)}
-                      {!worldwide && post.distanceMiles != null && (
-                        <> · {formatDistance(post.distanceMiles)}</>
-                      )}
-                      {" · "}
-                      {post.hours_cost}h
-                    </p>
-                    <button
-                      type="button"
-                      className="dash-map-popup-btn"
-                      onClick={() => onSelectPost?.(post)}
-                    >
-                      View details
-                    </button>
-                  </div>
+                <Popup closeOnClick={false}>
+                  <MapPopupContent
+                    post={post}
+                    worldwide={worldwide}
+                    onSelectPost={onSelectPost}
+                  />
                 </Popup>
               </Marker>
-            );
-          })}
+            ))}
         </MapContainer>
       </div>
 
