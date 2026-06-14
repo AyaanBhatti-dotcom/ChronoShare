@@ -27,7 +27,7 @@ export interface PoolTransaction {
   amount: number;
   transaction_type: "donation" | "claim";
   created_at: string;
-  profiles?: { full_name: string | null } | null;
+  profiles?: { full_name: string | null; avatar_url: string | null } | null;
 }
 
 export interface PoolEligibility {
@@ -183,10 +183,10 @@ export async function fetchPoolEligibility(userId: string): Promise<PoolEligibil
   };
 }
 
-export async function fetchRecentPoolActivity(limit = 8): Promise<PoolTransaction[]> {
+export async function fetchRecentPoolActivity(limit = 12): Promise<PoolTransaction[]> {
   const { data, error } = await supabase
     .from("community_pool_transactions")
-    .select("id, user_id, amount, transaction_type, created_at, profiles(full_name)")
+    .select("id, user_id, amount, transaction_type, created_at, profiles(full_name, avatar_url)")
     .order("created_at", { ascending: false })
     .limit(limit);
 

@@ -412,8 +412,6 @@ export default function RotatingEarth({
           boxShadow: "0 2px 10px rgba(26, 95, 122, 0.12)",
         }}
       >
-        <span className="hidden sm:inline">Drag to rotate · Scroll to zoom · </span>
-        <span className="sm:hidden">Drag to explore · </span>
         One global community
       </div>
     </div>

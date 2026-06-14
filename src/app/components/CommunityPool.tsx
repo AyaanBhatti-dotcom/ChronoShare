@@ -12,7 +12,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { dashColors } from "./onboarding/aeroTheme";
 import RotatingEarth from "./ui/wireframe-dotted-globe";
 import {
   POOL_RULES,
@@ -24,6 +23,7 @@ import {
   type PoolEligibility,
   type PoolTransaction,
 } from "../../lib/community-pool";
+import { PoolActivityFeed } from "./pool/PoolActivityFeed";
 
 interface CommunityPoolProps {
   onNavigate: (screen: string, options?: { boardMode?: "all" | "needs" | "offers" }) => void;
@@ -351,25 +351,10 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
               <h3 id="pool-activity-heading" className="pool-section-title">
                 Recent pool activity
               </h3>
-              <ul className="pool-timeline-list">
-                {activity.map((tx) => (
-                  <li key={tx.id} className="pool-timeline-item">
-                    <span className="truncate">
-                      {tx.profiles?.full_name ?? "Someone"}{" "}
-                      {tx.transaction_type === "donation" ? "donated" : "claimed"}
-                    </span>
-                    <span
-                      className="font-semibold tabular-nums flex-shrink-0"
-                      style={{
-                        color: tx.transaction_type === "donation" ? dashColors.earn : dashColors.spend,
-                      }}
-                    >
-                      {tx.transaction_type === "donation" ? "+" : "−"}
-                      {Number(tx.amount).toFixed(1)}h
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="pool-body mt-1 mb-0 max-w-xl">
+                Neighbors who donated or claimed hours — tap a photo to view their profile.
+              </p>
+              <PoolActivityFeed activity={activity} />
             </section>
           </>
         )}
