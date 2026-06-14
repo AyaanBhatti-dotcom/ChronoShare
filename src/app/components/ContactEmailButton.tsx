@@ -1,29 +1,26 @@
 import { Mail } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  buildExchangeMailto,
-  buildListingMailto,
-  fetchMemberContactEmail,
-} from "../../lib/contact";
+import { fetchMemberContactEmail } from "../../lib/contact";
 
 interface ContactEmailButtonProps {
   memberId: string;
-  memberName: string;
+  username?: string | null;
   postId?: string;
   exchangeId?: string;
-  listingTitle?: string;
-  postType?: "needs" | "offers";
   className?: string;
+}
+
+function contactLabel(username?: string | null): string {
+  const handle = username?.trim();
+  return handle ? `Email (${handle})` : "Email (member)";
 }
 
 export function ContactEmailButton({
   memberId,
-  memberName,
+  username,
   postId,
   exchangeId,
-  listingTitle,
-  postType,
-  className = "dash-btn-outline w-full py-2.5 rounded-full text-xs font-medium flex items-center justify-center gap-1.5",
+  className,
 }: ContactEmailButtonProps) {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,20 +49,23 @@ export function ContactEmailButton({
 
   if (loading || !email) return null;
 
-  const firstName = memberName.trim().split(/\s+/)[0] || "them";
-  const href =
-    postId && listingTitle && postType
-      ? buildListingMailto(email, listingTitle, postType)
-      : buildExchangeMailto(email, listingTitle ?? "your exchange", firstName);
-
   return (
-    <a
-      href={href}
-      className={className}
-      aria-label={`Email ${memberName}`}
+    <div
+      className={
+        className ??
+        "rounded-xl border dash-divider px-4 py-3 space-y-2"
+      }
     >
-      <Mail size={14} />
-      Email {firstName}
-    </a>
+      <div className="flex items-center gap-1.5 text-xs font-medium dash-heading">
+        <Mail size={14} className="dash-accent flex-shrink-0" />
+        {contactLabel(username)}
+      </div>
+      <p
+        className="text-sm dash-accent break-all select-all"
+        style={{ fontFamily: "'DM Mono', monospace" }}
+      >
+        {email}
+      </p>
+    </div>
   );
 }

@@ -6,7 +6,7 @@ import type { UserLocation } from "./location";
 import { fetchMatchedPostIds } from "./exchanges";
 
 const POST_SELECT =
-  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, exchange_format, meeting_preference, created_at, profiles(full_name)";
+  "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, exchange_format, meeting_preference, created_at, profiles(full_name, username)";
 
 export async function fetchActivePosts(): Promise<PostWithAuthor[]> {
   const matchedPostIds = await fetchMatchedPostIds();

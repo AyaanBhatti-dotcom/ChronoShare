@@ -603,10 +603,8 @@ export const JobBoard = ({
                 {!isOwnSelected && user && !isPreview && (
                   <ContactEmailButton
                     memberId={selectedJob.user_id}
-                    memberName={selectedJob.profiles?.full_name ?? "Community member"}
+                    username={selectedJob.profiles?.username}
                     postId={selectedJob.id}
-                    listingTitle={selectedJob.title}
-                    postType={selectedJob.post_type}
                   />
                 )}
 

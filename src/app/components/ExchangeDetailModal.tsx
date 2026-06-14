@@ -169,9 +169,8 @@ export function ExchangeDetailModal({
             {!isPreview && (
               <ContactEmailButton
                 memberId={partnerId}
-                memberName={partner.name}
+                username={partnerProfile?.username}
                 exchangeId={exchange.id}
-                listingTitle={exchange.title}
               />
             )}
             {onViewPartner && (

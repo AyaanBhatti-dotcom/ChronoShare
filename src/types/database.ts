@@ -413,7 +413,7 @@ export interface ExchangeReport {
 }
 
 export type PostWithAuthor = Post & {
-  profiles: Pick<Profile, "full_name"> | null;
+  profiles: Pick<Profile, "full_name" | "username"> | null;
 };
 
 export type Exchange = Database["public"]["Tables"]["exchanges"]["Row"];
