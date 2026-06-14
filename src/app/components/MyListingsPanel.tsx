@@ -378,7 +378,7 @@ export function MyListingsPanel({
 
           if (isProfile) {
             return (
-              <div key={post.id} className="flex flex-col gap-3 px-5 py-4 hover:bg-white/20 transition-colors">
+              <div key={post.id} className={`flex flex-col gap-3 px-5 py-4 transition-colors ${isProfile ? "profile-listing-row" : "hover:bg-white/20"}`}>
                 {editBody}
               </div>
             );
@@ -478,7 +478,7 @@ export function MyListingsPanel({
 
         if (isProfile) {
           return (
-            <div key={post.id} className="flex flex-col gap-3 px-5 py-4 hover:bg-white/20 transition-colors">
+            <div key={post.id} className={`flex flex-col gap-3 px-5 py-4 transition-colors ${isProfile ? "profile-listing-row" : "hover:bg-white/20"}`}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>

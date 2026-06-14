@@ -128,7 +128,7 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
             <h2 id="pool-heading" className="text-2xl sm:text-3xl font-bold dash-heading mb-1 leading-tight">
               Hours shared by neighbors, for neighbors
             </h2>
-            <p className="text-sm pool-body max-w-md mb-2">
+            <p className="text-sm pool-body max-w-md lg:max-w-xl mb-2">
               Donate hours you can spare. When you need a boost, earn access by helping others first —
               then claim during weekend windows.
             </p>
