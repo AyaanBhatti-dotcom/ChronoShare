@@ -7,7 +7,6 @@ import {
   Camera,
   Check,
   CheckCircle2,
-  Clock,
   Handshake,
   Loader2,
   Mail,
@@ -28,6 +27,7 @@ import {
 } from "../../../lib/profile";
 import { formatLocationLabel, type UserLocation } from "../../../lib/location";
 import { LocationPicker } from "../LocationPicker";
+import { LogoBrand } from "../Logo";
 import {
   INSECURE_PASSWORD_MESSAGE,
   isPasswordInRockyou,
@@ -359,13 +359,7 @@ export function SignupOnboarding() {
 
       <header className="signup-header auth-aero-content">
         <Link to="/" className="signup-brand">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center auth-aero-logo"
-            style={{ background: aero.gradientPrimary }}
-          >
-            <Clock size={18} style={{ color: aero.text }} />
-          </div>
-          <span className="signup-brand-name">ChronoShare</span>
+          <LogoBrand size="sm" nameClassName="signup-brand-name" />
         </Link>
         {step > 0 && step < STEPS.length - 1 && (
           <Link to="/login" className="signup-header-link">

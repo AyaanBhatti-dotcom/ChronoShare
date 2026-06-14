@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Shield, KeyRound, ArrowRight } from "lucide-react";
 import { verifyAdminKey } from "../../../lib/admin";
+import { Logo } from "../Logo";
 
 interface AdminDevGateProps {
   onAccessGranted: (key: string) => void;
@@ -43,6 +44,7 @@ export function AdminDevGate({ onAccessGranted }: AdminDevGateProps) {
         style={{ background: "#111827", borderColor: "#1F2937" }}
       >
         <div className="flex flex-col items-center text-center mb-8">
+          <Logo variant="minimal" size="md" className="mb-4" />
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
             style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}

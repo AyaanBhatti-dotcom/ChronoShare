@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
-  Clock,
   ArrowRight,
   ArrowLeft,
   Sparkles,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { AeroBackground, aero } from "./aeroTheme";
+import { Logo } from "../Logo";
 import { setTourPending } from "../../utils/onboarding";
 
 interface Step {
@@ -196,15 +196,7 @@ export function OnboardingFlow() {
               background: "rgba(255, 255, 255, 0.55)",
             }}
           >
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md"
-              style={{
-                background: aero.gradientIcon,
-                boxShadow: "0 4px 16px rgba(58,158,196,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
-              }}
-            >
-              <Clock size={30} style={{ color: aero.text }} />
-            </div>
+            <Logo size="lg" className="mx-auto mb-4 rounded-2xl shadow-md" />
             <p className="text-sm leading-relaxed" style={{ color: aero.textMuted }}>
               ChronoShare lets you{" "}
               <strong style={{ color: aero.text }}>offer your skills</strong> to earn time credits,

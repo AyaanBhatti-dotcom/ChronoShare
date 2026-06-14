@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Home, Briefcase, PlusCircle, User, Settings as SettingsIcon,
-  Clock, Bell, Search, Menu, X, LogOut,
+  Bell, Search, Menu, X, LogOut,
 } from "lucide-react";
 import { HomeDashboard } from "./HomeDashboard";
+import { LogoBrand } from "./Logo";
 import { JobBoard } from "./JobBoard";
 import { PostRequest } from "./PostRequest";
 import { Profile } from "./Profile";
@@ -226,10 +227,7 @@ export function DashboardLayout({
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b dash-divider">
-          <div className="dash-avatar w-8 h-8 rounded-xl flex items-center justify-center">
-            <Clock size={16} />
-          </div>
-          <span className="text-sm font-semibold dash-heading tracking-tight">ChronoShare</span>
+          <LogoBrand size="xs" nameClassName="dash-heading" />
         </div>
 
         {/* Nav */}

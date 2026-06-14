@@ -1,6 +1,5 @@
-import { Clock } from "lucide-react";
 import { Link } from "react-router";
-import { aero } from "../onboarding/aeroTheme";
+import { Logo } from "../Logo";
 
 interface AuthLayoutProps {
   title: string;
@@ -29,12 +28,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
       <div className="auth-aero-content min-h-screen flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div className="auth-glass-strip auth-aero-brand flex flex-col items-center mb-8 text-center">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 auth-aero-logo"
-              style={{ background: aero.gradientPrimary }}
-            >
-              <Clock size={22} style={{ color: aero.text }} />
-            </div>
+            <Logo size="md" className="mb-3 auth-aero-logo rounded-xl" />
             <Link to="/" className="text-lg font-extrabold auth-aero-brand-name tracking-tight hover:opacity-90">
               ChronoShare
             </Link>

@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { getAuthenticatedHomePath } from "../utils/auth-routes";
 import { MountainVistaParallax } from "./ui/mountain-vista-bg";
 import { LandingReveal } from "./LandingReveal";
+import { Logo, LogoBrand } from "./Logo";
 import { aero } from "./onboarding/aeroTheme";
 
 const features = [
@@ -97,15 +98,9 @@ export function LandingPage() {
         className={`landing-nav landing-nav-aero ${navScrolled ? "landing-nav-aero-scrolled" : ""}`}
       >
         <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ background: aero.gradientPrimary }}
-            >
-              <Clock size={18} style={{ color: aero.text }} />
-            </div>
-            <span className="text-sm font-semibold landing-heading tracking-tight">ChronoShare</span>
-          </div>
+          <Link to="/" className="hover:opacity-90 transition-opacity">
+            <LogoBrand size="sm" nameClassName="landing-heading" />
+          </Link>
           <div className="flex items-center gap-3">
             <Link
               to="/login"
@@ -240,12 +235,7 @@ export function LandingPage() {
         <footer className="landing-footer-aero py-8">
           <div className="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: aero.gradientPrimary }}
-              >
-                <Clock size={14} style={{ color: aero.text }} />
-              </div>
+              <Logo size="xs" />
               <span className="text-xs landing-stat-label !mt-0">© 2026 ChronoShare</span>
             </div>
             <div className="flex gap-4 text-xs">
