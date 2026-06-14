@@ -3291,8 +3291,34 @@ html {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    gap: 1.25rem;
     max-width: 56rem;
+    --pool-text: #062a38;
+    --pool-text-muted: #134e5e;
+    --pool-text-soft: #1a5568;
+  }
+
+  .pool-scene .dash-heading {
+    color: var(--pool-text);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  }
+
+  .pool-scene .dash-subtext {
+    color: var(--pool-text-muted);
+    font-weight: 500;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  .pool-glass {
+    padding: 1.35rem 1.4rem;
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    box-shadow:
+      0 10px 32px rgba(26, 95, 122, 0.14),
+      inset 0 1px 0 rgba(255, 255, 255, 0.98);
   }
 
   .pool-hero {
@@ -3304,10 +3330,9 @@ html {
     border-radius: 2rem;
     background: linear-gradient(
       145deg,
-      rgba(255, 255, 255, 0.52) 0%,
-      rgba(142, 212, 240, 0.18) 42%,
-      rgba(94, 255, 240, 0.12) 68%,
-      rgba(91, 199, 122, 0.14) 100%
+      rgba(255, 255, 255, 0.88) 0%,
+      rgba(255, 255, 255, 0.78) 38%,
+      rgba(198, 235, 250, 0.72) 100%
     );
     backdrop-filter: blur(20px) saturate(1.35);
     -webkit-backdrop-filter: blur(20px) saturate(1.35);
@@ -3363,6 +3388,18 @@ html {
       0 8px 28px rgba(45, 212, 200, 0.12);
   }
 
+  .pool-scene .dash-pill-inactive {
+    color: var(--pool-text-muted);
+    font-weight: 600;
+    background: rgba(6, 42, 56, 0.07);
+    border: 1px solid rgba(6, 42, 56, 0.12);
+  }
+
+  .pool-scene .dash-pill-inactive:hover {
+    color: var(--pool-text);
+    background: rgba(6, 42, 56, 0.1);
+  }
+
   .pool-balance {
     display: inline-flex;
     align-items: baseline;
@@ -3373,38 +3410,43 @@ html {
     font-size: clamp(2.25rem, 5vw, 3rem);
     font-weight: 700;
     line-height: 1;
-    color: var(--dash-heading, #1b5f7a);
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    color: var(--pool-text);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .pool-balance-unit {
     font-size: 1.125rem;
-    font-weight: 500;
-    color: var(--dash-text-muted, #4a8fad);
+    font-weight: 600;
+    color: var(--pool-text-muted);
   }
 
   .pool-toast {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1.15rem;
     border-radius: 999px;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     animation: pool-toast-in 0.35s ease-out;
   }
 
   .pool-toast-success {
-    background: rgba(91, 199, 122, 0.2);
-    color: var(--dash-earn, #3d8b5e);
-    box-shadow: inset 0 0 0 1px rgba(91, 199, 122, 0.35);
+    background: rgba(255, 255, 255, 0.92);
+    color: #1f6b3f;
+    box-shadow:
+      inset 0 0 0 1px rgba(91, 199, 122, 0.45),
+      0 4px 16px rgba(26, 95, 122, 0.1);
   }
 
   .pool-toast-error {
-    background: rgba(239, 68, 68, 0.12);
-    color: #b91c1c;
-    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.28);
+    background: rgba(255, 255, 255, 0.92);
+    color: #991b1b;
+    box-shadow:
+      inset 0 0 0 1px rgba(239, 68, 68, 0.35),
+      0 4px 16px rgba(26, 95, 122, 0.1);
   }
 
   @keyframes pool-toast-in {
@@ -3460,17 +3502,36 @@ html {
   }
 
   .pool-section-title {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--pool-text);
+    letter-spacing: 0.01em;
+  }
+
+  .pool-body {
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    color: var(--pool-text-muted);
+    font-weight: 500;
+  }
+
+  .pool-body strong {
+    color: var(--pool-text);
+    font-weight: 700;
+  }
+
+  .pool-label {
+    font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--dash-heading, #1b5f7a);
+    color: var(--pool-text-soft);
   }
 
   .pool-progress-track {
     height: 0.5rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.45);
+    background: rgba(6, 42, 56, 0.1);
     overflow: hidden;
-    box-shadow: inset 0 1px 2px rgba(27, 95, 122, 0.08);
+    box-shadow: inset 0 1px 2px rgba(6, 42, 56, 0.12);
   }
 
   .pool-progress-fill {
@@ -3493,13 +3554,15 @@ html {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    font-size: 0.75rem;
-    color: var(--dash-text-muted, #4a8fad);
-    line-height: 1.35;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--pool-text-soft);
+    line-height: 1.4;
   }
 
   .pool-status-chip-done {
-    color: var(--dash-heading, #1b5f7a);
+    color: var(--pool-text);
+    font-weight: 600;
   }
 
   .pool-claim-meter {
@@ -3508,7 +3571,10 @@ html {
     align-items: center;
     gap: 0.25rem;
     margin: 0.75rem 0 1rem;
-    padding: 0.5rem 0;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    background: rgba(91, 199, 122, 0.12);
+    border: 1px solid rgba(91, 199, 122, 0.28);
   }
 
   .pool-claim-value {
@@ -3516,33 +3582,17 @@ html {
     font-size: 2.25rem;
     font-weight: 700;
     line-height: 1;
-    background: linear-gradient(135deg, #3d8b5e, #2dd4c8);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: #1f6b3f;
   }
 
   .pool-ribbon {
     position: relative;
-    padding: 1.25rem 0;
+    padding: 0;
   }
 
   .pool-ribbon::before,
   .pool-ribbon::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(94, 255, 240, 0.45), transparent);
-  }
-
-  .pool-ribbon::before {
-    top: 0;
-  }
-
-  .pool-ribbon::after {
-    bottom: 0;
+    display: none;
   }
 
   .pool-donate-row {
@@ -3603,20 +3653,21 @@ html {
   }
 
   .pool-step-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--dash-heading, #1b5f7a);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--pool-text);
   }
 
   .pool-step-desc {
-    font-size: 0.6875rem;
-    line-height: 1.45;
-    color: var(--dash-text-muted, #4a8fad);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--pool-text-muted);
     max-width: 14rem;
   }
 
   .pool-timeline {
-    padding-top: 0.5rem;
+    padding-top: 0;
   }
 
   .pool-timeline-list {
@@ -3633,9 +3684,11 @@ html {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.65rem 0;
-    font-size: 0.75rem;
-    border-bottom: 1px solid rgba(94, 255, 240, 0.15);
+    padding: 0.75rem 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--pool-text-muted);
+    border-bottom: 1px solid rgba(6, 42, 56, 0.1);
   }
 
   .pool-timeline-item:last-child {
@@ -3647,13 +3700,13 @@ html {
     align-items: flex-start;
     gap: 0.5rem;
     margin-top: 0.75rem;
-    padding: 0.65rem 0.85rem;
+    padding: 0.75rem 0.9rem;
     border-radius: 1rem;
-    font-size: 0.75rem;
-    color: var(--dash-text-muted, #4a8fad);
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--pool-text-muted);
+    background: rgba(6, 42, 56, 0.06);
+    border: 1px solid rgba(6, 42, 56, 0.1);
   }
 
   @keyframes post-studio-float {

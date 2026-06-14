@@ -115,25 +115,25 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
         <div className="pool-hero-copy">
           <div className="flex items-center gap-2 mb-2">
             <HeartHandshake size={20} className="dash-accent" />
-            <span className="text-xs font-semibold uppercase tracking-wider dash-subtext">
+            <span className="pool-label uppercase tracking-wider">
               Community solidarity pool
             </span>
           </div>
           <h2 id="pool-heading" className="text-2xl sm:text-3xl font-bold dash-heading mb-1 leading-tight">
             Hours shared by neighbors, for neighbors
           </h2>
-          <p className="text-sm dash-subtext max-w-md mb-2 leading-relaxed">
+          <p className="text-sm pool-body max-w-md mb-2">
             Donate hours you can spare. When you need a boost, earn access by helping others first —
             then claim during weekend windows.
           </p>
 
-          <p className="text-xs dash-subtext mb-0.5">Pool balance</p>
+          <p className="pool-label mb-0.5">Pool balance</p>
           <p className="pool-balance">
             {loading ? "—" : eligibility?.poolBalance.toFixed(1) ?? "0.0"}
             <span className="pool-balance-unit">hrs</span>
           </p>
 
-          <div className="flex items-center gap-2 text-xs dash-subtext mt-3">
+          <div className="flex items-center gap-2 pool-body mt-3">
             <Droplets size={14} className="dash-accent flex-shrink-0" />
             <span>Funded by donations · separate from offer minting</span>
           </div>
@@ -163,8 +163,8 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
         </div>
       )}
 
-      {/* Access + claim — side-by-side flow sections, no card boxes */}
-      <div className="pool-split">
+      {/* Access + claim */}
+      <div className="pool-glass pool-split">
         <section className="pool-flow-section" aria-labelledby="pool-access-heading">
           <div className="pool-section-head">
             <Users size={16} className="dash-accent" />
@@ -179,9 +179,9 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
             </div>
           ) : eligibility ? (
             <>
-              <div className="flex justify-between text-xs mb-2">
-                <span className="dash-subtext">Helps in last {POOL_RULES.lookbackDays} days</span>
-                <span className="font-semibold dash-heading">
+              <div className="flex justify-between mb-2">
+                <span className="pool-label">Helps in last {POOL_RULES.lookbackDays} days</span>
+                <span className="font-bold dash-heading">
                   {eligibility.recentHelps} / {eligibility.effectiveHelpsRequired}
                 </span>
               </div>
@@ -193,7 +193,7 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
               </div>
 
               {eligibility.donationCredits > 0 && (
-                <p className="text-xs dash-subtext flex items-center gap-1.5 mt-3">
+                <p className="pool-body flex items-center gap-1.5 mt-3">
                   <Gift size={12} className="text-[var(--dash-earn)]" />
                   Donor credit: need {eligibility.effectiveHelpsRequired} help
                   {eligibility.effectiveHelpsRequired === 1 ? "" : "s"} instead of{" "}
@@ -249,15 +249,15 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
             </h3>
           </div>
 
-          <p className="text-xs dash-subtext leading-relaxed">
+          <p className="pool-body">
             When eligible, take up to{" "}
-            <strong className="dash-heading">{POOL_RULES.maxClaimPerWeek} hour</strong> per week during{" "}
+            <strong>{POOL_RULES.maxClaimPerWeek} hour</strong> per week during{" "}
             {formatClaimWindowLabel()}. This keeps the pool sustainable for everyone.
           </p>
 
           <div className="pool-claim-meter">
             <p className="pool-claim-value">{POOL_RULES.maxClaimPerWeek}h</p>
-            <p className="text-xs dash-subtext">max per week</p>
+            <p className="pool-label">max per week</p>
           </div>
 
           <button
@@ -271,9 +271,9 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
         </section>
       </div>
 
-      {/* Donate — horizontal ribbon, no enclosing box */}
-      <section className="pool-ribbon" aria-labelledby="pool-donate-heading">
-        <div className="flex items-center justify-between gap-4 flex-wrap mb-1">
+      {/* Donate */}
+      <section className="pool-glass pool-ribbon" aria-labelledby="pool-donate-heading">
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
           <div className="pool-section-head mb-0">
             <Gift size={16} className="dash-accent" />
             <h3 id="pool-donate-heading" className="pool-section-title">
@@ -281,14 +281,14 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
             </h3>
           </div>
           {user && (
-            <p className="text-xs dash-subtext">
+            <p className="pool-label">
               Your balance:{" "}
-              <span className="font-semibold dash-heading">{user.hoursAvailable.toFixed(1)}h</span>
+              <span className="font-bold dash-heading">{user.hoursAvailable.toFixed(1)}h</span>
             </p>
           )}
         </div>
 
-        <p className="text-xs dash-subtext leading-relaxed max-w-2xl">
+        <p className="pool-body max-w-2xl">
           Give back to the community. Donors get credit toward pool access — each hour donated in the
           last 90 days counts as one help toward the requirement.
         </p>
@@ -317,9 +317,9 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
         </div>
       </section>
 
-      {/* How it works — connected steps, not cards */}
-      <section aria-labelledby="pool-how-heading">
-        <h3 id="pool-how-heading" className="pool-section-title mb-3">
+      {/* How it works */}
+      <section className="pool-glass" aria-labelledby="pool-how-heading">
+        <h3 id="pool-how-heading" className="pool-section-title mb-4">
           How access works
         </h3>
         <div className="pool-steps">
@@ -346,14 +346,14 @@ export function CommunityPool({ onNavigate }: CommunityPoolProps) {
 
       {/* Activity — timeline strip */}
       {activity.length > 0 && (
-        <section className="pool-timeline" aria-labelledby="pool-activity-heading">
+        <section className="pool-glass pool-timeline" aria-labelledby="pool-activity-heading">
           <h3 id="pool-activity-heading" className="pool-section-title">
             Recent pool activity
           </h3>
           <ul className="pool-timeline-list">
             {activity.map((tx) => (
               <li key={tx.id} className="pool-timeline-item">
-                <span className="dash-subtext truncate">
+                <span className="truncate">
                   {tx.profiles?.full_name ?? "Someone"}{" "}
                   {tx.transaction_type === "donation" ? "donated" : "claimed"}
                 </span>

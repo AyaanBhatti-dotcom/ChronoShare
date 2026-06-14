@@ -9,11 +9,13 @@ const GLOBE_THEME = {
   ocean: "#1B5F7A",
   oceanGlow: "#2DD4C8",
   landDot: "#5EFFF0",
-  landDotDim: "#6EC6E8",
   outline: "rgba(255, 255, 255, 0.85)",
   graticule: "rgba(94, 255, 240, 0.35)",
   ring: "rgba(110, 198, 232, 0.6)",
 } as const;
+
+/** Fewer dots = smoother interaction */
+const DOT_SPACING = 26;
 
 interface GeoFeature {
   type: string;
@@ -38,7 +40,6 @@ export interface RotatingEarthProps {
   width?: number;
   height?: number;
   className?: string;
-  /** Pause auto-rotation (e.g. when off-screen) */
   paused?: boolean;
 }
 
@@ -88,8 +89,8 @@ function pointInFeature(point: [number, number], feature: GeoFeature): boolean {
   return false;
 }
 
-function generateDotsInPolygon(feature: GeoFeature, dotSpacing = 16): [number, number][] {
-  const dots: [number, number][] = [];
+function generateDotsInPolygon(feature: GeoFeature, dotSpacing: number): DotData[] {
+  const dots: DotData[] = [];
   const bounds = d3.geoBounds(feature as GeoPermissibleObjects);
   const [[minLng, minLat], [maxLng, maxLat]] = bounds;
   const stepSize = dotSpacing * 0.08;
@@ -97,7 +98,9 @@ function generateDotsInPolygon(feature: GeoFeature, dotSpacing = 16): [number, n
   for (let lng = minLng; lng <= maxLng; lng += stepSize) {
     for (let lat = minLat; lat <= maxLat; lat += stepSize) {
       const point: [number, number] = [lng, lat];
-      if (pointInFeature(point, feature)) dots.push(point);
+      if (pointInFeature(point, feature)) {
+        dots.push({ lng, lat });
+      }
     }
   }
 
@@ -120,7 +123,7 @@ export default function RotatingEarth({
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { alpha: true, desynchronized: true });
     if (!context) return;
 
     let disposed = false;
@@ -128,7 +131,11 @@ export default function RotatingEarth({
     let containerHeight = 0;
     let radius = 0;
     let landFeatures: GeoFeatureCollection | null = null;
-    const allDots: DotData[] = [];
+    let allDots: DotData[] = [];
+
+    const baseCanvas = document.createElement("canvas");
+    const baseCtx = baseCanvas.getContext("2d");
+    let cachedBaseScale = -1;
 
     const projection = d3
       .geoOrthographic()
@@ -137,6 +144,15 @@ export default function RotatingEarth({
       .clipAngle(90);
 
     const path = d3.geoPath().projection(projection).context(context);
+    const graticule = d3.geoGraticule();
+
+    const rotation: [number, number] = [0, 0];
+    let autoRotate = true;
+    let isDragging = false;
+    let needsRender = true;
+    const rotationSpeed = 0.35;
+
+    let rafId = 0;
 
     const measure = () => {
       const rect = container.getBoundingClientRect();
@@ -144,115 +160,137 @@ export default function RotatingEarth({
       containerHeight = Math.max(160, Math.floor(rect.height || height));
       radius = Math.min(containerWidth, containerHeight) / 2.35;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = containerWidth * dpr;
       canvas.height = containerHeight * dpr;
       canvas.style.width = `${containerWidth}px`;
       canvas.style.height = `${containerHeight}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      projection
-        .scale(radius)
-        .translate([containerWidth / 2, containerHeight / 2]);
+      baseCanvas.width = canvas.width;
+      baseCanvas.height = canvas.height;
+      baseCtx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      projection.scale(radius).translate([containerWidth / 2, containerHeight / 2]);
+      cachedBaseScale = -1;
+      needsRender = true;
+    };
+
+    const drawBaseLayer = (scale: number) => {
+      if (!baseCtx) return;
+
+      const cx = containerWidth / 2;
+      const cy = containerHeight / 2;
+
+      baseCtx.clearRect(0, 0, containerWidth, containerHeight);
+
+      const glow = baseCtx.createRadialGradient(cx, cy, scale * 0.2, cx, cy, scale * 1.15);
+      glow.addColorStop(0, "rgba(94, 255, 240, 0.18)");
+      glow.addColorStop(0.6, "rgba(45, 212, 200, 0.08)");
+      glow.addColorStop(1, "rgba(45, 212, 200, 0)");
+      baseCtx.fillStyle = glow;
+      baseCtx.fillRect(0, 0, containerWidth, containerHeight);
+
+      baseCtx.beginPath();
+      baseCtx.arc(cx, cy, scale, 0, 2 * Math.PI);
+      const oceanGrad = baseCtx.createRadialGradient(
+        cx - scale * 0.25,
+        cy - scale * 0.25,
+        scale * 0.1,
+        cx,
+        cy,
+        scale,
+      );
+      oceanGrad.addColorStop(0, GLOBE_THEME.oceanGlow);
+      oceanGrad.addColorStop(0.45, "#3DD9C8");
+      oceanGrad.addColorStop(1, GLOBE_THEME.ocean);
+      baseCtx.fillStyle = oceanGrad;
+      baseCtx.fill();
+      baseCtx.strokeStyle = GLOBE_THEME.ring;
+      baseCtx.lineWidth = 2;
+      baseCtx.stroke();
+
+      cachedBaseScale = scale;
+    };
+
+    const drawDotsBatched = (scaleFactor: number) => {
+      const dotRadius = 1.05 * scaleFactor;
+      context.beginPath();
+
+      for (let i = 0; i < allDots.length; i++) {
+        const dot = allDots[i];
+        const projected = projection([dot.lng, dot.lat]);
+        if (!projected) continue;
+        const [px, py] = projected;
+        context.moveTo(px + dotRadius, py);
+        context.arc(px, py, dotRadius, 0, 2 * Math.PI);
+      }
+
+      context.fillStyle = GLOBE_THEME.landDot;
+      context.fill();
     };
 
     const render = () => {
       if (!landFeatures) return;
 
+      needsRender = false;
+      const scale = projection.scale();
+      const scaleFactor = scale / radius;
+
+      if (cachedBaseScale !== scale) {
+        drawBaseLayer(scale);
+      }
+
       context.clearRect(0, 0, containerWidth, containerHeight);
+      context.drawImage(baseCanvas, 0, 0);
 
-      const currentScale = projection.scale();
-      const scaleFactor = currentScale / radius;
-      const cx = containerWidth / 2;
-      const cy = containerHeight / 2;
+      projection.rotate(rotation);
 
-      // Soft aqua glow behind globe
-      const glow = context.createRadialGradient(cx, cy, currentScale * 0.2, cx, cy, currentScale * 1.15);
-      glow.addColorStop(0, "rgba(94, 255, 240, 0.18)");
-      glow.addColorStop(0.6, "rgba(45, 212, 200, 0.08)");
-      glow.addColorStop(1, "rgba(45, 212, 200, 0)");
-      context.fillStyle = glow;
-      context.fillRect(0, 0, containerWidth, containerHeight);
+      if (!isDragging) {
+        context.beginPath();
+        path(graticule());
+        context.strokeStyle = GLOBE_THEME.graticule;
+        context.lineWidth = 0.75 * scaleFactor;
+        context.stroke();
+      }
 
-      // Ocean sphere
       context.beginPath();
-      context.arc(cx, cy, currentScale, 0, 2 * Math.PI);
-      const oceanGrad = context.createRadialGradient(
-        cx - currentScale * 0.25,
-        cy - currentScale * 0.25,
-        currentScale * 0.1,
-        cx,
-        cy,
-        currentScale,
-      );
-      oceanGrad.addColorStop(0, GLOBE_THEME.oceanGlow);
-      oceanGrad.addColorStop(0.45, "#3DD9C8");
-      oceanGrad.addColorStop(1, GLOBE_THEME.ocean);
-      context.fillStyle = oceanGrad;
-      context.fill();
-      context.strokeStyle = GLOBE_THEME.ring;
-      context.lineWidth = 2 * scaleFactor;
-      context.stroke();
-
-      // Graticule
-      const graticule = d3.geoGraticule();
-      context.beginPath();
-      path(graticule());
-      context.strokeStyle = GLOBE_THEME.graticule;
-      context.lineWidth = 0.75 * scaleFactor;
-      context.stroke();
-
-      // Land outlines
-      context.beginPath();
-      landFeatures.features.forEach((feature) => {
-        path(feature as GeoPermissibleObjects);
-      });
+      for (let i = 0; i < landFeatures.features.length; i++) {
+        path(landFeatures.features[i] as GeoPermissibleObjects);
+      }
       context.strokeStyle = GLOBE_THEME.outline;
       context.lineWidth = 1 * scaleFactor;
       context.stroke();
 
-      // Halftone land dots
-      allDots.forEach((dot) => {
-        const projected = projection([dot.lng, dot.lat]);
-        if (!projected) return;
-        const [px, py] = projected;
-        const dist = Math.hypot(px - cx, py - cy);
-        if (dist > currentScale) return;
-
-        context.beginPath();
-        context.arc(px, py, 1.1 * scaleFactor, 0, 2 * Math.PI);
-        context.fillStyle = dist < currentScale * 0.85 ? GLOBE_THEME.landDot : GLOBE_THEME.landDotDim;
-        context.fill();
-      });
+      drawDotsBatched(scaleFactor);
     };
 
-    const rotation: [number, number] = [0, 0];
-    let autoRotate = true;
-    const rotationSpeed = 0.35;
+    const loop = () => {
+      if (disposed) return;
 
-    const rotate = () => {
-      if (autoRotate && !paused) {
+      if (autoRotate && !paused && !isDragging) {
         rotation[0] += rotationSpeed;
-        projection.rotate(rotation);
+        needsRender = true;
+      }
+
+      if (needsRender) {
         render();
       }
-    };
 
-    const rotationTimer = d3.timer(rotate);
+      rafId = requestAnimationFrame(loop);
+    };
 
     const startDrag = (clientX: number, clientY: number) => {
       autoRotate = false;
+      isDragging = true;
       const startX = clientX;
       const startY = clientY;
       const startRotation: [number, number] = [rotation[0], rotation[1]];
 
       const onMove = (moveX: number, moveY: number) => {
-        const sensitivity = 0.45;
-        rotation[0] = startRotation[0] + (moveX - startX) * sensitivity;
-        rotation[1] = startRotation[1] - (moveY - startY) * sensitivity;
-        rotation[1] = Math.max(-90, Math.min(90, rotation[1]));
-        projection.rotate(rotation);
-        render();
+        rotation[0] = startRotation[0] + (moveX - startX) * 0.45;
+        rotation[1] = Math.max(-90, Math.min(90, startRotation[1] - (moveY - startY) * 0.45));
+        needsRender = true;
       };
 
       const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
@@ -261,10 +299,12 @@ export default function RotatingEarth({
       };
 
       const endDrag = () => {
+        isDragging = false;
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", endDrag);
         document.removeEventListener("touchmove", onTouchMove);
         document.removeEventListener("touchend", endDrag);
+        needsRender = true;
         window.setTimeout(() => {
           autoRotate = true;
         }, 800);
@@ -284,9 +324,8 @@ export default function RotatingEarth({
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const factor = e.deltaY > 0 ? 0.92 : 1.08;
-      const next = Math.max(radius * 0.55, Math.min(radius * 2.2, projection.scale() * factor));
-      projection.scale(next);
-      render();
+      projection.scale(Math.max(radius * 0.55, Math.min(radius * 2.2, projection.scale() * factor)));
+      needsRender = true;
     };
 
     canvas.addEventListener("mousedown", handleMouseDown);
@@ -295,7 +334,6 @@ export default function RotatingEarth({
 
     const ro = new ResizeObserver(() => {
       measure();
-      render();
     });
     ro.observe(container);
     measure();
@@ -312,14 +350,13 @@ export default function RotatingEarth({
 
         landFeatures = (await response.json()) as GeoFeatureCollection;
 
-        landFeatures.features.forEach((feature) => {
-          generateDotsInPolygon(feature, 16).forEach(([lng, lat]) => {
-            allDots.push({ lng, lat });
-          });
-        });
+        allDots = [];
+        for (let i = 0; i < landFeatures.features.length; i++) {
+          allDots.push(...generateDotsInPolygon(landFeatures.features[i], DOT_SPACING));
+        }
 
         if (!disposed) {
-          render();
+          needsRender = true;
           setIsLoading(false);
         }
       } catch {
@@ -331,10 +368,11 @@ export default function RotatingEarth({
     };
 
     loadWorldData();
+    rafId = requestAnimationFrame(loop);
 
     return () => {
       disposed = true;
-      rotationTimer.stop();
+      cancelAnimationFrame(rafId);
       ro.disconnect();
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("touchstart", handleTouchStart);
