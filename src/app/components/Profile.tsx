@@ -38,6 +38,7 @@ import { dashColors } from "./onboarding/aeroTheme";
 import { formatExchangeFormat } from "../../lib/exchange-format";
 import { ProfileFloatingWindow } from "./profile/ProfileFloatingWindow";
 import { ProfileWin7Window } from "./profile/ProfileWin7Window";
+import { ProfileAeroWallpaper } from "./profile/ProfileAeroWallpaper";
 import { useIsMobile } from "./ui/use-mobile";
 import { MyListingsPanel } from "./MyListingsPanel";
 import { MemberProfileModal } from "./MemberProfileModal";
@@ -427,12 +428,15 @@ export const Profile = () => {
 
   return (
     <div className="profile-desktop">
-      <button
-        type="button"
-        className="profile-desktop-wallpaper"
-        onClick={handleWallpaperClick}
-        aria-label="Desktop wallpaper"
-      />
+      <div className="profile-desktop-backdrop">
+        <ProfileAeroWallpaper />
+        <button
+          type="button"
+          className="profile-desktop-wallpaper-hit"
+          onClick={handleWallpaperClick}
+          aria-label="Desktop wallpaper"
+        />
+      </div>
 
       <div className="profile-desktop-icons">
         {DESKTOP_ICONS.map((icon) => {
@@ -1005,6 +1009,8 @@ export const Profile = () => {
 
       {showSystemInfo && (
         <div className="profile-system-modal" role="dialog" aria-modal="true">
+          <ProfileAeroWallpaper className="profile-system-modal-scene" />
+          <div className="profile-system-modal-dim" aria-hidden="true" />
           <ProfileWin7Window title="My Computer" subtitle="System properties">
             <div className="p-5 space-y-3 text-sm dash-subtext">
               <p><strong className="dash-heading">OS:</strong> ChronoShare Aero Edition (2007 vibes, 2026 tech)</p>

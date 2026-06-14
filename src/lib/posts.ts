@@ -2,29 +2,33 @@ import { supabase } from "./supabase";
 import type { Post, PostWithAuthor } from "../types/database";
 import type { ExchangeFormatPreference } from "./exchange-format";
 import type { UserLocation } from "./location";
+import { fetchMatchedPostIds } from "./exchanges";
 
 const POST_SELECT =
   "id, user_id, title, description, category, post_type, hours_cost, status, city, region, state, country, latitude, longitude, exchange_format, created_at, profiles(full_name)";
 
 export async function fetchActivePosts(): Promise<PostWithAuthor[]> {
-  const { data, error } = await supabase
+  const matchedPostIds = await fetchMatchedPostIds();
+
+  let query = supabase
     .from("posts")
     .select(POST_SELECT)
     .eq("status", "active")
     .order("created_at", { ascending: false });
+
+  if (matchedPostIds.length > 0) {
+    query = query.not("id", "in", `(${matchedPostIds.join(",")})`);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
   return (data ?? []) as PostWithAuthor[];
 }
 
 export async function fetchActivePostCount(): Promise<number> {
-  const { count, error } = await supabase
-    .from("posts")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "active");
-
-  if (error) return 0;
-  return count ?? 0;
+  const posts = await fetchActivePosts();
+  return posts.length;
 }
 
 export async function fetchMyPosts(userId: string): Promise<Post[]> {
@@ -101,6 +105,11 @@ export async function closePost(postId: string): Promise<void> {
 }
 
 export async function reopenPost(postId: string): Promise<void> {
+  const matchedPostIds = await fetchMatchedPostIds();
+  if (matchedPostIds.includes(postId)) {
+    throw new Error("This listing was matched in an exchange and can't be reopened.");
+  }
+
   const { error } = await supabase
     .from("posts")
     .update({ status: "active" })

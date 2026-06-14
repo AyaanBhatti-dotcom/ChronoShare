@@ -74,6 +74,17 @@ export async function fetchUserJoinedPostIds(userId: string): Promise<string[]> 
   return (data ?? []).map((row) => row.post_id as string);
 }
 
+/** Post IDs with a pending or completed exchange — no longer open on the job board. */
+export async function fetchMatchedPostIds(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("exchanges")
+    .select("post_id")
+    .in("status", ["pending", "completed"]);
+
+  if (error) throw new Error(error.message);
+  return [...new Set((data ?? []).map((row) => row.post_id as string))];
+}
+
 export async function fetchRecentExchanges(userId: string, limit = 5): Promise<ExchangeWithProfiles[]> {
   const { data, error } = await supabase
     .from("exchanges")

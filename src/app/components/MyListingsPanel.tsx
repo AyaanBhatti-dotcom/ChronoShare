@@ -11,6 +11,7 @@ import {
   reopenPost,
   deletePost,
 } from "../../lib/posts";
+import { fetchMatchedPostIds } from "../../lib/exchanges";
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
 import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import type { Post } from "../../types/database";
@@ -64,13 +65,15 @@ export function MyListingsPanel({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [matchedPostIds, setMatchedPostIds] = useState<Set<string>>(() => new Set());
 
   const loadMyPosts = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await fetchMyPosts(user.userId);
+      const [data, matchedIds] = await Promise.all([fetchMyPosts(user.userId), fetchMatchedPostIds()]);
       setMyPosts(data);
+      setMatchedPostIds(new Set(matchedIds));
       onStatsChange?.({
         total: data.length,
         active: data.filter((p) => p.status === "active").length,
@@ -377,15 +380,17 @@ export function MyListingsPanel({
                 </>
               ) : post.status === "closed" ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => handleReopenListing(post.id)}
-                    disabled={actionId === post.id}
-                    className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
-                  >
-                    <RotateCcw size={13} />
-                    Reopen
-                  </button>
+                  {!matchedPostIds.has(post.id) && (
+                    <button
+                      type="button"
+                      onClick={() => handleReopenListing(post.id)}
+                      disabled={actionId === post.id}
+                      className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
+                    >
+                      <RotateCcw size={13} />
+                      Reopen
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDeleteListing(post.id)}
