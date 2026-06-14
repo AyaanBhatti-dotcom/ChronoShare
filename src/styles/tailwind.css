@@ -1855,6 +1855,10 @@ html {
   padding-left: 2.25rem;
 }
 
+.signup-input-with-trailing-icon {
+  padding-right: 2.25rem;
+}
+
 .signup-strength-track {
   height: 0.25rem;
   border-radius: 9999px;

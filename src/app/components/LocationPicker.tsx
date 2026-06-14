@@ -148,8 +148,8 @@ export function LocationPicker({
 
   const labelClass = compact ? "auth-label" : "dash-label";
   const inputClass = compact
-    ? "auth-input w-full pl-9"
-    : "dash-input w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 pl-9";
+    ? "auth-input signup-input-with-icon w-full"
+    : "dash-input w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all duration-200 pl-10";
   const saveButtonClass = compact
     ? "auth-btn-primary px-5 py-2 rounded-full text-xs font-semibold disabled:opacity-50"
     : "dash-btn-primary px-5 py-2 rounded-full text-xs font-semibold disabled:opacity-50";
@@ -177,7 +177,11 @@ export function LocationPicker({
           }}
           onFocus={() => setSearchOpen(true)}
           placeholder="e.g. Tokyo, JP or Austin, TX"
-          className={[inputClass, hasSelection && !saved && "ring-2 ring-[var(--auth-aqua)]/35"]
+          className={[
+            inputClass,
+            (searching || (saved && showSuccessMessage)) && "signup-input-with-trailing-icon",
+            hasSelection && !saved && "ring-2 ring-[var(--auth-aqua)]/35",
+          ]
             .filter(Boolean)
             .join(" ")}
           autoComplete="off"
