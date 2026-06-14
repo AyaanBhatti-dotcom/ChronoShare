@@ -834,7 +834,10 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
                     >
                       <button
                         type="button"
-                        onClick={() => openMemberProfile(ex)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMemberProfile(ex);
+                        }}
                         className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
                       >
                         <UserCircle size={13} />
@@ -843,7 +846,10 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
                       {!userConfirmed && (
                         <button
                           type="button"
-                          onClick={() => handleConfirm(ex.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleConfirm(ex.id);
+                          }}
                           disabled={actionId === ex.id || isPreview}
                           className="dash-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold disabled:opacity-60"
                         >
@@ -856,7 +862,10 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleCancel(ex.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancel(ex.id);
+                        }}
                         disabled={actionId === ex.id || isPreview}
                         className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
                       >
@@ -874,7 +883,7 @@ export const Profile = ({ onNavigate }: ProfileProps) => {
         )}
 
         {error && openWindows.size > 0 && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">{error}</p>
+          <p className="profile-action-error text-sm rounded-xl px-4 py-2 mx-4 mb-2">{error}</p>
         )}
 
         {openWindows.has("ledger") && !ledgerState.minimized && (

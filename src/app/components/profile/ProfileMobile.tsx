@@ -307,7 +307,10 @@ export function ProfileMobile({
                         )}
                         <button
                           type="button"
-                          onClick={() => onCancel(ex.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCancel(ex.id);
+                          }}
                           disabled={actionId === ex.id || isPreview}
                           className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
                         >

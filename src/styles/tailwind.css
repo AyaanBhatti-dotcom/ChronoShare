@@ -6519,6 +6519,12 @@ html {
     width: 100%;
   }
 
+  .profile-action-error {
+    color: #fecaca;
+    background: rgba(120, 30, 30, 0.55);
+    border: 1px solid rgba(248, 113, 113, 0.45);
+  }
+
   .profile-egg-toast {
     position: fixed;
     bottom: 4rem;
