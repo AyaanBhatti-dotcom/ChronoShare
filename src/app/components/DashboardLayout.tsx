@@ -117,18 +117,18 @@ export function DashboardLayout({
       {
         title: `Welcome, ${firstName}!`,
         description:
-          "ChronoShare lets you trade skills using hours, not money. This quick tour will show you around your dashboard.",
+          "ChronoShare is a solarpunk time bank — trade skills in hours, not dollars. This quick tour shows where everything lives on your dashboard.",
       },
       {
-        title: "How time banking works",
+        title: "How hours move",
         description:
-          "Offer your skills to earn hours, browse the Job Board when you need help, and track your balance right here. Everyone starts with 1 hour.",
+          "Help on a need → you earn hours. Post an offer → you earn from the community when someone accepts. Request help → hours spend from your balance. Both people confirm before hours transfer.",
       },
       {
         target: '[data-tour="nav-home"]',
-        title: "Your dashboard",
+        title: "Home dashboard",
         description:
-          "Home is your command center — hour balance, charts, and recent exchanges all in one place.",
+          "Your command center — nearby map, listings in your area, hour balance, and recent exchanges. Toggle worldwide to browse anywhere.",
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
@@ -136,15 +136,15 @@ export function DashboardLayout({
         target: '[data-tour="hour-balance"]',
         title: "Your time bank",
         description:
-          "Your available hours are always shown here in the sidebar. Earn hours by helping others, spend them when you need help.",
+          "Available hours always show here in the sidebar. Tap your name anytime to jump to Profile.",
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="quick-actions"]',
-        title: "Quick actions",
+        title: "Balance & quick actions",
         description:
-          "Offer your skills or request help from the community. Both buttons take you to Post Request.",
+          "See your balance at a glance. Offer Time posts a skill listing; Request Time asks the community for help.",
         position: "bottom",
         onEnter: () => {
           setScreen("home");
@@ -155,7 +155,15 @@ export function DashboardLayout({
         target: '[data-tour="nav-board"]',
         title: "Job Board",
         description:
-          "Browse active posts — find people offering skills you need, or see who's looking for help you can provide.",
+          "Browse open needs and offers, filter by type, and join exchanges. Past jobs live here too once both sides confirm.",
+        position: "right",
+        onEnter: () => sidebarStep("home"),
+      },
+      {
+        target: '[data-tour="nav-community"]',
+        title: "Community Pool",
+        description:
+          "Donate spare hours to the solidarity pool. Help others first, then claim up to 1 hour per week during weekend windows.",
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
@@ -163,15 +171,15 @@ export function DashboardLayout({
         target: '[data-tour="nav-post"]',
         title: "Post a request",
         description:
-          "Create a listing to offer your skills or request help. Set how many hours each exchange is worth.",
+          "Create a listing — offer a skill or request help. Set hours, category, and whether it's in person or remote.",
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
       {
         target: '[data-tour="nav-profile"]',
-        title: "Your profile",
+        title: "Profile & confirmations",
         description:
-          "View your exchange history, public profile, and community ratings.",
+          "Confirm completed exchanges here — hours only move after both people confirm. View history, stats, and your public profile.",
         position: "right",
         onEnter: () => sidebarStep("home"),
       },
@@ -189,10 +197,10 @@ export function DashboardLayout({
       {
         title: "You're ready to go!",
         description:
-          "That's everything you need to get started. Browse the Job Board or post your first offer — happy trading!",
+          "Browse nearby listings, post your first offer, or explore the Community Pool. Happy trading!",
       },
     ],
-    [firstName, navigateScreen, sidebarStep],
+    [firstName, sidebarStep],
   );
 
   const handleTourComplete = useCallback(async () => {

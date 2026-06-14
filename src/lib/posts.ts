@@ -82,6 +82,11 @@ export async function updatePost(
     exchangeFormat?: ExchangeFormatPreference;
   },
 ): Promise<void> {
+  const matchedPostIds = await fetchMatchedPostIds();
+  if (matchedPostIds.includes(postId)) {
+    throw new Error("This listing is matched in an exchange and can't be edited.");
+  }
+
   const updates: Record<string, unknown> = {};
   if (input.title !== undefined) updates.title = input.title.trim();
   if (input.description !== undefined) updates.description = input.description?.trim() || null;

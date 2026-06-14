@@ -11,8 +11,15 @@ import {
   reopenPost,
   deletePost,
 } from "../../lib/posts";
-import { fetchMatchedPostIds } from "../../lib/exchanges";
+import { fetchMatchedPostIds, fetchExchangeInfoForPosts } from "../../lib/exchanges";
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
+import {
+  canEditListing,
+  getListingDisplayStatus,
+  getListingStatusBadgeClass,
+  type PostExchangeInfo,
+} from "../../lib/listing-status";
+import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import type { Post } from "../../types/database";
 
 const categories = [
@@ -69,17 +76,30 @@ export function MyListingsPanel({
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [matchedPostIds, setMatchedPostIds] = useState<Set<string>>(() => new Set());
+  const [exchangeByPostId, setExchangeByPostId] = useState<Map<string, PostExchangeInfo>>(
+    () => new Map(),
+  );
 
   const loadMyPosts = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [data, matchedIds] = await Promise.all([fetchMyPosts(user.userId), fetchMatchedPostIds()]);
+      const data = await fetchMyPosts(user.userId);
+      const postIds = data.map((p) => p.id);
+      const [matchedIds, exchangeMap] = await Promise.all([
+        fetchMatchedPostIds(),
+        fetchExchangeInfoForPosts(postIds),
+      ]);
       setMyPosts(data);
       setMatchedPostIds(new Set(matchedIds));
+      setExchangeByPostId(exchangeMap);
+
+      const openCount = data.filter(
+        (p) => getListingDisplayStatus(p, exchangeMap.get(p.id)).kind === "open",
+      ).length;
       onStatsChange?.({
         total: data.length,
-        active: data.filter((p) => p.status === "active").length,
+        active: openCount,
       });
     } catch (err) {
       console.warn("Could not load listings:", err);
@@ -183,7 +203,18 @@ export function MyListingsPanel({
   };
 
   const isProfile = variant === "profile";
-  const activeCount = myPosts.filter((p) => p.status === "active").length;
+
+  const statusCounts = myPosts.reduce(
+    (acc, post) => {
+      const kind = getListingDisplayStatus(post, exchangeByPostId.get(post.id)).kind;
+      if (kind === "open") acc.open += 1;
+      else if (kind === "pending") acc.pending += 1;
+      else if (kind === "done") acc.done += 1;
+      else if (kind === "closed") acc.closed += 1;
+      return acc;
+    },
+    { open: 0, pending: 0, done: 0, closed: 0 },
+  );
 
   if (loading) {
     return (
@@ -316,6 +347,14 @@ export function MyListingsPanel({
                 />
               </div>
 
+              <ExchangeFormatSelector
+                value={editForm.exchangeFormat}
+                onChange={(exchangeFormat) =>
+                  setEditForm((f) => f && { ...f, exchangeFormat })
+                }
+                label="How will this exchange happen?"
+              />
+
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -352,9 +391,23 @@ export function MyListingsPanel({
           );
         }
 
+        const exchangeInfo = exchangeByPostId.get(post.id);
+        const displayStatus = getListingDisplayStatus(post, exchangeInfo);
+        const editable = canEditListing(post, exchangeInfo);
+        const isLiveOnBoard = displayStatus.kind === "open";
+
+        const statusBadge = (
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${getListingStatusBadgeClass(displayStatus.kind)}`}
+            title={displayStatus.hint}
+          >
+            {displayStatus.label}
+          </span>
+        );
+
         const actions = (
           <div className={isProfile ? "flex items-center gap-2 flex-shrink-0 flex-wrap" : "listing-studio-card-actions"}>
-            {post.status === "active" && (
+            {editable && (
               <button
                 type="button"
                 onClick={() => startEdit(post)}
@@ -365,7 +418,7 @@ export function MyListingsPanel({
                 Edit
               </button>
             )}
-            {post.status === "active" ? (
+            {isLiveOnBoard ? (
               <>
                 <button
                   type="button"
@@ -386,7 +439,7 @@ export function MyListingsPanel({
                   Delete
                 </button>
               </>
-            ) : post.status === "closed" ? (
+            ) : displayStatus.kind === "closed" ? (
               <>
                 {!matchedPostIds.has(post.id) && (
                   <button
@@ -409,6 +462,16 @@ export function MyListingsPanel({
                   Delete
                 </button>
               </>
+            ) : displayStatus.kind === "done" || displayStatus.kind === "archived" ? (
+              <button
+                type="button"
+                onClick={() => handleDeleteListing(post.id)}
+                disabled={actionId === post.id || matchedPostIds.has(post.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+              >
+                <Trash2 size={13} />
+                Delete
+              </button>
             ) : null}
           </div>
         );
@@ -419,19 +482,14 @@ export function MyListingsPanel({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${
-                      post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
-                    }`}
-                  >
-                    {post.status}
-                  </span>
+                  {statusBadge}
                 </div>
                 <p className="text-xs dash-subtext">
                   {post.post_type === "needs" ? "Need help" : "Offering"} · {post.category} ·{" "}
                   <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
                   {post.exchange_format ? ` · ${formatExchangeFormat(post.exchange_format)}` : ""}
                 </p>
+                <p className="text-[11px] dash-subtext mt-0.5 opacity-80">{displayStatus.hint}</p>
                 {post.description && (
                   <p className="text-xs dash-subtext mt-1 line-clamp-2">{post.description}</p>
                 )}
@@ -451,13 +509,7 @@ export function MyListingsPanel({
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="listing-studio-card-title">{post.title}</h3>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${
-                      post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
-                    }`}
-                  >
-                    {post.status}
-                  </span>
+                  {statusBadge}
                 </div>
                 <div className="listing-studio-card-meta">
                   <span
@@ -473,6 +525,7 @@ export function MyListingsPanel({
                   <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
                   {post.exchange_format && <span>{formatExchangeFormat(post.exchange_format)}</span>}
                 </div>
+                <p className="text-[11px] dash-subtext mt-1 opacity-80">{displayStatus.hint}</p>
                 {post.description && (
                   <p className="text-xs dash-subtext mt-2 line-clamp-2 leading-relaxed">{post.description}</p>
                 )}
@@ -500,12 +553,20 @@ export function MyListingsPanel({
     <div className="listing-studio">
       <div className="listing-studio-summary">
         <div className="listing-studio-stat">
-          <p className="listing-studio-stat-value">{activeCount}</p>
-          <p className="listing-studio-stat-label">Active</p>
+          <p className="listing-studio-stat-value">{statusCounts.open}</p>
+          <p className="listing-studio-stat-label">Open</p>
+        </div>
+        <div className="listing-studio-stat">
+          <p className="listing-studio-stat-value">{statusCounts.pending}</p>
+          <p className="listing-studio-stat-label">Pending</p>
+        </div>
+        <div className="listing-studio-stat">
+          <p className="listing-studio-stat-value">{statusCounts.done}</p>
+          <p className="listing-studio-stat-label">Done</p>
         </div>
         <div className="listing-studio-stat">
           <p className="listing-studio-stat-value">{myPosts.length}</p>
-          <p className="listing-studio-stat-label">Total posted</p>
+          <p className="listing-studio-stat-label">Total</p>
         </div>
       </div>
       {listContent}

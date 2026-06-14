@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { Exchange, ExchangeWithProfiles } from "../types/database";
+import type { PostExchangeInfo } from "./listing-status";
 
 import type { ExchangeFormatResolved } from "./exchange-format";
 
@@ -83,6 +84,31 @@ export async function fetchMatchedPostIds(): Promise<string[]> {
 
   if (error) throw new Error(error.message);
   return [...new Set((data ?? []).map((row) => row.post_id as string))];
+}
+
+export async function fetchExchangeInfoForPosts(
+  postIds: string[],
+): Promise<Map<string, PostExchangeInfo>> {
+  if (postIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from("exchanges")
+    .select("post_id, status, created_at")
+    .in("post_id", postIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const map = new Map<string, PostExchangeInfo>();
+  for (const row of data ?? []) {
+    const postId = row.post_id as string;
+    if (map.has(postId)) continue;
+    map.set(postId, {
+      postId,
+      status: row.status as PostExchangeInfo["status"],
+    });
+  }
+  return map;
 }
 
 export async function fetchRecentExchanges(userId: string, limit = 5): Promise<ExchangeWithProfiles[]> {

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { X, ArrowRight, ArrowLeft } from "lucide-react";
+import { aero } from "./aeroTheme";
 
 export interface TourStep {
   target?: string;
@@ -252,7 +253,7 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
               left: spotlight.left,
               width: spotlight.width,
               height: spotlight.height,
-              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.78)",
+              boxShadow: `0 0 0 9999px ${aero.overlay}`,
               zIndex: 9999,
             }}
           />
@@ -263,7 +264,7 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
               left: spotlight.left,
               width: spotlight.width,
               height: spotlight.height,
-              boxShadow: "0 0 0 2px #10B981, 0 0 20px rgba(16,185,129,0.4)",
+              boxShadow: aero.spotlightRing,
               zIndex: 10000,
             }}
           />
@@ -271,7 +272,7 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
       ) : (
         <div
           className="fixed inset-0 pointer-events-none"
-          style={{ background: "rgba(0, 0, 0, 0.78)", zIndex: 9999 }}
+          style={{ background: aero.overlay, zIndex: 9999 }}
         />
       )}
 
@@ -284,30 +285,45 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
           width: getCardWidth(),
           maxWidth: `calc(100vw - ${VIEWPORT_PAD * 2}px)`,
           zIndex: 10001,
-          background: "#0D1220",
-          borderColor: "#1F2937",
-          boxShadow: "0 16px 48px rgba(0,0,0,0.5)",
+          background: aero.glass.background,
+          borderColor: aero.glass.border,
+          boxShadow: aero.glass.shadow,
+          backdropFilter: aero.glass.backdrop,
+          WebkitBackdropFilter: aero.glass.backdrop,
         }}
       >
+        <div
+          className="h-1 flex-shrink-0"
+          style={{ background: aero.gradientProgress }}
+        />
+
         <div className="p-5 flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider mb-1">
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wider mb-1"
+                style={{ color: aero.aquaDeep }}
+              >
                 Step {currentStep + 1} of {steps.length}
               </p>
-              <h3 className="text-sm font-semibold text-white leading-snug">{step.title}</h3>
+              <h3 className="text-sm font-bold leading-snug" style={{ color: aero.text }}>
+                {step.title}
+              </h3>
             </div>
             <button
               type="button"
               onClick={onSkip}
-              className="flex-shrink-0 text-[#6B7280] hover:text-white transition-colors"
+              className="flex-shrink-0 transition-colors"
+              style={{ color: aero.textFaint }}
               aria-label="Skip tour"
             >
               <X size={16} />
             </button>
           </div>
 
-          <p className="text-xs text-[#9CA3AF] leading-relaxed">{step.description}</p>
+          <p className="text-xs leading-relaxed" style={{ color: aero.textMuted }}>
+            {step.description}
+          </p>
 
           <div className="flex items-center gap-1">
             {steps.map((_, i) => (
@@ -316,7 +332,12 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
                 className="h-1 rounded-full transition-all duration-300"
                 style={{
                   width: i === currentStep ? 16 : 6,
-                  background: i === currentStep ? "#10B981" : "#374151",
+                  background:
+                    i === currentStep
+                      ? aero.aquaDeep
+                      : i < currentStep
+                        ? aero.grassLight
+                        : "rgba(255,255,255,0.45)",
                 }}
               />
             ))}
@@ -324,13 +345,14 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
 
           <div
             className="flex items-center justify-between gap-2 pt-3 border-t"
-            style={{ borderColor: "#1F2937" }}
+            style={{ borderColor: "rgba(255,255,255,0.55)" }}
           >
             <button
               type="button"
               onClick={goBack}
               disabled={currentStep === 0}
-              className="flex items-center gap-1 text-xs text-[#9CA3AF] hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              className="flex items-center gap-1 text-xs transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              style={{ color: aero.textMuted }}
             >
               <ArrowLeft size={14} />
               Back
@@ -339,17 +361,19 @@ export function OnboardingTour({ steps, onComplete, onSkip }: OnboardingTourProp
               <button
                 type="button"
                 onClick={onSkip}
-                className="text-xs text-[#6B7280] hover:text-[#9CA3AF] transition-colors px-2 py-1"
+                className="text-xs transition-colors px-2 py-1"
+                style={{ color: aero.textFaint }}
               >
                 Skip
               </button>
               <button
                 type="button"
                 onClick={goNext}
-                className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold"
+                className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold shadow-sm"
                 style={{
-                  background: "linear-gradient(135deg, #10B981, #06B6D4)",
-                  color: "#000",
+                  background: aero.gradientBtn,
+                  color: aero.text,
+                  boxShadow: "0 4px 12px rgba(58,158,196,0.25), inset 0 1px 0 rgba(255,255,255,0.8)",
                 }}
               >
                 {isLast ? "Finish" : "Next"}

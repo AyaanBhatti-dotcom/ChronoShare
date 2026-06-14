@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   Handshake,
+  HeartHandshake,
   Loader2,
   Mail,
   MapPin,
@@ -378,7 +379,7 @@ export function SignupOnboarding() {
             {step === 0 && (
               <StepShell
                 title="Trade time, not money"
-                subtitle="Join a community where skills are exchanged in hours. Help a neighbor, earn time credits, and get help when you need it."
+                subtitle="Join a solarpunk community where skills flow in hours — help neighbors, earn credits, and tap the Community Pool when you need a boost."
               >
                 <div className="grid gap-3 mb-8">
                   {[
@@ -388,14 +389,19 @@ export function SignupOnboarding() {
                       desc: "Tutoring, tech help, rides, design — whatever your community offers.",
                     },
                     {
-                      icon: <Sparkles size={18} />,
-                      title: "Start with 1 free hour",
-                      desc: "Every new member gets an hour in the bank to kick things off.",
+                      icon: <MapPin size={18} />,
+                      title: "Nearby map on Home",
+                      desc: "See listings around you on an interactive map, or browse worldwide.",
                     },
                     {
-                      icon: <MapPin size={18} />,
-                      title: "Local by design",
-                      desc: "Find listings near you on an interactive map.",
+                      icon: <HeartHandshake size={18} />,
+                      title: "Community Pool",
+                      desc: "Donate spare hours or claim from the pool after helping others — a safety net for the community.",
+                    },
+                    {
+                      icon: <Sparkles size={18} />,
+                      title: "Start with 1 free hour",
+                      desc: "Every new member gets an hour in the bank. Both sides confirm before hours move.",
                     },
                   ].map((item) => (
                     <div key={item.title} className="signup-feature-card">
@@ -742,7 +748,7 @@ export function SignupOnboarding() {
                 )}
                 <p className="signup-step-subtitle text-center mb-8">
                   You start with <span className="signup-highlight">1 hour</span> in your
-                  bank. Browse nearby listings or post your first offer — we&apos;ll show you around.
+                  bank. We&apos;ll show you the map, Job Board, and Community Pool on a quick tour.
                 </p>
                 <button
                   type="button"

@@ -12,7 +12,11 @@ import {
   Handshake,
   TrendingUp,
   Search,
+  HeartHandshake,
+  CheckCircle2,
+  Gift,
 } from "lucide-react";
+import { POOL_RULES, formatClaimWindowLabel } from "../../../lib/community-pool";
 import { useAuth } from "../../context/AuthContext";
 import { AeroBackground, aero } from "./aeroTheme";
 import { Logo } from "../Logo";
@@ -186,7 +190,7 @@ export function OnboardingFlow() {
     {
       id: "welcome",
       title: `Welcome, ${firstName}!`,
-      subtitle: "Join a community that trades skills with time, not money.",
+      subtitle: "A solarpunk time bank — trade skills with hours, not money.",
       content: (
         <div className="space-y-4">
           <div
@@ -198,10 +202,10 @@ export function OnboardingFlow() {
           >
             <Logo size="lg" className="mx-auto mb-4 rounded-2xl shadow-md" />
             <p className="text-sm leading-relaxed" style={{ color: aero.textMuted }}>
-              ChronoShare lets you{" "}
-              <strong style={{ color: aero.text }}>offer your skills</strong> to earn time credits,
-              then <strong style={{ color: aero.text }}>spend those hours</strong> getting help
-              from others.
+              ChronoShare connects neighbors through a{" "}
+              <strong style={{ color: aero.text }}>shared hour economy</strong>. Offer skills,
+              request help, and give back through the{" "}
+              <strong style={{ color: aero.text }}>Community Pool</strong>.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -229,29 +233,65 @@ export function OnboardingFlow() {
     {
       id: "how-it-works",
       title: "How time banking works",
-      subtitle: "Every exchange is tracked in your personal hour balance.",
+      subtitle: "Every exchange is tracked — both people confirm before hours move.",
       content: (
         <div className="space-y-2.5">
           <FeatureCard
             icon={<PlusCircle size={18} />}
             title="Offer your time"
-            description="Post a skill you can help with — tutoring, design, repairs, coding, and more."
+            description="Post a skill — tutoring, repairs, design, rides. Earn hours when someone accepts your offer."
           />
           <FeatureCard
             icon={<Search size={18} />}
             title="Find what you need"
-            description="Browse the Job Board for people offering skills or requesting help."
+            description="Browse the Job Board or the nearby map on Home. Filter needs vs. offers and join an exchange."
           />
           <FeatureCard
-            icon={<Handshake size={18} />}
-            title="Complete the exchange"
-            description="Help someone to earn hours. Get help and hours are deducted from your balance."
+            icon={<CheckCircle2 size={18} />}
+            title="Both confirm, then settle"
+            description="After you help each other, both people confirm in Profile. Hours transfer only once you're both satisfied."
           />
           <FeatureCard
             icon={<TrendingUp size={18} />}
             title="Track your activity"
-            description="Your dashboard shows hours earned vs. spent and your full exchange history."
+            description="Home shows your balance and recent exchanges. Profile has your full history and stats."
           />
+        </div>
+      ),
+    },
+    {
+      id: "community-pool",
+      title: "The Community Pool",
+      subtitle: "A solidarity fund — donate hours, earn access by helping others.",
+      content: (
+        <div className="space-y-2.5">
+          <FeatureCard
+            icon={<Gift size={18} />}
+            title="Donate spare hours"
+            description="Give hours back to the community when you're doing well. Donors get credit toward pool access."
+          />
+          <FeatureCard
+            icon={<Handshake size={18} />}
+            title="Give to get"
+            description={`Help ${POOL_RULES.helpsRequired} people in ${POOL_RULES.lookbackDays} days to unlock a claim. Donations can reduce that requirement.`}
+          />
+          <FeatureCard
+            icon={<HeartHandshake size={18} />}
+            title="Weekend claim windows"
+            description={`Eligible members can claim up to ${POOL_RULES.maxClaimPerWeek} hour per week during ${formatClaimWindowLabel()}.`}
+          />
+          <div
+            className="rounded-2xl px-4 py-3 text-xs leading-relaxed"
+            style={{
+              ...glassCard,
+              background: "rgba(91, 199, 122, 0.12)",
+              border: "1px solid rgba(91, 199, 122, 0.35)",
+              color: aero.textMuted,
+            }}
+          >
+            <strong style={{ color: aero.grassDeep }}>Tip:</strong> The pool is separate from
+            offer minting — it&apos;s a safety net for members who need a boost after contributing.
+          </div>
         </div>
       ),
     },
@@ -264,13 +304,19 @@ export function OnboardingFlow() {
           <NavPreview
             icon={<Home size={16} />}
             label="Home"
-            description="Hour balance, charts, and recent exchanges."
+            description="Nearby map, listings, balance, and recent exchanges."
           />
           <NavPreview
             icon={<Briefcase size={16} />}
             label="Job Board"
-            description="Browse active posts from the community."
+            description="Browse and join open needs and offers."
             badge="Live"
+          />
+          <NavPreview
+            icon={<HeartHandshake size={16} />}
+            label="Community Pool"
+            description="Donate hours or claim from the solidarity fund."
+            badge="New"
           />
           <NavPreview
             icon={<PlusCircle size={16} />}
@@ -280,12 +326,12 @@ export function OnboardingFlow() {
           <NavPreview
             icon={<User size={16} />}
             label="Profile"
-            description="Exchange history, ratings, and public profile."
+            description="Confirm exchanges, view history, and public profile."
           />
           <NavPreview
             icon={<SettingsIcon size={16} />}
             label="Settings"
-            description="Notifications, privacy, and account preferences."
+            description="Privacy, notifications, and restart this tour anytime."
           />
         </div>
       ),
@@ -298,23 +344,23 @@ export function OnboardingFlow() {
         <div className="space-y-2.5">
           <StepCard
             number="1"
-            title="Check your hour balance"
-            desc="You start with 1 hour. It's shown in the sidebar and on your dashboard."
+            title="Set your location"
+            desc="Home uses your city to show nearby listings on the map. You can browse worldwide too."
           />
           <StepCard
             number="2"
             title="Browse the Job Board"
-            desc="See what others are offering or needing. This is where exchanges begin."
+            desc="See what others need or offer. Join a listing that matches your skills or goals."
           />
           <StepCard
             number="3"
             title="Post your first offer"
-            desc="Share a skill you can help with — even 30 minutes counts."
+            desc="Share a skill you can help with — even 30 minutes counts toward earning hours."
           />
           <StepCard
             number="4"
             title="Take the guided tour"
-            desc="We'll walk you through the real dashboard and highlight each area."
+            desc="We'll walk through the real dashboard — map, pool, confirmations, and all."
           />
         </div>
       ),
@@ -335,8 +381,8 @@ export function OnboardingFlow() {
             <Sparkles size={32} className="mx-auto mb-3" style={{ color: aero.aquaDeep }} />
             <p className="text-sm leading-relaxed" style={{ color: aero.textMuted }}>
               We recommend the{" "}
-              <strong style={{ color: aero.text }}>guided tour</strong> — it takes about a minute
-              and shows you exactly where everything is.
+              <strong style={{ color: aero.text }}>guided tour</strong> — about a minute on your
+              real dashboard, including the map, Community Pool, and confirmation flow.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">

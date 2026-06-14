@@ -2338,6 +2338,18 @@ html {
     border: 1px solid rgba(74, 143, 173, 0.35);
   }
 
+  .dash-badge-pending {
+    background: rgba(255, 209, 102, 0.28);
+    color: #b8860b;
+    border: 1px solid rgba(255, 209, 102, 0.55);
+  }
+
+  .dash-badge-done {
+    background: rgba(58, 158, 196, 0.22);
+    color: var(--dash-sky);
+    border: 1px solid rgba(58, 158, 196, 0.45);
+  }
+
   .dash-badge-own {
     background: rgba(45, 212, 200, 0.2);
     color: var(--dash-aqua);
