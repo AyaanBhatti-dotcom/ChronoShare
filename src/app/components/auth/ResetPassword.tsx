@@ -1,11 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
-import {
-  INSECURE_PASSWORD_MESSAGE,
-  isPasswordInRockyou,
-  preloadRockyouSet,
-} from "../../../lib/password-leak-check";
 import { AuthLayout } from "./AuthLayout";
 
 export function ResetPassword() {
@@ -13,39 +8,8 @@ export function ResetPassword() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordInsecure, setPasswordInsecure] = useState(false);
-  const [checkingPassword, setCheckingPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    preloadRockyouSet();
-  }, []);
-
-  useEffect(() => {
-    if (!password) {
-      setPasswordInsecure(false);
-      return;
-    }
-
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      setCheckingPassword(true);
-      try {
-        const insecure = await isPasswordInRockyou(password);
-        if (!cancelled) setPasswordInsecure(insecure);
-      } catch {
-        if (!cancelled) setPasswordInsecure(false);
-      } finally {
-        if (!cancelled) setCheckingPassword(false);
-      }
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [password]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -53,11 +17,6 @@ export function ResetPassword() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
-      return;
-    }
-
-    if (passwordInsecure) {
-      setError(INSECURE_PASSWORD_MESSAGE);
       return;
     }
 
@@ -101,9 +60,6 @@ export function ResetPassword() {
             placeholder="At least 6 characters"
             className="auth-input"
           />
-          {passwordInsecure && (
-            <p className="text-xs text-red-700">{INSECURE_PASSWORD_MESSAGE}</p>
-          )}
         </div>
 
         <div className="space-y-1.5">
@@ -122,11 +78,7 @@ export function ResetPassword() {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading || checkingPassword || passwordInsecure}
-          className="auth-btn-primary"
-        >
+        <button type="submit" disabled={loading} className="auth-btn-primary">
           {loading ? "Updating..." : "Update password"}
         </button>
       </form>

@@ -8,7 +8,6 @@ import {
 } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { signupEmailRedirectUrl, supabase } from "../../lib/supabase";
-import { validatePasswordNotLeaked } from "../../lib/password-leak-check";
 import { completeProfileSetup as markProfileSetupDone } from "../../lib/profile";
 import type { Profile } from "../../types/database";
 import {
@@ -199,11 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: "Password must be at least 6 characters.", needsEmailVerification: false };
     }
 
-    const leakedPasswordError = await validatePasswordNotLeaked(input.password);
-    if (leakedPasswordError) {
-      return { error: leakedPasswordError, needsEmailVerification: false };
-    }
-
     const upsertSignupProfile = async (userId: string) => {
       await supabase.from("profiles").upsert({
         id: userId,
@@ -344,9 +338,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = async (password: string): Promise<string | null> => {
     if (password.length < 6) return "Password must be at least 6 characters.";
-
-    const leakedPasswordError = await validatePasswordNotLeaked(password);
-    if (leakedPasswordError) return leakedPasswordError;
 
     const { error } = await supabase.auth.updateUser({ password });
     if (error) return mapAuthError(error.message);

@@ -31,11 +31,6 @@ import { formatLocationLabel, type UserLocation } from "../../../lib/location";
 import { LocationPicker } from "../LocationPicker";
 import { LogoBrand } from "../Logo";
 import { LanguagePicker, OnboardingLanguageBadge } from "../LanguagePicker";
-import {
-  INSECURE_PASSWORD_MESSAGE,
-  isPasswordInRockyou,
-  preloadRockyouSet,
-} from "../../../lib/password-leak-check";
 import { setNewSignupTourPending } from "../../utils/onboarding";
 import { aero } from "../onboarding/aeroTheme";
 
@@ -149,8 +144,6 @@ export function SignupOnboarding() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [linkResent, setLinkResent] = useState(false);
-  const [passwordInsecure, setPasswordInsecure] = useState(false);
-  const [checkingPassword, setCheckingPassword] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -168,54 +161,54 @@ export function SignupOnboarding() {
   }, []);
 
   useEffect(() => {
-    if (step !== 3) return;
-    preloadRockyouSet();
-  }, [step]);
-
-  useEffect(() => {
-    if (step !== 3 || !password) {
-      setPasswordInsecure(false);
-      return;
-    }
-
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      setCheckingPassword(true);
-      try {
-        const insecure = await isPasswordInRockyou(password);
-        if (!cancelled) setPasswordInsecure(insecure);
-      } catch {
-        if (!cancelled) setPasswordInsecure(false);
-      } finally {
-        if (!cancelled) setCheckingPassword(false);
-      }
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [password, step]);
-
-  useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = window.setTimeout(() => setResendCooldown((c) => c - 1), 1000);
     return () => window.clearTimeout(timer);
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (!user || step !== 4) return;
-    setEmailVerified(true);
-    setStep(5);
-  }, [user, step]);
+    if (!user || user.profileSetupCompleted) return;
+    if (step >= 3 && step <= 4) {
+      setEmailVerified(true);
+      setStep(5);
+    }
+  }, [user, user?.profileSetupCompleted, step]);
+
+  useEffect(() => {
+    if (step !== 4 || emailVerified || !email || !password) return;
+
+    let cancelled = false;
+
+    const attemptSignIn = async () => {
+      const err = await signInAfterEmailConfirmation(email, password);
+      if (cancelled || err) return;
+      setEmailVerified(true);
+      setStep(5);
+    };
+
+    void attemptSignIn();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [step, emailVerified, email, password, signInAfterEmailConfirmation]);
 
   useEffect(() => {
     if (step !== 4 || emailVerified) return;
-    const onFocus = () => {
+
+    const tryAdvance = () => {
       void refreshUser();
     };
+
+    const onFocus = () => tryAdvance();
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+
+    const interval = window.setInterval(tryAdvance, 4000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(interval);
+    };
   }, [step, emailVerified, refreshUser]);
 
   useEffect(() => {
@@ -271,24 +264,29 @@ export function SignupOnboarding() {
     }
 
     setLoading(true);
-    const result = await signup({ name, username, email, password });
-    setLoading(false);
+    try {
+      const result = await signup({ name, username, email, password });
 
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
 
-    if (result.warning) {
-      setError(result.warning);
-    }
+      if (result.warning) {
+        setError(result.warning);
+      }
 
-    if (result.needsEmailVerification) {
-      setResendCooldown(60);
-      goNext();
-    } else {
-      setEmailVerified(true);
-      setStep(5);
+      if (result.needsEmailVerification) {
+        setResendCooldown(60);
+        goNext();
+      } else {
+        setEmailVerified(true);
+        setStep(5);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create account. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -570,12 +568,6 @@ export function SignupOnboarding() {
                         </div>
                       </div>
                     )}
-                    {passwordInsecure && (
-                      <p className="text-xs signup-status-error pl-1">{INSECURE_PASSWORD_MESSAGE}</p>
-                    )}
-                    {checkingPassword && password && !passwordInsecure && (
-                      <p className="text-xs signup-status-muted pl-1">Checking password safety...</p>
-                    )}
                   </div>
                   <div className="space-y-1.5">
                     <label className="auth-label">Confirm password</label>
@@ -601,8 +593,6 @@ export function SignupOnboarding() {
                     onClick={handleCreateAccount}
                     disabled={
                       loading ||
-                      checkingPassword ||
-                      passwordInsecure ||
                       !email ||
                       password.length < 6 ||
                       password !== confirmPassword

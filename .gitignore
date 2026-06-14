@@ -5,9 +5,6 @@ node_modules/
 dist/
 build/
 
-# Full rockyou wordlist (133MB+) — build with npm run build:rockyou
-rockyou.txt
-
 # Environment & secrets (never commit keys)
 .env
 .env.local
