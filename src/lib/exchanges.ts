@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { ExchangeWithProfiles } from "../types/database";
+import type { Exchange, ExchangeWithProfiles } from "../types/database";
 
 import type { ExchangeFormatResolved } from "./exchange-format";
 
@@ -108,6 +108,21 @@ export function getExchangePartner(
       : (exchange.poster?.full_name ?? "Community member"),
     role: isPoster ? "helper" : "recipient",
   };
+}
+
+export function getExchangePartnerId(exchange: Exchange, userId: string): string {
+  return exchange.poster_id === userId ? exchange.acceptor_id : exchange.poster_id;
+}
+
+export function getExchangePartnerLabel(
+  exchange: Pick<Exchange, "post_type" | "poster_id">,
+  userId: string,
+): string {
+  const isPoster = exchange.poster_id === userId;
+  if (exchange.post_type === "offers") {
+    return isPoster ? "Skill requester" : "Skill provider";
+  }
+  return isPoster ? "Helper" : "Requester";
 }
 
 export function hasUserConfirmed(exchange: ExchangeWithProfiles, userId: string): boolean {

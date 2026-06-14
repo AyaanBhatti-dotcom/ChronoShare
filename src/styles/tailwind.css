@@ -2011,6 +2011,16 @@ html {
     z-index: 1;
   }
 
+  .member-profile-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.65rem;
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+  }
+
   .dash-icon-box {
     background: rgba(255, 255, 255, 0.62);
     border: 1px solid rgba(255, 255, 255, 0.88);

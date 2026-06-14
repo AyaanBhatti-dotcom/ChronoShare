@@ -19,6 +19,7 @@ import {
   Briefcase,
   Award,
   Zap,
+  UserCircle,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
 import {
@@ -29,6 +30,8 @@ import {
   cancelExchange,
   hasUserConfirmed,
   isPartnerConfirmed,
+  getExchangePartnerId,
+  getExchangePartnerLabel,
 } from "../../lib/exchanges";
 import type { ExchangeWithProfiles } from "../../types/database";
 import { dashColors } from "./onboarding/aeroTheme";
@@ -36,6 +39,7 @@ import { formatExchangeFormat } from "../../lib/exchange-format";
 import { ProfileFloatingWindow } from "./profile/ProfileFloatingWindow";
 import { ProfileWin7Window } from "./profile/ProfileWin7Window";
 import { MyListingsPanel } from "./MyListingsPanel";
+import { MemberProfileModal } from "./MemberProfileModal";
 import { fetchMyPosts } from "../../lib/posts";
 
 function formatDate(iso: string) {
@@ -119,6 +123,8 @@ export const Profile = () => {
   const [windowStack, setWindowStack] = useState<ProfileWindowId[]>([]);
   const [windowStates, setWindowStates] = useState<Partial<Record<ProfileWindowId, ProfileWindowState>>>({});
   const desktopLayerRef = useRef<HTMLDivElement>(null);
+  const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
+  const [viewingMemberLabel, setViewingMemberLabel] = useState<string | undefined>();
 
   const getWindowState = useCallback(
     (id: ProfileWindowId): ProfileWindowState => windowStates[id] ?? defaultWindowState(id),
@@ -395,6 +401,12 @@ export const Profile = () => {
   const handleStartClick = () => {
     showEgg("ChronoStart", START_TIPS[startTipIndex]!);
     setStartTipIndex((i) => (i + 1) % START_TIPS.length);
+  };
+
+  const openMemberProfile = (exchange: ExchangeWithProfiles) => {
+    if (!user) return;
+    setViewingMemberId(getExchangePartnerId(exchange, user.userId));
+    setViewingMemberLabel(getExchangePartnerLabel(exchange, user.userId));
   };
 
   const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -680,19 +692,21 @@ export const Profile = () => {
               <div className={`divide-y dash-divider mt-2 ${pendingState.maximized ? "profile-pending-grid" : ""}`}>
               {pending.map((ex) => {
                 const partner = user ? getExchangePartner(ex, user.userId) : { name: "User", role: "helper" as const };
+                const partnerLabel = user ? getExchangePartnerLabel(ex, user.userId) : "Community member";
                 const userConfirmed = user ? hasUserConfirmed(ex, user.userId) : false;
                 const partnerConfirmed = user ? isPartnerConfirmed(ex, user.userId) : false;
+                const isSkillOfferRequest = ex.post_type === "offers" && user?.userId === ex.poster_id;
                 return (
                   <div key={ex.id} className={`flex flex-col gap-3 px-5 py-4 ${pendingState.maximized ? "profile-pending-card" : ""}`}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium dash-heading">{ex.title}</p>
                       <p className="text-xs dash-subtext">
-                        with {partner.name} · {ex.hours}h
+                        {isSkillOfferRequest ? "Requested by" : "With"} {partner.name} · {ex.hours}h
                         {ex.exchange_format ? ` · ${formatExchangeFormat(ex.exchange_format)}` : ""}
                       </p>
                       {pendingState.maximized && (
                         <p className="text-[11px] dash-subtext mt-1">
-                          Posted {formatDate(ex.created_at)} · Role: {partner.role}
+                          Posted {formatDate(ex.created_at)} · {partnerLabel}
                         </p>
                       )}
                     </div>
@@ -713,7 +727,15 @@ export const Profile = () => {
                         {partner.name.split(" ")[0]} {partnerConfirmed ? "confirmed" : "pending"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openMemberProfile(ex)}
+                        className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                      >
+                        <UserCircle size={13} />
+                        View {partnerLabel.toLowerCase()} profile
+                      </button>
                       {!userConfirmed && (
                         <button
                           type="button"
@@ -1001,6 +1023,15 @@ export const Profile = () => {
           <p className="profile-egg-body">{eggToast.body}</p>
         </div>
       )}
+
+      <MemberProfileModal
+        userId={viewingMemberId}
+        roleLabel={viewingMemberLabel}
+        onClose={() => {
+          setViewingMemberId(null);
+          setViewingMemberLabel(undefined);
+        }}
+      />
     </div>
   );
 };

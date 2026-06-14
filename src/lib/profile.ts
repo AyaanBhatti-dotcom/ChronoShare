@@ -90,3 +90,39 @@ export function getPasswordStrength(password: string): {
   if (score <= 4) return { score, label: "Good", color: "#06B6D4" };
   return { score, label: "Strong", color: "#10B981" };
 }
+
+export type PublicMemberProfile = {
+  id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  hours_available: number;
+  mfa_enabled: boolean;
+  created_at: string;
+};
+
+const PUBLIC_PROFILE_SELECT =
+  "id, full_name, username, avatar_url, city, state, country, hours_available, mfa_enabled, created_at";
+
+export async function fetchPublicProfile(userId: string): Promise<PublicMemberProfile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(PUBLIC_PROFILE_SELECT)
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data as PublicMemberProfile | null;
+}
+
+export function formatPublicLocation(profile: Pick<PublicMemberProfile, "city" | "state" | "country">): string {
+  const parts = [
+    profile.city,
+    profile.state,
+    profile.country && profile.country !== "US" ? profile.country : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : "Location not shared";
+}
