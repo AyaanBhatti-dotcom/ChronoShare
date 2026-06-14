@@ -342,6 +342,10 @@ export interface Database {
         };
         Returns: string | null;
       };
+      admin_get_user_preview: {
+        Args: { p_key: string; p_user_id: string };
+        Returns: Json;
+      };
       admin_list_exchange_reports: {
         Args: { p_key: string };
         Returns: ExchangeReport[];

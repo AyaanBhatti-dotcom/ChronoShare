@@ -276,6 +276,18 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
     }
   };
 
+  if (tab === "preview") {
+    return (
+      <AdminUserPreview
+        adminKey={adminKey}
+        users={users}
+        initialUserId={previewUserId}
+        onExitPreview={() => setTab("users")}
+        onExitAdmin={onLogout}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "#0B0F19" }}>
       <header
@@ -426,13 +438,7 @@ export function AdminDashboard({ adminKey, onLogout }: AdminDashboardProps) {
           </div>
         )}
 
-        {tab === "preview" ? (
-          <AdminUserPreview
-            users={users}
-            initialUserId={previewUserId}
-            onExitPreview={() => setTab("users")}
-          />
-        ) : loading ? (
+        {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
           </div>

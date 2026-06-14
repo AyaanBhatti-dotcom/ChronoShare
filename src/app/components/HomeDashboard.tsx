@@ -10,6 +10,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useAuth, getInitials } from "../context/AuthContext";
+import { usePreviewDashboard } from "../context/PreviewDashboardContext";
 import { fetchRecentExchanges, getExchangePartner, fetchPendingExchanges, fetchUserJoinedPostIds, hasUserConfirmed } from "../../lib/exchanges";
 import { fetchActivePosts } from "../../lib/posts";
 import {
@@ -45,7 +46,8 @@ interface HomeDashboardProps {
 
 export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, isPreview } = useAuth();
+  const previewSnapshot = usePreviewDashboard();
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [posts, setPosts] = useState<NearbyPost[]>([]);
@@ -67,6 +69,11 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
 
   const loadLocation = useCallback(async () => {
     if (!user) return;
+    if (isPreview && previewSnapshot) {
+      setUserLocation(previewSnapshot.location);
+      setLocationLoading(false);
+      return;
+    }
     setLocationLoading(true);
     try {
       const location = await getUserLocation(user.userId);
@@ -76,15 +83,21 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
     } finally {
       setLocationLoading(false);
     }
-  }, [user]);
+  }, [user, isPreview, previewSnapshot]);
 
   const handleLocationSaved = (location: UserLocation) => {
+    if (isPreview) return;
     setUserLocation(location);
   };
 
   const loadPosts = useCallback(async () => {
     setPostsLoading(true);
     try {
+      if (isPreview && previewSnapshot) {
+        setPosts(previewSnapshot.active_posts);
+        return;
+      }
+
       const active = await fetchActivePosts();
       if (userLocation) {
         setPosts(enrichPostsWithDistance(active, userLocation));
@@ -103,7 +116,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
     } finally {
       setPostsLoading(false);
     }
-  }, [userLocation]);
+  }, [userLocation, isPreview, previewSnapshot]);
 
   useEffect(() => {
     loadLocation();
@@ -115,6 +128,13 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
 
   useEffect(() => {
     if (!user) return;
+    if (isPreview && previewSnapshot) {
+      setExchanges(previewSnapshot.recent_exchanges.slice(0, 3));
+      setPendingCount(previewSnapshot.pending_count);
+      setNeedsYourConfirm(previewSnapshot.needs_confirm_count);
+      setJoinedPostIds(new Set());
+      return;
+    }
     fetchRecentExchanges(user.userId, 3)
       .then(setExchanges)
       .catch(console.warn);
@@ -129,7 +149,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
     fetchUserJoinedPostIds(user.userId)
       .then((ids) => setJoinedPostIds(new Set(ids)))
       .catch(console.warn);
-  }, [user]);
+  }, [user, isPreview, previewSnapshot]);
 
   const visiblePosts = useMemo(() => {
     return filterAndSortListings(posts, { scope, radiusMiles, sort }).filter(
@@ -222,7 +242,7 @@ export const HomeDashboard = ({ onNavigate }: HomeDashboardProps) => {
         </div>
       </div>
 
-      {!locationLoading && !userLocation && (
+      {!isPreview && !locationLoading && !userLocation && (
         <LocationPicker onSaved={handleLocationSaved} />
       )}
 
