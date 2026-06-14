@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Monitor, Wrench, BookOpen, Music, ChefHat, Palette,
-  XCircle, RotateCcw, Trash2, Pencil, Check, X,
+  XCircle, RotateCcw, Trash2, Pencil, Check, X, FolderOpen, PlusCircle,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -24,6 +24,10 @@ const categories = [
   { id: "Cooking", label: "Cooking", icon: <ChefHat size={16} /> },
   { id: "Design", label: "Design", icon: <Palette size={16} /> },
 ];
+
+function categoryIcon(cat: string) {
+  return categories.find((c) => c.id === cat)?.icon ?? <Monitor size={16} />;
+}
 
 type EditForm = {
   title: string;
@@ -180,9 +184,7 @@ export function MyListingsPanel({
   };
 
   const isProfile = variant === "profile";
-  const rowClass = isProfile
-    ? "flex flex-col gap-3 px-5 py-4 hover:bg-white/20 transition-colors"
-    : "dash-card rounded-2xl p-4 flex flex-col gap-3";
+  const activeCount = myPosts.filter((p) => p.status === "active").length;
 
   if (loading) {
     return (
@@ -193,18 +195,46 @@ export function MyListingsPanel({
   }
 
   if (myPosts.length === 0) {
+    if (isProfile) {
+      return (
+        <div className="px-6 py-12 text-center text-sm dash-subtext">
+          <p className="mb-3">You haven&apos;t posted any listings yet.</p>
+          {onCreateClick && (
+            <button
+              type="button"
+              onClick={onCreateClick}
+              className="dash-btn-primary px-5 py-2 rounded-full text-sm font-semibold"
+            >
+              Create your first listing
+            </button>
+          )}
+        </div>
+      );
+    }
+
     return (
-      <div className={isProfile ? "px-6 py-12 text-center text-sm dash-subtext" : "dash-card text-center py-12 rounded-2xl"}>
-        <p className="text-sm dash-subtext mb-3">You haven&apos;t posted any listings yet.</p>
-        {onCreateClick && (
-          <button
-            type="button"
-            onClick={onCreateClick}
-            className="dash-btn-primary px-5 py-2 rounded-full text-sm font-semibold"
-          >
-            Create your first listing
-          </button>
-        )}
+      <div className="listing-studio">
+        <div className="listing-studio-empty">
+          <div className="listing-studio-empty-icon">
+            <FolderOpen size={24} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold dash-heading mb-1">No listings yet</p>
+            <p className="text-xs dash-subtext max-w-[16rem] mx-auto">
+              Your job board posts will appear here — create one to start trading hours.
+            </p>
+          </div>
+          {onCreateClick && (
+            <button
+              type="button"
+              onClick={onCreateClick}
+              className="dash-btn-primary flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold"
+            >
+              <PlusCircle size={15} />
+              Create your first listing
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -212,198 +242,259 @@ export function MyListingsPanel({
   const listContent = (
     <>
       {error && (
-        <p className={`text-sm text-red-500 ${isProfile ? "px-5 pt-3" : ""}`}>{error}</p>
+        <p className={`text-sm text-red-600 bg-red-50/80 border border-red-200/60 rounded-xl px-4 py-2 ${isProfile ? "mx-5 mt-3" : ""}`}>
+          {error}
+        </p>
       )}
       {myPosts.map((post) => {
         const isEditing = editingId === post.id;
 
         if (isEditing && editForm) {
-          return (
-            <div key={post.id} className={rowClass}>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold dash-heading uppercase tracking-wide">Edit listing</p>
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="dash-btn-outline p-1.5 rounded-full"
-                    aria-label="Cancel edit"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-
-                <div className="dash-pill-group flex rounded-full p-1 w-fit">
-                  {(["needs", "offers"] as const).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setEditForm((f) => f && { ...f, postType: type })}
-                      className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
-                        editForm.postType === type ? "dash-pill-active" : "dash-pill-inactive"
-                      }`}
-                    >
-                      {type === "needs" ? "Need Help" : "Offering Skill"}
-                    </button>
-                  ))}
-                </div>
-
-                <ExchangeFormatSelector
-                  value={editForm.exchangeFormat}
-                  onChange={(v) => setEditForm((f) => f && { ...f, exchangeFormat: v as ExchangeFormatPreference })}
-                />
-
-                <input
-                  value={editForm.title}
-                  onChange={(e) => setEditForm((f) => f && { ...f, title: e.target.value })}
-                  className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none"
-                  placeholder="Title"
-                />
-
-                <textarea
-                  value={editForm.description}
-                  onChange={(e) => setEditForm((f) => f && { ...f, description: e.target.value })}
-                  rows={2}
-                  className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none resize-none"
-                  placeholder="Description (optional)"
-                />
-
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setEditForm((f) => f && { ...f, category: cat.id })}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                        editForm.category === cat.id ? "dash-category-active" : "dash-category-inactive"
-                      }`}
-                    >
-                      {cat.icon}
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <label className="text-xs dash-label">Hours</label>
-                  <input
-                    type="number"
-                    min={0.5}
-                    max={8}
-                    step={0.5}
-                    value={editForm.hours}
-                    onChange={(e) =>
-                      setEditForm((f) => f && { ...f, hours: Number(e.target.value) || 0.5 })
-                    }
-                    className="dash-input w-24 px-3 py-1.5 rounded-xl text-sm outline-none"
-                    style={{ fontFamily: "'DM Mono', monospace" }}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSaveEdit(post.id)}
-                    disabled={actionId === post.id || isPreview}
-                    className="dash-btn-primary flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold disabled:opacity-60"
-                  >
-                    <Check size={13} />
-                    Save changes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="dash-btn-outline px-4 py-2 rounded-full text-xs font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
+          const editBody = (
+            <div className={`space-y-3 ${isProfile ? "" : "listing-studio-edit"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold dash-heading uppercase tracking-wide">Edit listing</p>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="dash-btn-outline p-1.5 rounded-full"
+                  aria-label="Cancel edit"
+                >
+                  <X size={14} />
+                </button>
               </div>
+
+              <div className="dash-pill-group flex rounded-full p-1 w-fit">
+                {(["needs", "offers"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setEditForm((f) => f && { ...f, postType: type })}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      editForm.postType === type ? "dash-pill-active" : "dash-pill-inactive"
+                    }`}
+                  >
+                    {type === "needs" ? "Need Help" : "Offering Skill"}
+                  </button>
+                ))}
+              </div>
+
+              <ExchangeFormatSelector
+                value={editForm.exchangeFormat}
+                onChange={(v) => setEditForm((f) => f && { ...f, exchangeFormat: v as ExchangeFormatPreference })}
+              />
+
+              <input
+                value={editForm.title}
+                onChange={(e) => setEditForm((f) => f && { ...f, title: e.target.value })}
+                className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none"
+                placeholder="Title"
+              />
+
+              <textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => f && { ...f, description: e.target.value })}
+                rows={2}
+                className="dash-input w-full px-3 py-2 rounded-xl text-sm outline-none resize-none"
+                placeholder="Description (optional)"
+              />
+
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setEditForm((f) => f && { ...f, category: cat.id })}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      editForm.category === cat.id ? "dash-category-active" : "dash-category-inactive"
+                    }`}
+                  >
+                    {cat.icon}
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="text-xs dash-label">Hours</label>
+                <input
+                  type="number"
+                  min={0.5}
+                  max={8}
+                  step={0.5}
+                  value={editForm.hours}
+                  onChange={(e) =>
+                    setEditForm((f) => f && { ...f, hours: Number(e.target.value) || 0.5 })
+                  }
+                  className="dash-input w-24 px-3 py-1.5 rounded-xl text-sm outline-none"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSaveEdit(post.id)}
+                  disabled={actionId === post.id || isPreview}
+                  className="dash-btn-primary flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold disabled:opacity-60"
+                >
+                  <Check size={13} />
+                  Save changes
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="dash-btn-outline px-4 py-2 rounded-full text-xs font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          );
+
+          if (isProfile) {
+            return (
+              <div key={post.id} className="flex flex-col gap-3 px-5 py-4 hover:bg-white/20 transition-colors">
+                {editBody}
+              </div>
+            );
+          }
+
+          return (
+            <div key={post.id} className="listing-studio-card">
+              {editBody}
+            </div>
+          );
+        }
+
+        const actions = (
+          <div className={isProfile ? "flex items-center gap-2 flex-shrink-0 flex-wrap" : "listing-studio-card-actions"}>
+            {post.status === "active" && (
+              <button
+                type="button"
+                onClick={() => startEdit(post)}
+                disabled={actionId === post.id || isPreview}
+                className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
+              >
+                <Pencil size={13} />
+                Edit
+              </button>
+            )}
+            {post.status === "active" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleCloseListing(post.id)}
+                  disabled={actionId === post.id}
+                  className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
+                >
+                  <XCircle size={13} />
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteListing(post.id)}
+                  disabled={actionId === post.id}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                >
+                  <Trash2 size={13} />
+                  Delete
+                </button>
+              </>
+            ) : post.status === "closed" ? (
+              <>
+                {!matchedPostIds.has(post.id) && (
+                  <button
+                    type="button"
+                    onClick={() => handleReopenListing(post.id)}
+                    disabled={actionId === post.id}
+                    className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
+                  >
+                    <RotateCcw size={13} />
+                    Reopen
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteListing(post.id)}
+                  disabled={actionId === post.id}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                >
+                  <Trash2 size={13} />
+                  Delete
+                </button>
+              </>
+            ) : null}
+          </div>
+        );
+
+        if (isProfile) {
+          return (
+            <div key={post.id} className="flex flex-col gap-3 px-5 py-4 hover:bg-white/20 transition-colors">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${
+                      post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
+                    }`}
+                  >
+                    {post.status}
+                  </span>
+                </div>
+                <p className="text-xs dash-subtext">
+                  {post.post_type === "needs" ? "Need help" : "Offering"} · {post.category} ·{" "}
+                  <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
+                  {post.exchange_format ? ` · ${formatExchangeFormat(post.exchange_format)}` : ""}
+                </p>
+                {post.description && (
+                  <p className="text-xs dash-subtext mt-1 line-clamp-2">{post.description}</p>
+                )}
+              </div>
+              {actions}
             </div>
           );
         }
 
         return (
-          <div key={post.id} className={isProfile ? rowClass : `${rowClass} sm:flex-row sm:items-center`}>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="text-sm font-semibold dash-heading truncate">{post.title}</h3>
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${
-                    post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
-                  }`}
-                >
-                  {post.status}
-                </span>
+          <article
+            key={post.id}
+            className={`listing-studio-card ${post.post_type === "needs" ? "listing-studio-card-needs" : ""}`}
+          >
+            <div className="listing-studio-card-head">
+              <div className="listing-studio-cat-bubble">{categoryIcon(post.category)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="listing-studio-card-title">{post.title}</h3>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${
+                      post.status === "active" ? "dash-badge-earn" : "dash-badge-neutral"
+                    }`}
+                  >
+                    {post.status}
+                  </span>
+                </div>
+                <div className="listing-studio-card-meta">
+                  <span
+                    className={`listing-studio-type-pill ${
+                      post.post_type === "needs"
+                        ? "listing-studio-type-pill-needs"
+                        : "listing-studio-type-pill-offers"
+                    }`}
+                  >
+                    {post.post_type === "needs" ? "Need help" : "Offering"}
+                  </span>
+                  <span>{post.category}</span>
+                  <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
+                  {post.exchange_format && <span>{formatExchangeFormat(post.exchange_format)}</span>}
+                </div>
+                {post.description && (
+                  <p className="text-xs dash-subtext mt-2 line-clamp-2 leading-relaxed">{post.description}</p>
+                )}
               </div>
-              <p className="text-xs dash-subtext">
-                {post.post_type === "needs" ? "Need help" : "Offering"} · {post.category} ·{" "}
-                <span style={{ fontFamily: "'DM Mono', monospace" }}>{post.hours_cost}h</span>
-                {post.exchange_format ? ` · ${formatExchangeFormat(post.exchange_format)}` : ""}
-              </p>
-              {post.description && (
-                <p className="text-xs dash-subtext mt-1 line-clamp-2">{post.description}</p>
-              )}
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-              {post.status === "active" && (
-                <button
-                  type="button"
-                  onClick={() => startEdit(post)}
-                  disabled={actionId === post.id || isPreview}
-                  className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
-                >
-                  <Pencil size={13} />
-                  Edit
-                </button>
-              )}
-              {post.status === "active" ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => handleCloseListing(post.id)}
-                    disabled={actionId === post.id}
-                    className="dash-btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium disabled:opacity-60"
-                  >
-                    <XCircle size={13} />
-                    Close
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteListing(post.id)}
-                    disabled={actionId === post.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-                  >
-                    <Trash2 size={13} />
-                    Delete
-                  </button>
-                </>
-              ) : post.status === "closed" ? (
-                <>
-                  {!matchedPostIds.has(post.id) && (
-                    <button
-                      type="button"
-                      onClick={() => handleReopenListing(post.id)}
-                      disabled={actionId === post.id}
-                      className="dash-link flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[rgba(45,212,200,0.4)] disabled:opacity-60"
-                    >
-                      <RotateCcw size={13} />
-                      Reopen
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteListing(post.id)}
-                    disabled={actionId === post.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-red-400/40 text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-                  >
-                    <Trash2 size={13} />
-                    Delete
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
+            {actions}
+          </article>
         );
       })}
     </>
@@ -420,5 +511,19 @@ export function MyListingsPanel({
     );
   }
 
-  return <div className="space-y-3">{listContent}</div>;
+  return (
+    <div className="listing-studio">
+      <div className="listing-studio-summary">
+        <div className="listing-studio-stat">
+          <p className="listing-studio-stat-value">{activeCount}</p>
+          <p className="listing-studio-stat-label">Active</p>
+        </div>
+        <div className="listing-studio-stat">
+          <p className="listing-studio-stat-value">{myPosts.length}</p>
+          <p className="listing-studio-stat-label">Total posted</p>
+        </div>
+      </div>
+      {listContent}
+    </div>
+  );
 }
