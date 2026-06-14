@@ -1561,7 +1561,8 @@ html {
   }
 }
 
-.signup-lang-option {
+.signup-lang-option,
+.dash-lang-option {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1570,48 +1571,84 @@ html {
   padding: 0.75rem;
   border-radius: 1rem;
   text-align: left;
+  cursor: pointer;
   background: rgba(255, 255, 255, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.78);
-  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  backdrop-filter: blur(12px) saturate(1.35);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  box-shadow:
+    0 4px 16px rgba(58, 158, 196, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
-.signup-lang-option:hover {
+.signup-lang-option:hover,
+.dash-lang-option:hover {
   border-color: rgba(94, 255, 240, 0.55);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(45, 212, 200, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
-.signup-lang-option-active {
+.signup-lang-option-active,
+.dash-lang-option-active {
   border-color: rgba(45, 212, 200, 0.75);
-  background: rgba(45, 212, 200, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  background: rgba(45, 212, 200, 0.14);
+  box-shadow:
+    0 6px 20px rgba(45, 212, 200, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .signup-lang-native {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--auth-text);
+  color: var(--auth-text, var(--dash-text, #0a3344));
   padding-right: 1.25rem;
 }
 
 .signup-lang-english {
   font-size: 0.625rem;
-  color: var(--auth-text-muted);
+  color: var(--auth-text-muted, var(--dash-text-muted, #1a5568));
 }
 
 .signup-lang-check {
   position: absolute;
   top: 0.625rem;
   right: 0.625rem;
-  color: var(--auth-aqua);
+  color: var(--auth-aqua, var(--dash-aqua, #0d7a72));
 }
 
 .signup-lang-request {
   color: var(--auth-aqua);
-  font-weight: 500;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.625rem 1rem;
+  background: rgba(255, 255, 255, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px) saturate(1.35);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  box-shadow:
+    0 2px 12px rgba(58, 158, 196, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .signup-lang-request:hover {
-  opacity: 0.8;
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(94, 255, 240, 0.45);
+  box-shadow:
+    0 6px 18px rgba(45, 212, 200, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .signup-lang-badge {
@@ -1623,8 +1660,24 @@ html {
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--auth-text-muted);
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px) saturate(1.35);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  box-shadow:
+    0 2px 10px rgba(58, 158, 196, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.dash-lang-option {
+  --auth-text: var(--dash-text, #062a38);
+  --auth-text-muted: var(--dash-text-muted, #1a5568);
+  --auth-aqua: var(--dash-aqua, #0a5c54);
+}
+
+.signup-lang-grid-compact {
+  max-height: 12rem;
+  gap: 0.375rem;
 }
 
 .signup-inner-panel {
@@ -6356,7 +6409,7 @@ html {
   }
 }
 
-/* Language switcher */
+/* Language switcher — Frutiger Aero liquid glass */
 .landing-lang-trigger,
 .dash-lang-trigger,
 .dash-lang-trigger-compact {
@@ -6366,50 +6419,258 @@ html {
   padding: 0.375rem 0.625rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: 600;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    color 0.25s ease;
   cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(14px) saturate(1.45);
+  -webkit-backdrop-filter: blur(14px) saturate(1.45);
+  box-shadow:
+    0 2px 12px rgba(58, 158, 196, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
 }
 
 .landing-lang-trigger {
-  color: var(--landing-text-muted, #4a6a7a);
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(8px);
+  color: var(--landing-text-muted, #1a5568);
 }
 
 .landing-lang-trigger:hover {
-  background: rgba(255, 255, 255, 0.55);
-  color: var(--landing-text, #1a3a4a);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(94, 255, 240, 0.45);
+  color: var(--landing-text, #0a3344);
+  box-shadow:
+    0 6px 18px rgba(45, 212, 200, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .dash-lang-trigger,
 .dash-lang-trigger-compact {
-  color: var(--dash-text-muted);
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.2);
+  color: var(--dash-text-muted, #1a5568);
 }
 
 .dash-lang-trigger:hover,
 .dash-lang-trigger-compact:hover {
-  background: rgba(255, 255, 255, 0.35);
-  color: var(--dash-heading);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(94, 255, 240, 0.45);
+  color: var(--dash-text, #062a38);
+  box-shadow:
+    0 6px 18px rgba(45, 212, 200, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.aero-lang-menu {
+  --aero-lang-text: #0a3344;
+  --aero-lang-text-muted: #1a5568;
+  --aero-lang-accent: #0d7a72;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 0.375rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.92) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: var(--aero-lang-text) !important;
+  backdrop-filter: blur(22px) saturate(1.55);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  box-shadow:
+    0 12px 40px rgba(58, 158, 196, 0.18),
+    0 2px 8px rgba(45, 212, 200, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.aero-lang-menu [data-slot="dropdown-menu-separator"] {
+  background: rgba(45, 212, 200, 0.18);
+}
+
+.aero-lang-item {
+  border-radius: 0.625rem !important;
+  cursor: pointer;
+  color: var(--aero-lang-text) !important;
+}
+
+.aero-lang-item:hover,
+.aero-lang-item:focus,
+.aero-lang-item[data-highlighted] {
+  background: rgba(45, 212, 200, 0.12) !important;
+  color: var(--aero-lang-text) !important;
+}
+
+.aero-lang-item-active {
+  background: rgba(45, 212, 200, 0.16) !important;
+  border: 1px solid rgba(45, 212, 200, 0.35);
+}
+
+.aero-lang-native {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aero-lang-text);
+}
+
+.aero-lang-english {
+  display: block;
+  font-size: 0.625rem;
+  color: var(--aero-lang-text-muted);
+}
+
+.aero-lang-check {
+  flex-shrink: 0;
+  color: var(--aero-lang-accent);
+}
+
+.aero-lang-request {
+  color: var(--aero-lang-accent) !important;
+  font-weight: 600;
 }
 
 .dash-lang-menu {
-  max-height: 16rem;
-  overflow-y: auto;
+  min-width: 10rem;
 }
 
-.dash-lang-item-active {
-  background: rgba(61, 217, 200, 0.12);
+/* Request-a-language dialog — Frutiger Aero liquid glass */
+.aero-lang-dialog-overlay {
+  background: rgba(10, 51, 68, 0.38) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.dash-lang-request {
-  color: var(--dash-accent, #18a89e);
+.aero-lang-dialog {
+  --aero-lang-text: #0a3344;
+  --aero-lang-text-muted: #1a5568;
+  --aero-lang-text-faint: #4a8499;
+  --aero-lang-accent: #0d7a72;
+  --aero-lang-grass: #2a7348;
+  padding: 1.5rem !important;
+  border-radius: 1.25rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.92) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: var(--aero-lang-text) !important;
+  backdrop-filter: blur(22px) saturate(1.55);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  box-shadow:
+    0 16px 48px rgba(58, 158, 196, 0.22),
+    0 4px 12px rgba(45, 212, 200, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.aero-lang-dialog [data-slot="dialog-close"] {
+  color: var(--aero-lang-text-muted);
+  opacity: 0.75;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.aero-lang-dialog [data-slot="dialog-close"]:hover {
+  opacity: 1;
+  color: var(--aero-lang-text);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.aero-lang-dialog-title {
+  color: var(--aero-lang-text);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.aero-lang-dialog-desc {
+  color: var(--aero-lang-text-muted);
+}
+
+.aero-lang-dialog-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--aero-lang-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.aero-lang-dialog-input {
+  width: 100%;
+  border-radius: 0.875rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: var(--aero-lang-text);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 2px rgba(26, 95, 122, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.aero-lang-dialog-input::placeholder {
+  color: var(--aero-lang-text-faint);
+}
+
+.aero-lang-dialog-input:focus {
+  border-color: rgba(94, 255, 240, 0.65);
+  box-shadow:
+    0 0 0 3px rgba(45, 212, 200, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.aero-lang-dialog-btn {
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--aero-lang-text);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #8ed4f0 32%, #3dd9c8 68%, #5bc77a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 4px 20px rgba(45, 212, 200, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -2px 0 rgba(45, 212, 200, 0.2);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+
+.aero-lang-dialog-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 8px 28px rgba(45, 212, 200, 0.42),
+    inset 0 2px 0 rgba(255, 255, 255, 0.95);
+}
+
+.aero-lang-dialog-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.aero-lang-dialog-error {
+  font-size: 0.75rem;
+  color: #b91c1c;
+  background: rgba(254, 226, 226, 0.75);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.aero-lang-dialog-success {
+  font-size: 0.875rem;
+  color: var(--aero-lang-grass);
+  font-weight: 600;
+}
+
+.aero-lang-dialog-success-body {
+  font-size: 0.75rem;
+  color: var(--aero-lang-text-muted);
 }
 
 /* RTL layout adjustments */

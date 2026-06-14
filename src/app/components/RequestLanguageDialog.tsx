@@ -53,39 +53,38 @@ export function RequestLanguageDialog({ open, onOpenChange }: RequestLanguageDia
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="dash-card sm:max-w-md">
+      <DialogContent
+        overlayClassName="aero-lang-dialog-overlay"
+        className="aero-lang-dialog sm:max-w-md"
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 dash-heading">
-            <Globe size={18} className="dash-accent" />
+          <DialogTitle className="aero-lang-dialog-title flex items-center gap-2 text-lg">
+            <Globe size={18} className="aero-lang-check" />
             {t("languageRequest.title")}
           </DialogTitle>
-          <DialogDescription className="dash-subtext">
+          <DialogDescription className="aero-lang-dialog-desc">
             {t("languageRequest.description")}
           </DialogDescription>
         </DialogHeader>
 
         {success ? (
           <div className="space-y-4 py-2">
-            <p className="text-sm dash-heading">{t("languageRequest.successTitle")}</p>
-            <p className="text-xs dash-subtext">{t("languageRequest.successBody")}</p>
+            <p className="aero-lang-dialog-success">{t("languageRequest.successTitle")}</p>
+            <p className="aero-lang-dialog-success-body">{t("languageRequest.successBody")}</p>
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="dash-btn-primary w-full py-2.5 rounded-full text-sm font-semibold"
+              className="aero-lang-dialog-btn py-2.5"
             >
               {t("common.close")}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                {error}
-              </div>
-            )}
+            {error && <div className="aero-lang-dialog-error">{error}</div>}
 
             <div className="space-y-1.5">
-              <label htmlFor="language-name" className="dash-label">
+              <label htmlFor="language-name" className="aero-lang-dialog-label">
                 {t("languageRequest.languageLabel")}
               </label>
               <input
@@ -97,12 +96,12 @@ export function RequestLanguageDialog({ open, onOpenChange }: RequestLanguageDia
                 value={languageName}
                 onChange={(e) => setLanguageName(e.target.value)}
                 placeholder={t("languageRequest.languagePlaceholder")}
-                className="dash-input w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                className="aero-lang-dialog-input"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="language-reason" className="dash-label">
+              <label htmlFor="language-reason" className="aero-lang-dialog-label">
                 {t("languageRequest.reasonLabel")}
               </label>
               <textarea
@@ -112,14 +111,14 @@ export function RequestLanguageDialog({ open, onOpenChange }: RequestLanguageDia
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder={t("languageRequest.reasonPlaceholder")}
-                className="dash-input w-full px-4 py-2.5 rounded-xl text-sm outline-none resize-none"
+                className="aero-lang-dialog-input resize-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading || languageName.trim().length < 2}
-              className="dash-btn-primary w-full flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-semibold disabled:opacity-60"
+              className="aero-lang-dialog-btn flex items-center justify-center gap-2 py-2.5"
             >
               {loading ? (
                 <>

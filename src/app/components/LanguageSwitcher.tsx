@@ -38,30 +38,30 @@ export function LanguageSwitcher({ variant = "dashboard", className = "" }: Lang
           <Globe size={variant === "compact" ? 14 : 16} />
           <span className="truncate">{current.nativeName}</span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="dash-lang-menu min-w-[10rem]">
+        <DropdownMenuContent align="end" className="aero-lang-menu dash-lang-menu">
           {LANGUAGES.map((lang) => {
             const active = lang.code === current.code;
             return (
               <DropdownMenuItem
                 key={lang.code}
                 onClick={() => i18n.changeLanguage(lang.code)}
-                className={`dash-lang-item ${active ? "dash-lang-item-active" : ""}`}
+                className={`aero-lang-item ${active ? "aero-lang-item-active" : ""}`}
               >
                 <span className="flex-1">
-                  <span className="block text-sm font-medium">{lang.nativeName}</span>
-                  <span className="block text-[10px] opacity-60">{lang.name}</span>
+                  <span className="aero-lang-native">{lang.nativeName}</span>
+                  <span className="aero-lang-english">{lang.name}</span>
                 </span>
-                {active && <Check size={14} className="dash-accent flex-shrink-0" />}
+                {active && <Check size={14} className="aero-lang-check" />}
               </DropdownMenuItem>
             );
           })}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setRequestOpen(true)}
-            className="dash-lang-item dash-lang-request"
+            className="aero-lang-item aero-lang-request"
           >
-            <Plus size={14} className="dash-accent flex-shrink-0" />
-            <span className="text-sm font-medium">{t("languageRequest.requestButton")}</span>
+            <Plus size={14} className="aero-lang-check flex-shrink-0" />
+            <span className="text-sm font-semibold">{t("languageRequest.requestButton")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
