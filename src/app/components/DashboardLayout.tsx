@@ -229,24 +229,25 @@ export function DashboardLayout({
       <AeroBackground />
 
       <div className={`relative z-10 flex min-h-0 overflow-hidden ${previewMode ? "h-full" : "h-screen max-sm:h-dvh"}`}>
-      {/* Sidebar */}
+      {/* Sidebar — collapsed on desktop, expands on hover */}
       <aside
-        className={`dash-glass-sidebar dash-liquid-surface fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r transition-transform duration-300 sm:relative sm:translate-x-0 ${
+        data-expanded={showTour || undefined}
+        className={`dash-glass-sidebar dash-liquid-surface dash-sidebar-collapsible fixed inset-y-0 left-0 z-40 flex flex-col w-60 border-r sm:relative sm:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         onTransitionEnd={(e) => {
-          if (e.propertyName === "transform") {
+          if (e.propertyName === "transform" || e.propertyName === "width") {
             window.dispatchEvent(new CustomEvent("tour-layout-change"));
           }
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b dash-divider">
-          <LogoBrand size="xs" nameClassName="dash-heading" />
+        <div className="dash-sidebar-header flex items-center gap-2.5 py-5 border-b dash-divider">
+          <LogoBrand size="xs" className="dash-sidebar-brand" nameClassName="dash-heading dash-sidebar-label" />
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {navItemIds.map((item) => {
             const active = screen === item.id;
             return (
@@ -254,16 +255,22 @@ export function DashboardLayout({
                 key={item.id}
                 data-tour={`nav-${item.id}`}
                 onClick={() => navigateScreen(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                className={`dash-sidebar-nav-btn relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   active ? "dash-nav-active" : "dash-nav-inactive"
                 }`}
               >
-                {item.icon}
-                {t(item.labelKey)}
+                <span className="flex-shrink-0">{item.icon}</span>
+                <span className="dash-sidebar-label">{t(item.labelKey)}</span>
                 {item.id === "board" && jobCount > 0 && (
-                  <span className="dash-badge ml-auto text-xs px-1.5 py-0.5 rounded-full">
-                    {jobCount}
-                  </span>
+                  <>
+                    <span className="dash-sidebar-badge-full dash-badge ml-auto text-xs px-1.5 py-0.5 rounded-full">
+                      {jobCount}
+                    </span>
+                    <span
+                      className="dash-sidebar-badge-dot absolute top-2 right-2.5 w-2 h-2 rounded-full dash-btn-primary"
+                      aria-hidden
+                    />
+                  </>
                 )}
               </button>
             );
@@ -274,12 +281,12 @@ export function DashboardLayout({
         <div className="px-3 py-4 border-t dash-divider space-y-1">
           <button
             onClick={() => navigateScreen("profile")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/30 transition-colors"
+            className="dash-sidebar-user-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/30 transition-colors"
           >
             <div className="dash-avatar w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">
               {initials}
             </div>
-            <div className="text-left min-w-0" data-tour="hour-balance">
+            <div className="dash-sidebar-label text-left min-w-0" data-tour="hour-balance">
               <p className="text-xs font-medium dash-heading truncate">{user?.name}</p>
               <p className="text-xs dash-subtext truncate">
                 {t("common.hrsAvailable", { count: user?.hoursAvailable.toFixed(1) })}
@@ -288,10 +295,12 @@ export function DashboardLayout({
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs dash-subtext hover:text-red-500 hover:bg-red-500/10 transition-colors"
+            className="dash-sidebar-user-btn w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs dash-subtext hover:text-red-500 hover:bg-red-500/10 transition-colors"
           >
-            <LogOut size={14} />
-            {previewMode ? t("nav.exitPreview") : t("nav.signOut")}
+            <LogOut size={14} className="flex-shrink-0" />
+            <span className="dash-sidebar-label">
+              {previewMode ? t("nav.exitPreview") : t("nav.signOut")}
+            </span>
           </button>
         </div>
       </aside>

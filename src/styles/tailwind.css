@@ -2172,6 +2172,101 @@ html {
     );
   }
 
+  .dash-sidebar-collapsible {
+    overflow: hidden;
+    transition:
+      width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.3s ease;
+  }
+
+  .dash-sidebar-badge-dot {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .dash-sidebar-collapsible {
+      width: 4.5rem;
+    }
+
+    .dash-sidebar-collapsible:hover,
+    .dash-sidebar-collapsible[data-expanded="true"] {
+      width: 15rem;
+    }
+
+    .dash-sidebar-header {
+      justify-content: center;
+      padding-inline: 0.75rem;
+      transition: padding 0.3s ease;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-header,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-header {
+      justify-content: flex-start;
+      padding-inline: 1.25rem;
+    }
+
+    .dash-sidebar-label {
+      opacity: 0;
+      max-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      transition:
+        opacity 0.22s ease 0.06s,
+        max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-label,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-label {
+      opacity: 1;
+      max-width: 11rem;
+    }
+
+    .dash-sidebar-nav-btn {
+      justify-content: center;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-nav-btn,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-nav-btn {
+      justify-content: flex-start;
+    }
+
+    .dash-sidebar-badge-full {
+      display: none;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-badge-full,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-badge-full {
+      display: inline-flex;
+    }
+
+    .dash-sidebar-badge-dot {
+      display: block;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-badge-dot,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-badge-dot {
+      display: none;
+    }
+
+    .dash-sidebar-brand {
+      gap: 0;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-brand,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-brand {
+      gap: 0.625rem;
+    }
+
+    .dash-sidebar-user-btn {
+      justify-content: center;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-user-btn,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-user-btn {
+      justify-content: flex-start;
+    }
+  }
+
   .dash-glass-header {
     background: rgba(255, 255, 255, 0.55);
     border-color: rgba(255, 255, 255, 0.82);
