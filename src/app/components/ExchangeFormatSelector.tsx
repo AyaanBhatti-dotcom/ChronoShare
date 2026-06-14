@@ -35,7 +35,15 @@ export function ExchangeFormatSelector({
           {hint && <p className="text-xs dash-subtext mt-1">{hint}</p>}
         </div>
       )}
-      <div className={isStudio ? "post-studio-format-grid" : "grid grid-cols-1 gap-2 sm:grid-cols-3"}>
+      <div
+        className={
+          isStudio
+            ? "post-studio-format-grid"
+            : mode === "join"
+              ? "dash-modal-format-grid"
+              : "grid grid-cols-1 gap-2 sm:grid-cols-3"
+        }
+      >
         {options.map((option) => {
           const active = value === option.id;
           const Icon = option.icon;

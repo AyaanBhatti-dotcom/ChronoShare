@@ -18,7 +18,7 @@ import {
   type UserLocation,
 } from "../../lib/location";
 import { getStoredListingScope, storeListingScope, type ListingScope } from "../../lib/listing-scope";
-import { impactBadgeStyle, impactPanelStyle } from "./onboarding/aeroTheme";
+import { impactBadgeStyle } from "./onboarding/aeroTheme";
 import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
 import {
   formatListingFormatLine,
@@ -222,8 +222,15 @@ export const JobBoard = ({
   useEffect(() => {
     setJoinFormat(null);
     setAcceptError(null);
+    setAcceptSuccess(false);
     setMatchedExchangeId(null);
   }, [selectedJob?.id]);
+
+  const closeJobModal = () => {
+    if (accepting) return;
+    setSelectedJob(null);
+    setAcceptSuccess(false);
+  };
 
   useEffect(() => {
     if (!selectedJob || !user || !joinedPostIds.has(selectedJob.id)) {
@@ -273,10 +280,6 @@ export const JobBoard = ({
       setAcceptSuccess(true);
       setJobs((prev) => prev.filter((j) => j.id !== selectedJob.id));
       await loadJoinedPostIds();
-      setTimeout(() => {
-        setSelectedJob(null);
-        setAcceptSuccess(false);
-      }, 2000);
     } catch (err) {
       setAcceptError(err instanceof Error ? err.message : "Could not accept listing");
       await loadPosts();
@@ -549,19 +552,20 @@ export const JobBoard = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 dash-modal-overlay"
-            onClick={() => !accepting && setSelectedJob(null)}
+            onClick={closeJobModal}
           />
-          <div className="dash-modal relative w-full max-w-md rounded-2xl p-6 space-y-5 dash-modal-mobile">
+          <div className="dash-modal dash-modal-listing relative w-full max-w-md rounded-2xl dash-modal-mobile max-h-[90vh] overflow-y-auto">
             <button
               type="button"
-              onClick={() => !accepting && setSelectedJob(null)}
-              className="absolute top-4 right-4 dash-subtext hover:dash-heading transition-colors"
+              onClick={closeJobModal}
+              className="dash-modal-close"
+              aria-label="Close listing"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
 
             {acceptSuccess ? (
-              <div className="flex flex-col items-center py-4 gap-4 text-center">
+              <div className="flex flex-col items-center py-8 px-6 gap-4 text-center">
                 <CheckCircle2 size={40} className="dash-accent-grass" />
                 <div>
                   <h3 className="text-lg font-semibold dash-heading">You&apos;re matched!</h3>
@@ -577,163 +581,205 @@ export const JobBoard = ({
                     className="w-full rounded-xl border dash-divider bg-white/5 px-4 py-3 space-y-1.5 text-left"
                   />
                 )}
+                <div className="flex flex-col gap-2 w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeJobModal();
+                      onNavigate?.("profile");
+                    }}
+                    className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold"
+                  >
+                    Open Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeJobModal}
+                    className="dash-btn-outline w-full py-3 rounded-full text-sm font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
               <>
-                <div>
-                  <p className="text-xs dash-subtext mb-1">
+                <div className="dash-modal-hero">
+                  <span className="dash-modal-member-pill">
                     {getMemberDisplayName(selectedJob.profiles)}
-                  </p>
-                  <h3 className="text-lg font-semibold dash-heading">{selectedJob.title}</h3>
+                  </span>
+                  <h3 className="dash-modal-title">{selectedJob.title}</h3>
                 </div>
 
-                {selectedJob.description && (
-                  <p className="text-sm dash-subtext leading-relaxed">{selectedJob.description}</p>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <span className="dash-tag flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium">
-                    {categoryIcon(selectedJob.category)}
-                    {selectedJob.category}
-                  </span>
-                  <span
-                    className="text-sm font-medium dash-accent"
-                    style={{ fontFamily: "'DM Mono', monospace" }}
-                  >
-                    {selectedJob.hours_cost}h
-                  </span>
-                  <span className="text-xs dash-subtext capitalize">
-                    {selectedJob.post_type === "needs" ? "Needs help" : "Offering skill"}
-                  </span>
-                </div>
-
-                <p className="text-xs dash-subtext flex items-center gap-1.5">
-                  <MapPin size={12} className="dash-accent" />
-                  {formatPostLocation(selectedJob)}
-                  {selectedJob.distanceMiles != null && (
-                    <span>· {formatDistance(selectedJob.distanceMiles)} away</span>
+                <div className="dash-modal-body">
+                  {selectedJob.description && (
+                    <p className="dash-modal-desc">{selectedJob.description}</p>
                   )}
-                </p>
 
-                <p className="text-xs dash-subtext">
-                  Exchange format:{" "}
-                  <span className="dash-heading font-medium">
-                    {formatListingFormatLine(
-                      selectedJob.exchange_format,
-                      selectedJob.meeting_preference,
-                    )}
-                  </span>
-                </p>
-
-                {!isOwnSelected &&
-                  (selectedJob.exchange_format === "in_person" ||
-                    joinFormat === "in_person" ||
-                    selectedJob.meeting_preference === "public_venue") && (
-                  <SafetyTipBanner variant="compact" />
-                )}
-
-                {!isOwnSelected && isFlexibleFormat(selectedJob.exchange_format) && (
-                  <ExchangeFormatSelector
-                    mode="join"
-                    value={joinFormat}
-                    onChange={setJoinFormat}
-                    label="How would you like to do this?"
-                    hint="The poster is open to either — pick what works for you."
-                  />
-                )}
-
-                {hourImpact && (
-                  <div
-                    className="rounded-xl p-4 flex items-center gap-3"
-                    style={impactPanelStyle(hourImpact.direction === "free" ? "free" : hourImpact.direction)}
-                  >
-                    {hourImpact.direction === "earn" ? (
-                      <ArrowUpRight size={20} className="dash-accent-grass" />
-                    ) : hourImpact.direction === "spend" ? (
-                      <ArrowDownRight size={20} className="dash-accent" />
-                    ) : (
-                      <CheckCircle2 size={20} className="dash-subtext" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium dash-heading">
-                        {hourImpact.direction === "free"
-                          ? "No cost to join"
-                          : `You'll ${hourImpact.direction === "earn" ? "earn" : "spend"} ${hourImpact.amount}h`}
-                      </p>
-                      <p className="text-xs dash-subtext">
-                        {hourImpact.direction === "earn"
-                          ? "Hours transfer to you when you join this exchange."
-                          : hourImpact.direction === "spend"
-                            ? `Requires ${hourImpact.amount}h in your balance.`
-                            : "The helper earns from the community pool — you don't pay."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {acceptError && (
-                  <p className="text-sm text-red-400">{acceptError}</p>
-                )}
-
-                {isOwnSelected ? (
-                  <div className="space-y-3">
-                    <div className="dash-badge-earn rounded-xl p-4 text-center">
-                      <p className="text-sm dash-accent font-medium">This is your listing</p>
-                      <p className="text-xs text-[#9CA3AF] mt-1">
-                        Others can find and join it here, or remove it below.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      disabled={deleting || isPreview}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-semibold border border-red-400/40 text-red-500 transition-all hover:bg-red-500/10 disabled:opacity-60"
+                  <div className="dash-modal-chips">
+                    <span className="dash-modal-chip dash-modal-chip-category">
+                      {categoryIcon(selectedJob.category)}
+                      {selectedJob.category}
+                    </span>
+                    <span className="dash-modal-chip dash-modal-chip-hours">
+                      <Clock size={12} />
+                      {selectedJob.hours_cost}h
+                    </span>
+                    <span
+                      className={`dash-modal-chip ${
+                        selectedJob.post_type === "needs"
+                          ? "dash-modal-chip-need"
+                          : "dash-modal-chip-offer"
+                      }`}
                     >
-                      <Trash2 size={16} />
-                      {deleting ? "Deleting..." : "Delete listing"}
-                    </button>
+                      {selectedJob.post_type === "needs" ? "Needs help" : "Offering skill"}
+                    </span>
                   </div>
-                ) : alreadyJoined ? (
-                  <div className="space-y-3">
-                    <div className="dash-badge-earn rounded-xl p-4 text-center">
-                      <p className="text-sm dash-accent font-medium">You&apos;ve already joined this listing</p>
-                      <p className="text-xs text-[#9CA3AF] mt-1">
-                        Head to Profile to confirm the exchange. This listing is no longer open to others.
-                      </p>
+
+                  <div className="dash-modal-info-list">
+                    <div className="dash-modal-info-row">
+                      <span className="dash-modal-info-icon">
+                        <MapPin size={12} />
+                      </span>
+                      <span>
+                        {formatPostLocation(selectedJob)}
+                        {selectedJob.distanceMiles != null && (
+                          <> · <strong>{formatDistance(selectedJob.distanceMiles)} away</strong></>
+                        )}
+                      </span>
                     </div>
-                    {matchedExchangeId && user && !isPreview && (
-                      <ContactEmailButton
-                        memberId={selectedJob.user_id}
-                        exchangeId={matchedExchangeId}
-                        username={selectedJob.profiles?.username}
+                    <div className="dash-modal-info-row">
+                      <span className="dash-modal-info-icon">
+                        <Monitor size={12} />
+                      </span>
+                      <span>
+                        Exchange format:{" "}
+                        <strong>
+                          {formatListingFormatLine(
+                            selectedJob.exchange_format,
+                            selectedJob.meeting_preference,
+                          )}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+
+                  {!isOwnSelected &&
+                    (selectedJob.exchange_format === "in_person" ||
+                      joinFormat === "in_person" ||
+                      selectedJob.meeting_preference === "public_venue") && (
+                    <SafetyTipBanner variant="compact" />
+                  )}
+
+                  {!isOwnSelected && isFlexibleFormat(selectedJob.exchange_format) && (
+                    <div className="dash-modal-section">
+                      <ExchangeFormatSelector
+                        mode="join"
+                        value={joinFormat}
+                        onChange={setJoinFormat}
+                        label="How would you like to do this?"
+                        hint="The poster is open to either — pick what works for you."
                       />
-                    )}
+                    </div>
+                  )}
+
+                  {hourImpact && (
+                    <div
+                      className={`dash-modal-impact ${
+                        hourImpact.direction === "free"
+                          ? "dash-modal-impact-free"
+                          : hourImpact.direction === "earn"
+                            ? "dash-modal-impact-earn"
+                            : "dash-modal-impact-spend"
+                      }`}
+                    >
+                      {hourImpact.direction === "earn" ? (
+                        <ArrowUpRight size={22} className="dash-accent-grass flex-shrink-0" />
+                      ) : hourImpact.direction === "spend" ? (
+                        <ArrowDownRight size={22} className="dash-accent flex-shrink-0" />
+                      ) : (
+                        <CheckCircle2 size={22} className="dash-accent-grass flex-shrink-0" />
+                      )}
+                      <div>
+                        <p className="dash-modal-impact-title">
+                          {hourImpact.direction === "free"
+                            ? "No cost to join"
+                            : `You'll ${hourImpact.direction === "earn" ? "earn" : "spend"} ${hourImpact.amount}h`}
+                        </p>
+                        <p className="dash-modal-impact-desc">
+                          {hourImpact.direction === "earn"
+                            ? "Hours transfer to you when you join this exchange."
+                            : hourImpact.direction === "spend"
+                              ? `Requires ${hourImpact.amount}h in your balance.`
+                              : "The helper earns from the community pool — you don't pay."}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {acceptError && (
+                    <p className="text-sm font-medium text-red-600">{acceptError}</p>
+                  )}
+
+                  {isOwnSelected ? (
+                    <div className="space-y-3">
+                      <div className="dash-badge-earn rounded-xl p-4 text-center">
+                        <p className="text-sm dash-accent font-medium">This is your listing</p>
+                        <p className="text-xs dash-subtext mt-1">
+                          Others can find and join it here, or remove it below.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting || isPreview}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-sm font-semibold border border-red-400/40 text-red-500 transition-all hover:bg-red-500/10 disabled:opacity-60"
+                      >
+                        <Trash2 size={16} />
+                        {deleting ? "Deleting..." : "Delete listing"}
+                      </button>
+                    </div>
+                  ) : alreadyJoined ? (
+                    <div className="space-y-3">
+                      <div className="dash-badge-earn rounded-xl p-4 text-center">
+                        <p className="text-sm dash-accent font-medium">You&apos;ve already joined this listing</p>
+                        <p className="text-xs dash-subtext mt-1">
+                          Head to Profile to confirm the exchange. This listing is no longer open to others.
+                        </p>
+                      </div>
+                      {matchedExchangeId && user && !isPreview && (
+                        <ContactEmailButton
+                          memberId={selectedJob.user_id}
+                          exchangeId={matchedExchangeId}
+                          username={selectedJob.profiles?.username}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedJob(null);
+                          onNavigate?.("profile");
+                        }}
+                        className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold"
+                      >
+                        Open Profile
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedJob(null);
-                        onNavigate?.("profile");
-                      }}
-                      className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold"
+                      onClick={handleAccept}
+                      disabled={
+                        accepting ||
+                        isPreview ||
+                        alreadyJoined ||
+                        (isFlexibleFormat(selectedJob.exchange_format) && !joinFormat)
+                      }
+                      className="dash-btn-primary w-full py-3.5 rounded-full text-base font-bold disabled:opacity-60"
                     >
-                      Open Profile
+                      {accepting ? "Joining..." : isPreview ? "Preview mode" : "Join this exchange"}
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleAccept}
-                    disabled={
-                      accepting ||
-                      isPreview ||
-                      alreadyJoined ||
-                      (isFlexibleFormat(selectedJob.exchange_format) && !joinFormat)
-                    }
-                    className="dash-btn-primary w-full py-3.5 rounded-full text-sm font-semibold disabled:opacity-60"
-                  >
-                    {accepting ? "Joining..." : isPreview ? "Preview mode" : "Join this exchange"}
-                  </button>
-                )}
+                  )}
+                </div>
               </>
             )}
           </div>

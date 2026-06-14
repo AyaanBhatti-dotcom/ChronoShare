@@ -11,10 +11,10 @@ export function SafetyTipBanner({
 }: SafetyTipBannerProps) {
   if (variant === "compact") {
     return (
-      <p className="text-[11px] dash-subtext flex items-start gap-1.5 leading-relaxed">
-        <Shield size={12} className="dash-accent flex-shrink-0 mt-0.5" />
-        {message}
-      </p>
+      <div className="dash-modal-callout">
+        <Shield size={14} className="dash-accent flex-shrink-0 mt-0.5" />
+        <p>{message}</p>
+      </div>
     );
   }
 
