@@ -1,20 +1,26 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const PROJECT_REF = "vthefxwlwecyjsrznchr";
-const MIGRATION_NAME = "002_posts_and_admin";
+const MIGRATION_NAME = process.argv[2] ?? "002_posts_and_admin";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const migrationPath = join(__dirname, "..", "supabase", "migrations", `${MIGRATION_NAME}.sql`);
 
 async function main() {
+  if (!existsSync(migrationPath)) {
+    console.error(`Migration file not found: ${migrationPath}`);
+    console.error("Usage: npm run db:apply-migration -- 020_community_pool");
+    process.exit(1);
+  }
+
   const token = process.env.SUPABASE_ACCESS_TOKEN;
   if (!token) {
     console.error(
       "Missing SUPABASE_ACCESS_TOKEN.\n" +
         "Create one at https://supabase.com/dashboard/account/tokens then run:\n" +
-        '  $env:SUPABASE_ACCESS_TOKEN="your-token"; npm run db:apply-migration',
+        '  $env:SUPABASE_ACCESS_TOKEN="your-token"; npm run db:apply-migration -- 020_community_pool',
     );
     process.exit(1);
   }

@@ -74,11 +74,27 @@ export async function countRecentHelps(userId: string): Promise<number> {
   }).length;
 }
 
+const POOL_MIGRATION_HINT =
+  "Community Pool is not set up on the database yet. Run migration 020_community_pool in Supabase (SQL Editor or: npm run db:apply-migration -- 020_community_pool).";
+
+function wrapPoolRpcError(error: { message?: string; code?: string }): Error {
+  const msg = error.message ?? "Request failed";
+  if (
+    error.code === "PGRST202" ||
+    msg.includes("donate_to_community_pool") ||
+    msg.includes("claim_from_community_pool") ||
+    msg.includes("community_pool_balance")
+  ) {
+    return new Error(POOL_MIGRATION_HINT);
+  }
+  return new Error(msg);
+}
+
 export async function fetchPoolBalance(): Promise<number> {
   const { data, error } = await supabase.rpc("community_pool_balance");
   if (error) {
     if (error.code === "PGRST202") return 0;
-    throw new Error(error.message);
+    throw wrapPoolRpcError(error);
   }
   return Number(data ?? 0);
 }
@@ -182,18 +198,18 @@ export async function fetchRecentPoolActivity(limit = 8): Promise<PoolTransactio
   return (data ?? []) as PoolTransaction[];
 }
 
+export function formatClaimWindowLabel(): string {
+  return "Friday – Sunday";
+}
+
 export async function donateToPool(amount: number): Promise<void> {
   const { error } = await supabase.rpc("donate_to_community_pool", { p_amount: amount });
-  if (error) throw new Error(error.message);
+  if (error) throw wrapPoolRpcError(error);
 }
 
 export async function claimFromPool(amount: number): Promise<void> {
   const { error } = await supabase.rpc("claim_from_community_pool", { p_amount: amount });
-  if (error) throw new Error(error.message);
-}
-
-export function formatClaimWindowLabel(): string {
-  return "Friday – Sunday";
+  if (error) throw wrapPoolRpcError(error);
 }
 
 export { getExchangePartner, isHelperExchange };
