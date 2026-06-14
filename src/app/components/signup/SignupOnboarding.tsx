@@ -599,7 +599,7 @@ export function SignupOnboarding() {
                     }
                     className="auth-btn-primary"
                   >
-                    {loading ? "Creating account..." : "Continue — we'll email you a link"}
+                    {loading ? "Creating account..." : "Create account"}
                   </button>
                 </div>
               </StepShell>
