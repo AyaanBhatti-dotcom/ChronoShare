@@ -39,7 +39,15 @@ export function defaultMeetingPreferenceForFormat(
   exchangeFormat: "in_person" | "remote" | "flexible",
 ): MeetingPreference {
   if (exchangeFormat === "remote") return "remote_only";
+  if (exchangeFormat === "flexible") return "flexible";
   return "public_venue";
+}
+
+/** Only "Either works" needs a follow-up — in-person is always public; remote skips this entirely. */
+export function shouldShowMeetingPreferenceSelector(
+  exchangeFormat: "in_person" | "remote" | "flexible",
+): boolean {
+  return exchangeFormat === "flexible";
 }
 
 export function isPublicVenuePreferred(preference: MeetingPreference | null | undefined): boolean {

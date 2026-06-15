@@ -13,6 +13,7 @@ import { SafetyTipBanner } from "./safety/SafetyTipBanner";
 import type { ExchangeFormatPreference } from "../../lib/exchange-format";
 import {
   defaultMeetingPreferenceForFormat,
+  shouldShowMeetingPreferenceSelector,
   type MeetingPreference,
 } from "../../lib/meeting-preference";
 
@@ -295,14 +296,14 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                 label="Exchange format"
                 hint="Choose how people will connect for this listing."
               />
-              {exchangeFormat !== "remote" && (
+              {shouldShowMeetingPreferenceSelector(exchangeFormat) && (
                 <MeetingPreferenceSelector
                   value={meetingPreference}
                   onChange={setMeetingPreference}
                   variant="studio"
                 />
               )}
-              {exchangeFormat !== "remote" && <SafetyTipBanner variant="compact" />}
+              {exchangeFormat === "in_person" && <SafetyTipBanner variant="compact" />}
             </div>
           </section>
 

@@ -15,6 +15,7 @@ import { fetchMatchedPostIds, fetchExchangeInfoForPosts, fetchExchangesForPosts 
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
 import {
   defaultMeetingPreferenceForFormat,
+  shouldShowMeetingPreferenceSelector,
   formatMeetingPreference,
   type MeetingPreference,
 } from "../../lib/meeting-preference";
@@ -376,7 +377,7 @@ export function MyListingsPanel({
                 label="How will this exchange happen?"
               />
 
-              {editForm.exchangeFormat !== "remote" && (
+              {shouldShowMeetingPreferenceSelector(editForm.exchangeFormat) && (
                 <MeetingPreferenceSelector
                   value={editForm.meetingPreference}
                   onChange={(meetingPreference) =>
