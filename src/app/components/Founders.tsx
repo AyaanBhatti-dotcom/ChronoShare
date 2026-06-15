@@ -1,5 +1,6 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { Crown, Sparkles } from "lucide-react";
+import { Crown, Sparkles, Sun } from "lucide-react";
 
 const FOUNDERS = [
   {
@@ -29,42 +30,109 @@ export function Founders() {
   const { t } = useTranslation();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-8">
-      <section className="dash-card dash-card-hero p-6 sm:p-8 text-center">
-        <div className="dash-icon-box w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Crown size={20} className="dash-accent" strokeWidth={1.75} />
-        </div>
-        <h2 className="text-lg sm:text-xl font-bold dash-heading">{t("founders.title")}</h2>
-        <p className="text-sm dash-subtext mt-2 max-w-md mx-auto leading-relaxed">
-          {t("founders.subtitle")}
-        </p>
-      </section>
+    <div className="founders-scene">
+      <article className="founders-sheet">
+        <section className="founders-hero" aria-labelledby="founders-heading">
+          <div className="founders-hero-orb founders-hero-orb-a" aria-hidden />
+          <div className="founders-hero-orb founders-hero-orb-b" aria-hidden />
+          <div className="founders-hero-orb founders-hero-orb-c" aria-hidden />
 
-      <div className="space-y-5">
-        {FOUNDERS.map((founder) => (
-          <article key={founder.id} className="dash-card dash-card-hover overflow-hidden">
-            <div className="flex flex-col sm:flex-row gap-5 p-5 sm:p-6">
-              <div className="flex-shrink-0 mx-auto sm:mx-0">
-                <img
-                  src={founder.image}
-                  alt={t(founder.nameKey)}
-                  className="w-36 h-36 sm:w-32 sm:h-32 rounded-2xl object-cover shadow-md ring-2 ring-white/60"
-                />
-              </div>
-              <div className="min-w-0 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
-                  <Sparkles size={14} className="dash-accent flex-shrink-0" />
-                  <h3 className="text-base font-bold dash-heading">{t(founder.nameKey)}</h3>
-                </div>
-                {t(founder.roleKey) && (
-                  <p className="text-xs font-medium dash-accent mb-3">{t(founder.roleKey)}</p>
-                )}
-                <p className="text-sm dash-subtext leading-relaxed">{t(founder.bioKey)}</p>
-              </div>
+          <div className="founders-hero-content">
+            <span className="founders-eyebrow">
+              <Sun size={13} className="founders-eyebrow-icon" />
+              {t("founders.eyebrow")}
+            </span>
+
+            <div className="founders-crown-ring" aria-hidden>
+              <Crown size={22} strokeWidth={1.75} />
             </div>
-          </article>
-        ))}
-      </div>
+
+            <h2 id="founders-heading" className="founders-title">
+              {t("founders.title")}
+            </h2>
+            <p className="founders-subtitle">{t("founders.subtitle")}</p>
+
+            <p className="founders-tagline">
+              <Sparkles size={14} />
+              {t("founders.tagline")}
+            </p>
+          </div>
+
+          <Crown
+            size={140}
+            strokeWidth={1}
+            className="founders-hero-watermark"
+            aria-hidden
+          />
+        </section>
+
+        <FoundersWaveDivider />
+
+        <div className="founders-grid">
+          {FOUNDERS.map((founder, index) => {
+            const role = t(founder.roleKey);
+            return (
+              <article
+                key={founder.id}
+                className={`founders-card founders-card-${founder.id} ${
+                  index % 2 === 1 ? "founders-card-reverse" : ""
+                }`}
+              >
+                <span className="founders-card-index" aria-hidden>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+
+                <div className="founders-avatar-wrap">
+                  <img
+                    src={founder.image}
+                    alt={t(founder.nameKey)}
+                    className="founders-avatar"
+                  />
+                </div>
+
+                <div className="founders-card-body">
+                  <h3 className="founders-name">
+                    <Sparkles size={15} className="founders-name-icon" />
+                    {t(founder.nameKey)}
+                  </h3>
+                  {role && <p className="founders-role">{role}</p>}
+                  <p className="founders-bio">{t(founder.bioKey)}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <footer className="founders-footer">
+          <Sparkles size={16} />
+          <span>{t("founders.footer")}</span>
+        </footer>
+      </article>
+    </div>
+  );
+}
+
+function FoundersWaveDivider() {
+  const gradientId = useId();
+
+  return (
+    <div className="founders-wave-divider" aria-hidden="true">
+      <svg viewBox="0 0 1200 32" preserveAspectRatio="none" className="founders-wave-svg">
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(251,191,36,0)" />
+            <stop offset="30%" stopColor="rgba(251,191,36,0.45)" />
+            <stop offset="55%" stopColor="rgba(45,212,191,0.4)" />
+            <stop offset="80%" stopColor="rgba(134,239,172,0.35)" />
+            <stop offset="100%" stopColor="rgba(251,191,36,0)" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M0,16 Q200,4 400,16 T800,16 T1200,16 L1200,32 L0,32 Z"
+          fill={`url(#${gradientId})`}
+          opacity="0.7"
+        />
+      </svg>
     </div>
   );
 }
