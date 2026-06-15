@@ -8,12 +8,10 @@ import { createPost } from "../../lib/posts";
 import { getUserLocation } from "../../lib/location";
 import { MyListingsPanel } from "./MyListingsPanel";
 import { ExchangeFormatSelector } from "./ExchangeFormatSelector";
-import { MeetingPreferenceSelector } from "./safety/MeetingPreferenceSelector";
 import { SafetyTipBanner } from "./safety/SafetyTipBanner";
 import type { ExchangeFormatPreference } from "../../lib/exchange-format";
 import {
   defaultMeetingPreferenceForFormat,
-  shouldShowMeetingPreferenceSelector,
   type MeetingPreference,
 } from "../../lib/meeting-preference";
 
@@ -296,14 +294,7 @@ export const PostRequest = ({ initialPostType = "needs", onNavigate }: PostReque
                 label="Exchange format"
                 hint="Choose how people will connect for this listing."
               />
-              {shouldShowMeetingPreferenceSelector(exchangeFormat) && (
-                <MeetingPreferenceSelector
-                  value={meetingPreference}
-                  onChange={setMeetingPreference}
-                  variant="studio"
-                />
-              )}
-              {exchangeFormat === "in_person" && <SafetyTipBanner variant="compact" />}
+              {exchangeFormat !== "remote" && <SafetyTipBanner variant="compact" />}
             </div>
           </section>
 

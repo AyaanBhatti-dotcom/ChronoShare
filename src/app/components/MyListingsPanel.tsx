@@ -15,11 +15,9 @@ import { fetchMatchedPostIds, fetchExchangeInfoForPosts, fetchExchangesForPosts 
 import { formatExchangeFormat, type ExchangeFormatPreference } from "../../lib/exchange-format";
 import {
   defaultMeetingPreferenceForFormat,
-  shouldShowMeetingPreferenceSelector,
   formatMeetingPreference,
   type MeetingPreference,
 } from "../../lib/meeting-preference";
-import { MeetingPreferenceSelector } from "./safety/MeetingPreferenceSelector";
 import {
   canEditListing,
   getListingDisplayStatus,
@@ -376,15 +374,6 @@ export function MyListingsPanel({
                 }
                 label="How will this exchange happen?"
               />
-
-              {shouldShowMeetingPreferenceSelector(editForm.exchangeFormat) && (
-                <MeetingPreferenceSelector
-                  value={editForm.meetingPreference}
-                  onChange={(meetingPreference) =>
-                    setEditForm((f) => f && { ...f, meetingPreference })
-                  }
-                />
-              )}
 
               <div className="flex items-center gap-2">
                 <button
