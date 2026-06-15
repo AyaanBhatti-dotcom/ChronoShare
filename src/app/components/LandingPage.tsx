@@ -103,20 +103,24 @@ export function LandingPage() {
       <header
         className={`landing-nav landing-nav-aero ${navScrolled ? "landing-nav-aero-scrolled" : ""}`}
       >
-        <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link to="/" className="hover:opacity-90 transition-opacity">
-            <LogoBrand size="sm" nameClassName="landing-heading" />
+        <div className="landing-nav-inner max-w-6xl mx-auto px-3 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+          <Link to="/" className="hover:opacity-90 transition-opacity flex-shrink-0">
+            <LogoBrand size="sm" nameClassName="landing-heading max-sm:hidden" />
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher variant="landing" />
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            <LanguageSwitcher variant="landing" iconOnly className="landing-lang-trigger-icon-only" />
             <Link
               to="/login"
-              className="text-sm font-medium landing-body hover:text-[var(--landing-text)] transition-colors px-3 py-1.5"
+              className="hidden sm:inline text-sm font-medium landing-body hover:text-[var(--landing-text)] transition-colors px-3 py-1.5"
             >
               {t("nav.logIn")}
             </Link>
-            <Link to="/signup" className="landing-btn-primary text-sm !py-2 !px-4">
-              {t("nav.getStarted")}
+            <Link
+              to="/signup"
+              className="landing-btn-primary text-xs sm:text-sm !py-2 !px-3 sm:!px-4 whitespace-nowrap"
+            >
+              <span className="sm:hidden">{t("nav.signUp")}</span>
+              <span className="hidden sm:inline">{t("nav.getStarted")}</span>
             </Link>
           </div>
         </div>

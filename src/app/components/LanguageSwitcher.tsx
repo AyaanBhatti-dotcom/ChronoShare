@@ -14,9 +14,15 @@ import { RequestLanguageDialog } from "./RequestLanguageDialog";
 interface LanguageSwitcherProps {
   variant?: "landing" | "dashboard" | "compact";
   className?: string;
+  /** Hide the language label on small screens (globe icon only). */
+  iconOnly?: boolean;
 }
 
-export function LanguageSwitcher({ variant = "dashboard", className = "" }: LanguageSwitcherProps) {
+export function LanguageSwitcher({
+  variant = "dashboard",
+  className = "",
+  iconOnly = false,
+}: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation();
   const [requestOpen, setRequestOpen] = useState(false);
   const current = LANGUAGES.find((l) => l.code === i18n.language.split("-")[0]) ?? LANGUAGES[0];
@@ -36,7 +42,9 @@ export function LanguageSwitcher({ variant = "dashboard", className = "" }: Lang
           aria-label={t("common.selectLanguage")}
         >
           <Globe size={variant === "compact" ? 14 : 16} />
-          <span className="truncate">{current.nativeName}</span>
+          <span className={`truncate ${iconOnly ? "max-sm:sr-only" : ""}`.trim()}>
+            {current.nativeName}
+          </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="aero-lang-menu dash-lang-menu">
           {LANGUAGES.map((lang) => {
