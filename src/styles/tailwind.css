@@ -2216,6 +2216,24 @@ html {
       max-width: 11rem;
     }
 
+    .dash-sidebar-collapsible:not(:hover):not([data-expanded="true"]) .dash-sidebar-label {
+      display: none;
+    }
+
+    .dash-sidebar-collapsible:hover .dash-sidebar-label,
+    .dash-sidebar-collapsible[data-expanded="true"] .dash-sidebar-label {
+      display: inline;
+    }
+
+    .dash-sidebar-nav-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.125rem;
+      height: 1.125rem;
+      flex-shrink: 0;
+    }
+
     .dash-sidebar-nav-btn {
       justify-content: center;
     }
@@ -2225,6 +2243,10 @@ html {
       height: 2.5rem;
       padding: 0;
       margin-inline: auto;
+      gap: 0;
+      border-radius: 9999px;
+      align-items: center;
+      justify-content: center;
     }
 
     .dash-sidebar-collapsible:hover .dash-sidebar-nav-btn,

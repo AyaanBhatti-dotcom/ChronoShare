@@ -31,8 +31,8 @@ export function Founders() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-8">
       <section className="dash-card dash-card-hero p-6 sm:p-8 text-center">
-        <div className="dash-icon-box w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <Crown size={20} className="dash-accent" />
+        <div className="dash-icon-box w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Crown size={20} className="dash-accent" strokeWidth={1.75} />
         </div>
         <h2 className="text-lg sm:text-xl font-bold dash-heading">{t("founders.title")}</h2>
         <p className="text-sm dash-subtext mt-2 max-w-md mx-auto leading-relaxed">

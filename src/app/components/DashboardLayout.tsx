@@ -29,10 +29,10 @@ const navItemIds: { id: Screen; labelKey: string; shortKey: string; icon: React.
   { id: "home", labelKey: "nav.home", shortKey: "nav.home", icon: <Home size={18} /> },
   { id: "board", labelKey: "nav.board", shortKey: "nav.boardShort", icon: <Briefcase size={18} /> },
   { id: "community", labelKey: "nav.community", shortKey: "nav.communityShort", icon: <HeartHandshake size={18} /> },
-  { id: "founders", labelKey: "nav.founders", shortKey: "nav.foundersShort", icon: <Crown size={18} /> },
   { id: "post", labelKey: "nav.post", shortKey: "nav.postShort", icon: <PlusCircle size={18} /> },
   { id: "profile", labelKey: "nav.profile", shortKey: "nav.profile", icon: <User size={18} /> },
   { id: "settings", labelKey: "nav.settings", shortKey: "nav.settings", icon: <SettingsIcon size={18} /> },
+  { id: "founders", labelKey: "nav.founders", shortKey: "nav.foundersShort", icon: <Crown size={18} /> },
 ];
 
 const pageTitleKeys: Record<Screen, string> = {
@@ -262,7 +262,7 @@ export function DashboardLayout({
                   active ? "dash-nav-active" : "dash-nav-inactive"
                 }`}
               >
-                <span className="flex-shrink-0">{item.icon}</span>
+                <span className="dash-sidebar-nav-icon flex-shrink-0">{item.icon}</span>
                 <span className="dash-sidebar-label">{t(item.labelKey)}</span>
                 {item.id === "board" && jobCount > 0 && (
                   <>
