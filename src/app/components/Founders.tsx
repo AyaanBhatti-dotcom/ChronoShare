@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Crown } from "lucide-react";
+import { Crown, Sparkles } from "lucide-react";
 
 const FOUNDERS = [
   {
@@ -29,58 +29,44 @@ export function Founders() {
   const { t } = useTranslation();
 
   return (
-    <div className="founders-scene">
-      <div className="founders-win98-window">
-        <div className="founders-win98-titlebar">
-          <div className="founders-win98-title">
-            <Crown size={12} strokeWidth={2.25} aria-hidden />
-            <span className="founders-win98-title-text">{t("founders.title")}</span>
-            <span className="founders-win98-title-sub">— ChronoShare</span>
-          </div>
-          <div className="founders-win98-controls" aria-hidden>
-            <span className="founders-win98-btn founders-win98-btn-min" />
-            <span className="founders-win98-btn founders-win98-btn-max" />
-            <span className="founders-win98-btn founders-win98-btn-close" />
-          </div>
+    <div className="max-w-3xl mx-auto space-y-6 pb-8">
+      <section className="dash-card dash-card-hero p-6 sm:p-8 text-center">
+        <div className="dash-icon-box w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Crown size={20} className="dash-accent" strokeWidth={1.75} />
         </div>
+        <h2 className="text-lg sm:text-xl font-bold dash-heading">{t("founders.title")}</h2>
+        <p className="text-sm dash-subtext mt-2 max-w-md mx-auto leading-relaxed">
+          {t("founders.subtitle")}
+        </p>
+      </section>
 
-        <div className="founders-win98-toolbar">
-          <span>{t("founders.subtitle")}</span>
-        </div>
-
-        <div className="founders-win98-body">
-          <div className="founders-win98-aero-sun" aria-hidden />
-          <div className="founders-win98-aero-cloud founders-win98-aero-cloud-a" aria-hidden />
-          <div className="founders-win98-aero-cloud founders-win98-aero-cloud-b" aria-hidden />
-
-          <div className="founders-win98-grid">
-            {FOUNDERS.map((founder) => {
-              const role = t(founder.roleKey);
-              return (
-                <fieldset
-                  key={founder.id}
-                  className={`founders-win98-panel founders-win98-panel-${founder.id}`}
-                >
-                  <legend className="founders-win98-legend">{t(founder.nameKey)}</legend>
-                  <div className="founders-win98-panel-inner">
-                    <img
-                      src={founder.image}
-                      alt={t(founder.nameKey)}
-                      className="founders-win98-avatar"
-                    />
-                    {role && <p className="founders-win98-role">{role}</p>}
-                    <p className="founders-win98-bio">{t(founder.bioKey)}</p>
+      <div className="space-y-5">
+        {FOUNDERS.map((founder) => {
+          const role = t(founder.roleKey);
+          return (
+            <article key={founder.id} className="dash-card dash-card-hover overflow-hidden">
+              <div className="flex flex-col sm:flex-row gap-5 p-5 sm:p-6">
+                <div className="flex-shrink-0 mx-auto sm:mx-0">
+                  <img
+                    src={founder.image}
+                    alt={t(founder.nameKey)}
+                    className="w-36 h-36 sm:w-32 sm:h-32 rounded-2xl object-cover shadow-md ring-2 ring-white/60"
+                  />
+                </div>
+                <div className="min-w-0 text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                    <Sparkles size={14} className="dash-accent flex-shrink-0" />
+                    <h3 className="text-base font-bold dash-heading">{t(founder.nameKey)}</h3>
                   </div>
-                </fieldset>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="founders-win98-statusbar">
-          <span className="founders-win98-status-text">{t("founders.tagline")}</span>
-          <span className="founders-win98-status-grip" aria-hidden />
-        </div>
+                  {role && (
+                    <p className="text-xs font-medium dash-accent mb-3">{role}</p>
+                  )}
+                  <p className="text-sm dash-subtext leading-relaxed">{t(founder.bioKey)}</p>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

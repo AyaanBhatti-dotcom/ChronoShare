@@ -370,11 +370,7 @@ export function DashboardLayout({
         </header>
 
         {/* Content */}
-        <main
-          className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-5 sm:px-8 py-6 max-sm:py-0 dash-mobile-main${
-            screen === "founders" ? " founders-main" : ""
-          }`}
-        >
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-5 sm:px-8 py-6 max-sm:py-0 dash-mobile-main">
           {screen === "home" && <HomeDashboard onNavigate={navigateScreen} />}
           {screen === "board" && (
             <JobBoard
